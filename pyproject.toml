@@ -25,3 +25,9 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["flysim*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+# ROS (/opt/ros) on PYTHONPATH registers a pytest plugin that fails to import
+# without pyyaml. Block it so `pytest` works from a ROS-sourced shell.
+addopts = "-p no:launch_testing -p no:launch_ros"

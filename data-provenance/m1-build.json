@@ -1,0 +1,156 @@
+{
+  "retention_rule": "annotations.status == 'Traced'; edges with both endpoints retained; no weight threshold",
+  "neurons": {
+    "annotation_rows": 211577,
+    "retained": 165122,
+    "side_counts": {
+      "L": 78646,
+      "R": 80027,
+      "M": 392,
+      "null": 6057
+    },
+    "side_from_instance_suffix": 10023,
+    "soma_xyz_present": 140024
+  },
+  "edges": {
+    "weight_rows": 151856684,
+    "retained": 25563197,
+    "dropped_pre_only": 112538237,
+    "dropped_post_only": 4802106,
+    "contacts_raw": 311833243,
+    "contacts_retained": 124025046,
+    "self_loops": 101,
+    "positive": 15842302,
+    "negative": 9720895,
+    "contacts_positive": 77266539,
+    "contacts_negative": 46758507
+  },
+  "sign_rule": "sign of presynaptic neuron's consensus_nt (Dale's principle, assumption)",
+  "nt_codes": {
+    "acetylcholine": 0,
+    "gaba": 1,
+    "glutamate": 2,
+    "unclear": 3,
+    "histamine": 4,
+    "dopamine": 5,
+    "octopamine": 6,
+    "serotonin": 7,
+    "missing": 8
+  },
+  "nt_sign": {
+    "acetylcholine": 1.0,
+    "gaba": -1.0,
+    "glutamate": -1.0,
+    "unclear": 1.0,
+    "histamine": 1.0,
+    "dopamine": 1.0,
+    "octopamine": 1.0,
+    "serotonin": 1.0,
+    "missing": 1.0
+  },
+  "neuron_nt_counts": {
+    "acetylcholine": 103718,
+    "gaba": 22055,
+    "glutamate": 29296,
+    "unclear": 3100,
+    "histamine": 5910,
+    "dopamine": 392,
+    "octopamine": 101,
+    "serotonin": 48,
+    "missing": 502
+  },
+  "edges_by_pre_nt": {
+    "acetylcholine": {
+      "sign": 1,
+      "edges": 14737539,
+      "contacts": 73471245,
+      "assumed": false,
+      "modulator": false
+    },
+    "gaba": {
+      "sign": -1,
+      "edges": 4923256,
+      "contacts": 25709222,
+      "assumed": false,
+      "modulator": false
+    },
+    "glutamate": {
+      "sign": -1,
+      "edges": 4797639,
+      "contacts": 21049285,
+      "assumed": true,
+      "modulator": false
+    },
+    "unclear": {
+      "sign": 1,
+      "edges": 587940,
+      "contacts": 2048046,
+      "assumed": true,
+      "modulator": false
+    },
+    "histamine": {
+      "sign": 1,
+      "edges": 81270,
+      "contacts": 563450,
+      "assumed": true,
+      "modulator": true
+    },
+    "dopamine": {
+      "sign": 1,
+      "edges": 241702,
+      "contacts": 583124,
+      "assumed": true,
+      "modulator": true
+    },
+    "octopamine": {
+      "sign": 1,
+      "edges": 148528,
+      "contacts": 467888,
+      "assumed": true,
+      "modulator": true
+    },
+    "serotonin": {
+      "sign": 1,
+      "edges": 45323,
+      "contacts": 132786,
+      "assumed": true,
+      "modulator": true
+    },
+    "missing": {
+      "sign": 1,
+      "edges": 0,
+      "contacts": 0,
+      "assumed": true,
+      "modulator": false
+    }
+  },
+  "side_codes": {
+    "L": 0,
+    "R": 1,
+    "M": 2
+  },
+  "cache_bytes": {
+    "body_ids": 1320976,
+    "indptr": 1320984,
+    "indices": 102252788,
+    "weight": 102252788,
+    "csc_indptr": 1320984,
+    "csc_indices": 102252788,
+    "csc_weight": 102252788,
+    "side": 165122,
+    "nt": 165122,
+    "nt_modulator": 165122,
+    "nt_assumed": 165122,
+    "has_soma_xyz": 165122,
+    "soma_xyz": 1981464
+  },
+  "cache_bytes_total": 415781170,
+  "timings_s": {
+    "annotations_s": 0.2,
+    "nt_s": 0.5,
+    "edge_filter_s": 13.1,
+    "csr_build_s": 9.8,
+    "total_s": 24.8
+  },
+  "generated_at": "2026-09-13T01:50:25+0900"
+}
