@@ -19,5 +19,12 @@
     "md5": "f30e9dcca25cfd021bf1e7b3d975599e",
     "server_last_modified": "Wed, 03 Jun 2026 13:54:47 GMT",
     "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/connectome-weights-male-cns-v1.0-minconf-0.5.feather"
+  },
+  "syn-partners-male-cns-v1.0-minconf-0.5.feather": {
+    "bytes": 6777179098,
+    "downloaded_at": "2026-09-13T02:08:01+0900",
+    "md5": "58efcf712f8c4d4de5f2ad51e97def76",
+    "server_last_modified": "Wed, 03 Jun 2026 13:55:42 GMT",
+    "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/connectome-data/flat-connectome/syn-partners-male-cns-v1.0-minconf-0.5.feather"
   }
 }
