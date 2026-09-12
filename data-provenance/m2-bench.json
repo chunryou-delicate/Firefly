@@ -1,0 +1,272 @@
+{
+ "generated": "2026-09-13T02:17:40+09:00",
+ "gpu": "NVIDIA GeForce RTX 4090 Laptop GPU",
+ "torch": "2.6.0+cu124",
+ "n_neurons": 165122,
+ "n_edges": 25563197,
+ "steps": 10000,
+ "warmup": 100,
+ "seed": 0,
+ "params": {
+  "dt": 0.1,
+  "tau_m": 20.0,
+  "tau_syn": 5.0,
+  "t_ref": 0.0,
+  "v_rest": -65.0,
+  "v_reset": -65.0,
+  "v_thresh": -50.0,
+  "g": 0.0,
+  "noise_sigma": 0.0,
+  "v_floor": null,
+  "decay_m": 0.9950124791926823,
+  "decay_syn": 0.9801986733067553,
+  "c_syn": 0.004937935295309022,
+  "ref_steps": 0,
+  "noise_scale": 0.0
+ },
+ "stim_current": 10000.0,
+ "target_us": 100.0,
+ "engine_bytes": 343511854,
+ "rows": [
+  {
+   "backend": "triton-eager",
+   "activity": 0.0,
+   "forced_neurons": 0,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 53.9,
+   "spikes_per_step": 0,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.0,
+   "forced_neurons": 0,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 55.2,
+   "spikes_per_step": 0.0,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.0,
+   "forced_neurons": 0,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 35.7,
+   "spikes_per_step": 0,
+   "transient_peak_mib": 3.3
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.0,
+   "forced_neurons": 0,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 35.9,
+   "spikes_per_step": 0.0,
+   "transient_peak_mib": 3.3
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.0,
+   "forced_neurons": 0,
+   "record": false,
+   "steps": 1000,
+   "us_per_step": 130.7,
+   "spikes_per_step": 0,
+   "transient_peak_mib": 3.3
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.0,
+   "forced_neurons": 0,
+   "record": true,
+   "steps": 1000,
+   "us_per_step": 153.8,
+   "spikes_per_step": 0.0,
+   "transient_peak_mib": 3.3
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.001,
+   "forced_neurons": 165,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 53.9,
+   "spikes_per_step": 165,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.001,
+   "forced_neurons": 165,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 58.7,
+   "spikes_per_step": 165.0,
+   "transient_peak_mib": 1.4
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.001,
+   "forced_neurons": 165,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 38.1,
+   "spikes_per_step": 165,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.001,
+   "forced_neurons": 165,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 40.2,
+   "spikes_per_step": 165.0,
+   "transient_peak_mib": 1.4
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.001,
+   "forced_neurons": 165,
+   "record": false,
+   "steps": 1000,
+   "us_per_step": 301.0,
+   "spikes_per_step": 165,
+   "transient_peak_mib": 3.3
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.001,
+   "forced_neurons": 165,
+   "record": true,
+   "steps": 1000,
+   "us_per_step": 367.8,
+   "spikes_per_step": 165.0,
+   "transient_peak_mib": 3.3
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.01,
+   "forced_neurons": 1651,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 53.7,
+   "spikes_per_step": 1651,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.01,
+   "forced_neurons": 1651,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 65.3,
+   "spikes_per_step": 1651.0,
+   "transient_peak_mib": 8.2
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.01,
+   "forced_neurons": 1651,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 44.0,
+   "spikes_per_step": 1651,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.01,
+   "forced_neurons": 1651,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 51.5,
+   "spikes_per_step": 1651.0,
+   "transient_peak_mib": 8.2
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.01,
+   "forced_neurons": 1651,
+   "record": false,
+   "steps": 1000,
+   "us_per_step": 304.5,
+   "spikes_per_step": 1651,
+   "transient_peak_mib": 7.7
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.01,
+   "forced_neurons": 1651,
+   "record": true,
+   "steps": 1000,
+   "us_per_step": 374.8,
+   "spikes_per_step": 1651.0,
+   "transient_peak_mib": 8.2
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.05,
+   "forced_neurons": 8256,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 80.6,
+   "spikes_per_step": 8256,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-eager",
+   "activity": 0.05,
+   "forced_neurons": 8256,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 113.9,
+   "spikes_per_step": 8256.0,
+   "transient_peak_mib": 39.5
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.05,
+   "forced_neurons": 8256,
+   "record": false,
+   "steps": 10000,
+   "us_per_step": 81.8,
+   "spikes_per_step": 8256,
+   "transient_peak_mib": 0.6
+  },
+  {
+   "backend": "triton-cudagraph",
+   "activity": 0.05,
+   "forced_neurons": 8256,
+   "record": true,
+   "steps": 10000,
+   "us_per_step": 104.6,
+   "spikes_per_step": 8256.0,
+   "transient_peak_mib": 39.5
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.05,
+   "forced_neurons": 8256,
+   "record": false,
+   "steps": 1000,
+   "us_per_step": 363.5,
+   "spikes_per_step": 8256,
+   "transient_peak_mib": 35.4
+  },
+  {
+   "backend": "torch-gpu",
+   "activity": 0.05,
+   "forced_neurons": 8256,
+   "record": true,
+   "steps": 1000,
+   "us_per_step": 439.3,
+   "spikes_per_step": 8256.0,
+   "transient_peak_mib": 39.5
+  }
+ ]
+}
