@@ -1,0 +1,61 @@
+{
+  "retention_rule": "annotations.status == 'Traced'; edges with both endpoints retained",
+  "before": {
+    "annotation_rows": 211577,
+    "weight_rows": 151856684,
+    "weight_sum": 311833243
+  },
+  "observed": {
+    "neurons": 165122,
+    "directed_edges": 25563197,
+    "synapse_contacts": 124025046,
+    "cell_types": 11751
+  },
+  "reference": {
+    "neurons": 166700,
+    "directed_edges": 25580000,
+    "synapse_contacts": 124000000,
+    "cell_types": 11691
+  },
+  "deviation": {
+    "neurons": -0.00946610677864427,
+    "directed_edges": -0.0006568803752931978,
+    "synapse_contacts": 0.00020198387096774195,
+    "cell_types": 0.005132152938157557
+  },
+  "tolerance": 0.1,
+  "pass": true,
+  "somaSide_retained": {
+    "R": 74430,
+    "L": 74220,
+    "None": 16080,
+    "M": 392
+  },
+  "somaLocation_present_retained": 140024,
+  "nt_coverage_retained": {
+    "consensus_nt": {
+      "acetylcholine": 103718,
+      "glutamate": 29296,
+      "gaba": 22055,
+      "histamine": 5910,
+      "unclear": 3100,
+      "nan": 502,
+      "dopamine": 392,
+      "octopamine": 101,
+      "serotonin": 48
+    },
+    "predicted_nt": {
+      "acetylcholine": 94946,
+      "glutamate": 28055,
+      "gaba": 20218,
+      "unclear": 14365,
+      "dopamine": 4443,
+      "histamine": 2026,
+      "nan": 502,
+      "serotonin": 465,
+      "octopamine": 102
+    },
+    "missing_from_nt_table": 502
+  },
+  "generated_at": "2026-09-12T23:53:40+0900"
+}

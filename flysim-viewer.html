@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flysim — 활동 재생기</title>
+
+<!--
+════════════════════════════════════════════════════════════════════
+  데이터 계약 (run.json)
+
+  파이프라인은 아래 구조의 JSON 하나를 뱉으면 된다.
+  이 파일에 드래그&드롭하거나 "런 파일 열기"로 불러온다.
+
+  {
+    "meta": {
+      "run_id":    "m4-ipi-sweep-035",
+      "dataset":   "MaleCNS v1.0",
+      "dt_ms":     0.1,            // 시뮬 타임스텝
+      "bin_ms":    1.0,            // 아래 rates/spikes의 시간 해상도
+      "n_neurons": 166700,
+      "sensory_mode": "phase-lock" // "rate" | "phase-lock" — 반드시 기록
+    },
+
+    "neurons": {                   // 길이 n_neurons, 인덱스 = 뉴런 인덱스
+      "x":      [ ... ],           // 해부학적 좌표 (임의 단위, 뷰어가 정규화)
+      "y":      [ ... ],
+      "region": [ ... ]            // regions 배열의 인덱스
+    },
+
+    "regions": ["JO_A", "AMMC", "WED", "pC1", ...],
+
+    "input": {                     // 자극 신호. 없으면 상단 창이 비활성
+      "label":     "click train, IPI 35 ms",
+      "envelope":  [ ... ]         // 0~1, 길이는 프레임 수와 무관 (뷰어가 리샘플)
+    },
+
+    "frames": {
+      "n":     1200,               // 프레임 수 (= 시간 빈 개수)
+      "rates": [ [ ... ], ... ]    // regions.length × n, 0~1로 정규화된 발화율
+    },
+
+    "spikes": {                    // 뉴런 필드용. 전체를 담지 말고 샘플링할 것
+      "neuron_idx": [ ... ],       // 두 배열은 같은 길이
+      "t_bin":      [ ... ]
+    }
+  }
+
+  주의
+  - spikes를 전량 덤프하면 파일이 GB 단위가 된다. 프레임당 상한을 두고
+    샘플링하되, 샘플링 비율을 meta에 기록할 것.
+  - neurons.x/y는 런마다 바뀌지 않으므로 별도 파일로 빼도 된다.
+    그 경우 뷰어는 두 파일을 순서 무관하게 받는다.
+  - rates는 0~1로 정규화해서 보낸다. 정규화 기준(최대값)도 meta에 남길 것.
+════════════════════════════════════════════════════════════════════
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --ground:#10161D;
+  --panel:#161E27;
+  --rule:#243040;
+  --rule-soft:#1C2632;
+  --ink:#C9D3DD;
+  --ink-dim:#6D7C8C;
+  --ink-faint:#4A5766;
+
+  /* 차가운 색 = 집어넣은 것, 따뜻한 색 = 나온 것 */
+  --stimulus:#3FBFCF;
+  --idle:#3A4756;
+  --warm-lo:#B0762E;
+  --warm-hi:#E8A13A;
+  --hot:#E5484D;
+
+  --alert:#E5484D;
+
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{height:100%}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.45;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+#app{
+  height:100%;
+  display:grid;
+  grid-template-rows:auto auto minmax(0,1fr) auto auto;
+}
+
+/* ── 헤더 ─────────────────────────────────────────────── */
+header{
+  display:flex;
+  align-items:center;
+  gap:16px;
+  padding:10px 18px;
+  border-bottom:1px solid var(--rule);
+  background:var(--panel);
+}
+.mark{
+  font-weight:600;
+  letter-spacing:-0.01em;
+}
+.run-id{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink-dim);
+}
+.spacer{flex:1}
+
+.badge{
+  font-size:11px;
+  font-family:var(--mono);
+  padding:3px 8px;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  color:var(--ink-dim);
+}
+.badge.synthetic{
+  color:var(--alert);
+  border-color:color-mix(in srgb,var(--alert) 45%,transparent);
+}
+
+button{
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  background:transparent;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:5px 11px;
+  cursor:pointer;
+}
+button:hover{border-color:var(--ink-faint);background:#1B242F}
+button:focus-visible{outline:2px solid var(--stimulus);outline-offset:1px}
+
+/* ── 공통 창 ──────────────────────────────────────────── */
+.pane{
+  position:relative;
+  border-bottom:1px solid var(--rule-soft);
+  background:var(--panel);
+}
+.pane-label{
+  position:absolute;
+  top:7px; left:12px;
+  font-size:11px;
+  color:var(--ink-faint);
+  pointer-events:none;
+  z-index:2;
+}
+.pane canvas{display:block;width:100%;height:100%}
+
+#stimPane{height:76px}
+#fieldPane{background:#0C1218;border-bottom:1px solid var(--rule)}
+#heatPane{height:150px}
+
+/* 세 창을 관통하는 재생 헤드 */
+.playhead{
+  position:absolute;
+  top:0; bottom:0;
+  width:1px;
+  background:var(--stimulus);
+  pointer-events:none;
+  z-index:3;
+}
+
+/* ── 뉴런 필드 위 오버레이 ────────────────────────────── */
+#fieldPane{position:relative}
+.field-readout{
+  position:absolute;
+  right:14px; top:10px;
+  text-align:right;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-faint);
+  line-height:1.7;
+  pointer-events:none;
+}
+.field-readout b{
+  display:block;
+  font-size:22px;
+  font-weight:500;
+  color:var(--warm-hi);
+  font-variant-numeric:tabular-nums;
+}
+.warn{
+  position:absolute;
+  left:12px; bottom:10px;
+  font-size:12px;
+  color:var(--alert);
+  font-family:var(--mono);
+}
+
+/* ── 트랜스포트 ───────────────────────────────────────── */
+.transport{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  padding:9px 18px;
+  background:var(--panel);
+  border-bottom:1px solid var(--rule);
+}
+.transport input[type=range]{
+  flex:1;
+  accent-color:var(--stimulus);
+  height:3px;
+  cursor:pointer;
+}
+.readout{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink-dim);
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+.readout span{color:var(--ink)}
+
+.play{
+  width:34px;
+  padding:5px 0;
+  text-align:center;
+}
+
+/* ── 하단 상태줄 ──────────────────────────────────────── */
+footer{
+  display:flex;
+  gap:22px;
+  padding:7px 18px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-faint);
+  background:var(--ground);
+}
+footer span{color:var(--ink-dim)}
+
+/* ── 드롭 상태 ────────────────────────────────────────── */
+#drop{
+  position:fixed; inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  background:color-mix(in srgb,var(--ground) 88%,transparent);
+  border:2px dashed var(--stimulus);
+  z-index:20;
+  font-size:15px;
+  color:var(--stimulus);
+}
+body.dragging #drop{display:flex}
+
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+}
+@media (max-width:640px){
+  .readout.optional{display:none}
+  #stimPane{height:58px}
+  #heatPane{height:120px}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <span class="mark">flysim</span>
+    <span class="run-id" id="runId">—</span>
+    <span class="badge synthetic" id="sourceBadge">합성 데모 데이터</span>
+    <span class="spacer"></span>
+    <span class="badge" id="modeBadge">—</span>
+    <button id="openBtn">런 파일 열기</button>
+    <input type="file" id="fileInput" accept="application/json" hidden>
+  </header>
+
+  <section class="pane" id="stimPane">
+    <span class="pane-label" id="stimLabel">자극 신호</span>
+    <canvas id="stimCanvas"></canvas>
+    <div class="playhead" id="ph1"></div>
+  </section>
+
+  <section class="pane" id="fieldPane">
+    <span class="pane-label">뉴런 활동</span>
+    <canvas id="fieldCanvas"></canvas>
+    <div class="field-readout">
+      <b id="activeCount">0</b>
+      발화 중
+    </div>
+    <div class="warn" id="warnMsg"></div>
+  </section>
+
+  <section class="pane" id="heatPane">
+    <span class="pane-label">영역별 발화율</span>
+    <canvas id="heatCanvas"></canvas>
+    <div class="playhead" id="ph3"></div>
+  </section>
+
+  <div class="transport">
+    <button class="play" id="playBtn" aria-label="재생">▶</button>
+    <input type="range" id="scrub" min="0" max="100" value="0" step="1" aria-label="시간 위치">
+    <span class="readout">t <span id="tRead">0.0</span> ms</span>
+    <span class="readout optional">최대 <span id="peakRead">—</span></span>
+    <button id="speedBtn">1.0×</button>
+  </div>
+
+  <footer>
+    <span id="metaDataset">—</span>
+    <span id="metaNeurons">—</span>
+    <span id="metaBin">—</span>
+    <span id="metaFrames">—</span>
+  </footer>
+
+</div>
+
+<div id="drop">run.json 놓기</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════
+//  상태
+// ═══════════════════════════════════════════════════════
+let D = null;              // 로드된 런
+let frame = 0;
+let playing = false;
+let speed = 1;
+let activation = null;     // Float32Array, 뉴런별 잔광
+let lastTick = 0;
+
+const SPEEDS = [0.25, 0.5, 1, 2, 4];
+let speedIdx = 2;
+
+const el = id => document.getElementById(id);
+
+// ═══════════════════════════════════════════════════════
+//  합성 데모 데이터
+//  실제 커넥톰이 아니다. 뷰어 동작 확인과 포맷 예시용.
+//  자극 → JO → AMMC → WED → pC1 전달을 지연시간만 넣어
+//  흉내낸 것이므로 어떤 과학적 의미도 없다.
+// ═══════════════════════════════════════════════════════
+function synth(){
+  const N = 166700;
+  const FR = 900;                 // 프레임 수 (900 ms @ 1 ms bin)
+  const regions = ["JO_A","JO_B","AMMC","WED","pC1","MB","CX","OL_L","OL_R","VNC_T1","VNC_T2","VNC_T3"];
+
+  const x = new Float32Array(N);
+  const y = new Float32Array(N);
+  const reg = new Uint8Array(N);
+
+  // 아주 거친 초파리 CNS 실루엣: 위쪽 뇌 + 시각엽, 아래로 신경삭
+  const blobs = [
+    // [regionIdx, cx, cy, rx, ry, share]
+    [7, 0.20, 0.30, 0.115, 0.155, 0.215],   // OL_L
+    [8, 0.80, 0.30, 0.115, 0.155, 0.215],   // OL_R
+    [5, 0.50, 0.235, 0.075, 0.055, 0.075],  // MB
+    [6, 0.50, 0.335, 0.048, 0.040, 0.045],  // CX
+    [2, 0.435, 0.415, 0.042, 0.035, 0.050], // AMMC
+    [3, 0.565, 0.415, 0.042, 0.035, 0.050], // WED
+    [4, 0.50, 0.475, 0.032, 0.026, 0.030],  // pC1
+    [0, 0.415, 0.135, 0.026, 0.022, 0.020], // JO_A
+    [1, 0.585, 0.135, 0.026, 0.022, 0.020], // JO_B
+    [9, 0.50, 0.615, 0.075, 0.052, 0.095],  // VNC T1
+    [10,0.50, 0.735, 0.068, 0.050, 0.093],  // VNC T2
+    [11,0.50, 0.855, 0.060, 0.050, 0.092],  // VNC T3
+  ];
+
+  let i = 0;
+  for(const [r, cx, cy, rx, ry, share] of blobs){
+    const count = Math.min(Math.round(N * share), N - i);
+    for(let k = 0; k < count; k++, i++){
+      // 가장자리보다 중심이 조밀하게
+      const a = Math.random() * Math.PI * 2;
+      const d = Math.pow(Math.random(), 0.62);
+      x[i] = cx + Math.cos(a) * rx * d;
+      y[i] = cy + Math.sin(a) * ry * d;
+      reg[i] = r;
+    }
+  }
+  for(; i < N; i++){                       // 잔여분은 중앙뇌에 흩뿌림
+    x[i] = 0.5 + (Math.random() - 0.5) * 0.16;
+    y[i] = 0.36 + (Math.random() - 0.5) * 0.13;
+    reg[i] = 6;
+  }
+
+  // 자극: IPI 35 ms 클릭 트레인, 150~700 ms 구간
+  const env = new Float32Array(FR);
+  for(let t = 0; t < FR; t++){
+    if(t < 150 || t > 700){ env[t] = 0; continue; }
+    const phase = (t - 150) % 35;
+    env[t] = phase < 3 ? 1 - phase / 3 : 0;
+  }
+
+  // 영역별 발화율: 지연 + 적분
+  const R = regions.length;
+  const rates = Array.from({length: R}, () => new Float32Array(FR));
+  const chain = [
+    // [regionIdx, 지연 ms, 이득, 시정수(적분)]
+    [0, 0,  1.00, 1.5],
+    [1, 0,  0.92, 1.5],
+    [2, 3,  0.78, 4],
+    [3, 8,  0.60, 9],
+    [4, 13, 0.44, 34],   // pC1은 길게 적분 → 펄스열에 누적 반응
+  ];
+  for(const [r, lag, gain, tau] of chain){
+    let v = 0;
+    for(let t = 0; t < FR; t++){
+      const src = env[Math.max(0, t - lag)];
+      v += (src * gain - v) / tau;
+      rates[r][t] = v;
+    }
+  }
+  // 나머지 영역은 낮은 배경 활동
+  for(let r = 0; r < R; r++){
+    if(chain.some(c => c[0] === r)) continue;
+    let v = 0.05;
+    for(let t = 0; t < FR; t++){
+      v += (Math.random() - 0.5) * 0.014;
+      v = Math.max(0.012, Math.min(0.14, v));
+      rates[r][t] = v;
+    }
+  }
+
+  // 스파이크 샘플링: 프레임당 최대 1400개
+  const nIdx = [], tIdx = [];
+  const byRegion = Array.from({length: R}, () => []);
+  for(let n = 0; n < N; n++) byRegion[reg[n]].push(n);
+
+  for(let t = 0; t < FR; t++){
+    let budget = 1400;
+    for(let r = 0; r < R && budget > 0; r++){
+      const pool = byRegion[r];
+      const want = Math.min(budget, Math.round(rates[r][t] * pool.length * 0.02));
+      for(let k = 0; k < want; k++){
+        nIdx.push(pool[(Math.random() * pool.length) | 0]);
+        tIdx.push(t);
+      }
+      budget -= want;
+    }
+  }
+
+  return {
+    meta:{
+      run_id:"synthetic-demo", dataset:"(합성 — 실제 커넥톰 아님)",
+      dt_ms:0.1, bin_ms:1.0, n_neurons:N, sensory_mode:"rate"
+    },
+    neurons:{x, y, region:reg},
+    regions,
+    input:{label:"클릭 트레인 · IPI 35 ms", envelope:env},
+    frames:{n:FR, rates},
+    spikes:{neuron_idx:nIdx, t_bin:tIdx},
+    _synthetic:true
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+//  로드
+// ═══════════════════════════════════════════════════════
+function load(raw){
+  // 배열을 타입드로 정규화하고, 프레임별 스파이크 인덱스를 미리 만든다
+  const d = {
+    meta: raw.meta || {},
+    regions: raw.regions || [],
+    neurons:{
+      x: Float32Array.from(raw.neurons.x),
+      y: Float32Array.from(raw.neurons.y),
+      region: Uint8Array.from(raw.neurons.region)
+    },
+    input: raw.input ? {
+      label: raw.input.label || "자극 신호",
+      envelope: Float32Array.from(raw.input.envelope)
+    } : null,
+    frames:{
+      n: raw.frames.n,
+      rates: raw.frames.rates.map(r => Float32Array.from(r))
+    },
+    _synthetic: !!raw._synthetic
+  };
+
+  // 좌표 정규화 (0~1로)
+  const nx = d.neurons.x, ny = d.neurons.y;
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for(let i = 0; i < nx.length; i++){
+    if(nx[i] < x0) x0 = nx[i]; if(nx[i] > x1) x1 = nx[i];
+    if(ny[i] < y0) y0 = ny[i]; if(ny[i] > y1) y1 = ny[i];
+  }
+  const sx = x1 - x0 || 1, sy = y1 - y0 || 1;
+  for(let i = 0; i < nx.length; i++){
+    nx[i] = (nx[i] - x0) / sx;
+    ny[i] = (ny[i] - y0) / sy;
+  }
+
+  // 프레임 → 스파이크 뉴런 인덱스 버킷
+  const buckets = Array.from({length: d.frames.n}, () => []);
+  const sn = raw.spikes?.neuron_idx || [], st = raw.spikes?.t_bin || [];
+  for(let k = 0; k < sn.length; k++){
+    const t = st[k];
+    if(t >= 0 && t < d.frames.n) buckets[t].push(sn[k]);
+  }
+  d.buckets = buckets;
+
+  D = d;
+  activation = new Float32Array(d.neurons.x.length);
+  frame = 0;
+  playing = false;
+
+  el("runId").textContent = d.meta.run_id || "—";
+  el("modeBadge").textContent = d.meta.sensory_mode
+    ? "감각 모드: " + d.meta.sensory_mode : "감각 모드 미기록";
+  el("stimLabel").textContent = d.input ? d.input.label : "자극 신호 없음";
+  el("metaDataset").textContent = d.meta.dataset || "데이터셋 미기록";
+  el("metaNeurons").textContent = (d.meta.n_neurons ?? d.neurons.x.length).toLocaleString() + " 뉴런";
+  el("metaBin").textContent = "빈 " + (d.meta.bin_ms ?? "?") + " ms";
+  el("metaFrames").textContent = d.frames.n + " 프레임";
+
+  const badge = el("sourceBadge");
+  badge.textContent = d._synthetic ? "합성 데모 데이터" : "실측 런";
+  badge.classList.toggle("synthetic", d._synthetic);
+
+  el("scrub").max = d.frames.n - 1;
+  el("scrub").value = 0;
+
+  resize();
+  drawStim();
+  drawHeat();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════
+//  캔버스
+// ═══════════════════════════════════════════════════════
+const stim = el("stimCanvas"), field = el("fieldCanvas"), heat = el("heatCanvas");
+const sctx = stim.getContext("2d");
+const fctx = field.getContext("2d", {alpha:false});
+const hctx = heat.getContext("2d");
+let dpr = 1;
+
+function fit(c){
+  const r = c.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  c.width  = Math.max(1, Math.round(r.width  * dpr));
+  c.height = Math.max(1, Math.round(r.height * dpr));
+  return r;
+}
+
+function resize(){
+  fit(stim); fit(field); fit(heat);
+  if(D){ drawStim(); drawHeat(); render(); }
+}
+window.addEventListener("resize", resize);
+
+// ── 자극 신호 ──────────────────────────────────────────
+function drawStim(){
+  const W = stim.width, H = stim.height;
+  sctx.clearRect(0, 0, W, H);
+  if(!D || !D.input) return;
+
+  const env = D.input.envelope, n = D.frames.n;
+  const mid = H * 0.62, amp = H * 0.34;
+
+  sctx.strokeStyle = "#243040";
+  sctx.lineWidth = 1;
+  sctx.beginPath(); sctx.moveTo(0, mid); sctx.lineTo(W, mid); sctx.stroke();
+
+  sctx.strokeStyle = getComputedStyle(document.documentElement)
+    .getPropertyValue("--stimulus").trim();
+  sctx.lineWidth = 1 * dpr;
+  sctx.beginPath();
+  for(let px = 0; px < W; px++){
+    // 픽셀당 구간 최대값 (피크 놓치지 않게)
+    const a = Math.floor(px / W * env.length);
+    const b = Math.max(a + 1, Math.floor((px + 1) / W * env.length));
+    let m = 0;
+    for(let i = a; i < b && i < env.length; i++) if(env[i] > m) m = env[i];
+    const y = mid - m * amp;
+    if(px === 0) sctx.moveTo(px, y); else sctx.lineTo(px, y);
+  }
+  sctx.stroke();
+}
+
+// ── 영역별 히트맵 ──────────────────────────────────────
+function drawHeat(){
+  const W = heat.width, H = heat.height;
+  hctx.clearRect(0, 0, W, H);
+  if(!D) return;
+
+  const R = D.regions.length, n = D.frames.n;
+  const rowH = H / R;
+  const img = hctx.createImageData(W, H);
+  const px = img.data;
+
+  for(let r = 0; r < R; r++){
+    const rates = D.frames.rates[r];
+    const y0 = Math.floor(r * rowH), y1 = Math.floor((r + 1) * rowH) - 1;
+    for(let x = 0; x < W; x++){
+      const a = Math.floor(x / W * n);
+      const b = Math.max(a + 1, Math.floor((x + 1) / W * n));
+      let m = 0;
+      for(let i = a; i < b && i < n; i++) if(rates[i] > m) m = rates[i];
+      const [cr, cg, cb] = ramp(m);
+      for(let y = y0; y < y1; y++){
+        const o = (y * W + x) * 4;
+        px[o] = cr; px[o+1] = cg; px[o+2] = cb; px[o+3] = 255;
+      }
+    }
+  }
+  hctx.putImageData(img, 0, 0);
+
+  // 영역 라벨
+  hctx.font = `${11 * dpr}px "IBM Plex Mono", monospace`;
+  hctx.textBaseline = "middle";
+  for(let r = 0; r < R; r++){
+    const y = (r + 0.5) * rowH;
+    hctx.fillStyle = "rgba(16,22,29,0.72)";
+    const label = D.regions[r];
+    const w = hctx.measureText(label).width + 10 * dpr;
+    hctx.fillRect(0, Math.floor(r * rowH), w, Math.ceil(rowH));
+    hctx.fillStyle = "#93A2B2";
+    hctx.fillText(label, 5 * dpr, y);
+  }
+}
+
+// 활동 색 램프: 유휴(차가운 회청) → 앰버 → 적색
+function ramp(v){
+  v = Math.max(0, Math.min(1, v));
+  const stops = [
+    [0.00,  22,  30,  40],
+    [0.06,  58,  71,  86],
+    [0.35, 176, 118,  46],
+    [0.70, 232, 161,  58],
+    [1.00, 229,  72,  77],
+  ];
+  for(let i = 1; i < stops.length; i++){
+    if(v <= stops[i][0]){
+      const a = stops[i-1], b = stops[i];
+      const t = (v - a[0]) / (b[0] - a[0] || 1);
+      return [
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+        Math.round(a[3] + (b[3] - a[3]) * t),
+      ];
+    }
+  }
+  return [229, 72, 77];
+}
+
+// ── 뉴런 필드 ──────────────────────────────────────────
+function render(){
+  const W = field.width, H = field.height;
+  fctx.fillStyle = "#0C1218";
+  fctx.fillRect(0, 0, W, H);
+  if(!D) return;
+
+  // 잔광 감쇠 후 현재 프레임 스파이크 주입
+  const decay = 0.80;
+  for(let i = 0; i < activation.length; i++){
+    if(activation[i] > 0.004) activation[i] *= decay; else activation[i] = 0;
+  }
+  const bucket = D.buckets[frame] || [];
+  for(let k = 0; k < bucket.length; k++) activation[bucket[k]] = 1;
+
+  const nx = D.neurons.x, ny = D.neurons.y;
+  const N = nx.length;
+
+  // 종횡비 유지하며 여백 두고 배치
+  const pad = 18 * dpr;
+  const scale = Math.min(W - pad * 2, H - pad * 2);
+  const ox = (W - scale) / 2, oy = (H - scale) / 2;
+
+  const img = fctx.createImageData(W, H);
+  const px = img.data;
+  for(let i = 3; i < px.length; i += 4) px[i] = 255;
+  for(let i = 0; i < px.length; i += 4){
+    px[i] = 12; px[i+1] = 18; px[i+2] = 24;
+  }
+
+  let active = 0;
+  for(let i = 0; i < N; i++){
+    const a = activation[i];
+    const X = (ox + nx[i] * scale) | 0;
+    const Y = (oy + ny[i] * scale) | 0;
+    if(X < 0 || Y < 0 || X >= W || Y >= H) continue;
+
+    let cr, cg, cb;
+    if(a <= 0.004){
+      cr = 30; cg = 39; cb = 50;            // 유휴 뉴런: 배경보다 살짝 밝게
+    } else {
+      active++;
+      [cr, cg, cb] = ramp(0.30 + a * 0.70);
+    }
+    const o = (Y * W + X) * 4;
+    // 가산 합성 — 겹친 뉴런일수록 밝아진다
+    px[o]   = Math.min(255, px[o]   + cr);
+    px[o+1] = Math.min(255, px[o+1] + cg);
+    px[o+2] = Math.min(255, px[o+2] + cb);
+  }
+  fctx.putImageData(img, 0, 0);
+
+  // 판독값
+  el("activeCount").textContent = active.toLocaleString();
+  el("tRead").textContent = (frame * (D.meta.bin_ms ?? 1)).toFixed(1);
+
+  let peak = 0, peakName = "—";
+  for(let r = 0; r < D.regions.length; r++){
+    const v = D.frames.rates[r][frame];
+    if(v > peak){ peak = v; peakName = D.regions[r]; }
+  }
+  el("peakRead").textContent = peakName;
+
+  // 이상 상태 경고 — 조용한 실패를 눈에 보이게
+  const ratio = active / N;
+  const w = el("warnMsg");
+  if(active === 0)          w.textContent = "발화 뉴런 없음 — 입력이 닿지 않았거나 임계값이 너무 높다";
+  else if(ratio > 0.90)     w.textContent = "전체의 90% 이상 발화 — 활동 폭주, 억제 부호를 확인할 것";
+  else                      w.textContent = "";
+
+  // 재생 헤드
+  const pct = D.frames.n > 1 ? frame / (D.frames.n - 1) * 100 : 0;
+  el("ph1").style.left = pct + "%";
+  el("ph3").style.left = pct + "%";
+  el("scrub").value = frame;
+}
+
+// ═══════════════════════════════════════════════════════
+//  재생 루프
+// ═══════════════════════════════════════════════════════
+function tick(ts){
+  requestAnimationFrame(tick);
+  if(!playing || !D) return;
+  const binMs = D.meta.bin_ms ?? 1;
+  const elapsed = ts - lastTick;
+  const advance = Math.floor(elapsed * speed / binMs);
+  if(advance < 1) return;
+  lastTick = ts;
+  frame += advance;
+  if(frame >= D.frames.n){ frame = 0; }
+  render();
+}
+requestAnimationFrame(ts => { lastTick = ts; tick(ts); });
+
+function setPlaying(v){
+  playing = v;
+  el("playBtn").textContent = v ? "❚❚" : "▶";
+  el("playBtn").setAttribute("aria-label", v ? "일시정지" : "재생");
+  lastTick = performance.now();
+}
+
+// ═══════════════════════════════════════════════════════
+//  입력
+// ═══════════════════════════════════════════════════════
+el("playBtn").onclick = () => setPlaying(!playing);
+
+el("scrub").oninput = e => {
+  frame = +e.target.value;
+  activation.fill(0);
+  render();
+};
+
+el("speedBtn").onclick = () => {
+  speedIdx = (speedIdx + 1) % SPEEDS.length;
+  speed = SPEEDS[speedIdx];
+  el("speedBtn").textContent = speed.toFixed(2).replace(/0$/, "") + "×";
+};
+
+el("openBtn").onclick = () => el("fileInput").click();
+el("fileInput").onchange = e => {
+  const f = e.target.files[0];
+  if(f) readFile(f);
+};
+
+function readFile(f){
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      load(JSON.parse(r.result));
+      setPlaying(false);
+    }catch(err){
+      el("warnMsg").textContent = "런 파일을 읽지 못했다: " + err.message;
+    }
+  };
+  r.readAsText(f);
+}
+
+let dragDepth = 0;
+window.addEventListener("dragenter", e => {
+  e.preventDefault(); dragDepth++; document.body.classList.add("dragging");
+});
+window.addEventListener("dragleave", e => {
+  e.preventDefault(); if(--dragDepth <= 0) document.body.classList.remove("dragging");
+});
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => {
+  e.preventDefault();
+  dragDepth = 0; document.body.classList.remove("dragging");
+  const f = e.dataTransfer.files[0];
+  if(f) readFile(f);
+});
+
+window.addEventListener("keydown", e => {
+  if(e.target.tagName === "INPUT" && e.target.type !== "range") return;
+  if(e.code === "Space"){ e.preventDefault(); setPlaying(!playing); }
+  if(e.code === "ArrowRight"){
+    e.preventDefault();
+    frame = Math.min(D.frames.n - 1, frame + (e.shiftKey ? 10 : 1)); render();
+  }
+  if(e.code === "ArrowLeft"){
+    e.preventDefault();
+    frame = Math.max(0, frame - (e.shiftKey ? 10 : 1)); render();
+  }
+});
+
+// 히트맵/자극창 클릭으로 위치 이동
+for(const p of [el("stimPane"), el("heatPane")]){
+  p.addEventListener("click", e => {
+    if(!D) return;
+    const r = p.getBoundingClientRect();
+    frame = Math.round((e.clientX - r.left) / r.width * (D.frames.n - 1));
+    frame = Math.max(0, Math.min(D.frames.n - 1, frame));
+    activation.fill(0);
+    render();
+  });
+}
+
+// 시작
+load(synth());
+</script>
+</body>
+</html>
