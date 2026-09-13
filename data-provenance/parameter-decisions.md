@@ -39,3 +39,18 @@ records the value in every run's `meta.engine_params`.
 **Not decided yet:** whether to move to conductance-based synapses (reversal potentials)
 to remove the unphysical hyperpolarisation. Deferred until M3/M4 show whether the
 input-driven regime is sufficient.
+
+## 2026-09-13 — M3 input gain (a_in) sweep and adapter assumptions
+
+All in `flysim/apps/m3_click.py` / `flysim/sensory/jo.py`, results in `docs/m3-report.md`.
+
+- Pre-defined `a_in` grid: 10, 20, 40, 80, 160, 320 (log2). The first sweep of this grid gave
+  **no PASS and no ignition in either mode** (rate: JO_post_R 0.84 Hz at 320; phase-lock: 0.23 Hz).
+  Extension rule added *after* that sweep and applied identically to both modes: keep doubling
+  `a_in` until the first PASS, then two more doublings; stop at IGNITED / failure or 5120.
+  Result: first PASS at a_in = 640 (rate) and 2560 (phase-lock); no run ignited (late-window
+  active fraction 0 % everywhere). The judgement criteria themselves were not changed.
+- `g = 0.336` untouched (rule of the previous entry).
+- Adapter assumptions: band 100–400 Hz as HP2 ∘ LP2 Butterworth biquads; envelope τ = 2 ms;
+  half-wave rectification in phase-lock mode; carrier 200 Hz = geometric centre of the band;
+  pulse 10 ms (2 cycles); `k_min = 5` contacts for JO_post; identical input to both sides.
