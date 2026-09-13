@@ -54,3 +54,25 @@ All in `flysim/apps/m3_click.py` / `flysim/sensory/jo.py`, results in `docs/m3-r
 - Adapter assumptions: band 100–400 Hz as HP2 ∘ LP2 Butterworth biquads; envelope τ = 2 ms;
   half-wave rectification in phase-lock mode; carrier 200 Hz = geometric centre of the band;
   pulse 10 ms (2 cycles); `k_min = 5` contacts for JO_post; identical input to both sides.
+
+## 2026-09-13 — no fluctuation-driven low-rate state exists (background-noise reconnaissance)
+
+Planning session, after M3. g = 0.336, dt = 1 ms, no input, 2 s, `noise_sigma` swept (current noise,
+per-step voltage kick ≈ (1 − e^{−1/20})·σ ≈ 0.05 σ mV):
+
+| σ | mean rate (Hz, all N) | active % | behaviour |
+|---|---|---|---|
+| ≤ 10 | 0 | 0 | silent |
+| 20 | 0.001 | 0.10 | ~35 spikes / 400 ms network-wide, stable |
+| 22 | 4.3 | 13 | ignites after ~1 s (both seeds) |
+| 24–29 | 7.6–10.3 | 17–33 | ignites within 0.4 s |
+| 30–80 | 10–20 | 27–94 | ignited from the start |
+
+There is no σ at which the network sits in an asynchronous low-rate state: it is silent or ignited.
+Cause (assumed, not tested): current-based synapses without reversal potentials plus excitation
+dominating by contact count (77.3 M exc vs 46.8 M inh contacts) give no saturation mechanism.
+
+**Decision:** M4 phase A runs the IPI sweep in the silent regime (g = 0.336, σ = 0) with the M3 gains,
+and records whatever appears at each stage; a flat pC1 curve is an acceptable result. Whether to move
+to conductance-based synapses (phase B) is deferred to the user. No parameter is adjusted to obtain
+propagation beyond hop 1.
