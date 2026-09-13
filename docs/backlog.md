@@ -25,3 +25,13 @@ Items deferred with a reason. Not scheduled until a milestone needs them.
   See `data-provenance/parameter-decisions.md` (2026-09-13). Decide after M3/M4.
 - Ignition threshold may be lower for correlated multi-neuron input (JO) than for 100 random neurons.
   M3 brief's ignition check covers it per run; if M3/M4 runs ignite at g = 0.336, revisit the g rule.
+
+## From M3 verification (planning session, 2026-09-13)
+- **Viewer normalisation**: `rate_norm_hz` is set by the 1 ms bin in which every JO_AB neuron fires at once
+  (1000 Hz), so every other region renders at ≤ 0.01 in the heatmap. Options: export a coarser `bin_ms` for
+  `frames.rates` only, or a log/percentile scale in the viewer. Viewer change is the user's call.
+- **Silence-control runs trigger the viewer's "발화 뉴런 없음" warning by design.** The CLAUDE.md rule
+  ("runs with a warning are not submitted") is about results; controls are exempt and say so in `meta.run_id`.
+  Consider a `meta.is_control` flag if the viewer ever grows a control mode.
+- **Propagation stops at hop 1** at g = 0.336 with no background activity (SAD/AMMCtype/pC1 = 0 Hz at every
+  a_in). M4 must decide, before running, whether to add background noise at a rule-chosen sigma.
