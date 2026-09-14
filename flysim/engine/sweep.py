@@ -144,10 +144,36 @@ def markdown_table(res: dict) -> str:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", type=Path, default=Path("data-provenance/m2-sweep.json"))
+    ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--synapse", choices=("current", "conductance"), default="current")
+    ap.add_argument("--noise", action="store_true", help="M2b: noise sweep at g_mid of the recorded RESPONSIVE range")
+    ap.add_argument("--g", type=float, default=None, help="M2b noise sweep: override g_mid")
     a = ap.parse_args()
     if not torch.cuda.is_available():
         raise SystemExit("sweep requires CUDA")
+    if a.synapse == "conductance":
+        from . import sweep_conductance as sc
+        if a.noise:
+            g = a.g
+            if g is None:
+                prev = json.loads(Path("data-provenance/m2b-sweep.json").read_text())
+                g = prev["default_g_conductance"]
+                if g is None:
+                    raise SystemExit("no common RESPONSIVE range recorded; pass --g explicitly")
+            res = sc.run_noise_sweep(g)
+            out = a.out or Path("data-provenance/m2b-noise-sweep.json")
+            out.write_text(json.dumps(res, indent=1))
+            print(); print(sc.markdown_noise_table(res))
+            print(f"\nstable low-rate sigma: {res['stable_low_rate_range']}\nwritten: {out}")
+        else:
+            res = sc.run_g_sweep()
+            out = a.out or Path("data-provenance/m2b-sweep.json")
+            out.write_text(json.dumps(res, indent=1))
+            print(); print(sc.markdown_g_table(res))
+            print(f"\nRESPONSIVE (all seeds): {res['responsive_range']} contiguous={res['responsive_contiguous']}"
+                  f"\nDEFAULT_G_CONDUCTANCE (geometric mean): {res['default_g_conductance']}\nwritten: {out}")
+        return
+    a.out = a.out or Path("data-provenance/m2-sweep.json")
     res = run_sweep()
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(res, indent=1))

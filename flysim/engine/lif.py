@@ -18,7 +18,15 @@ Backends: ``"triton"`` (CUDA, default) and ``"torch"`` (plain torch ops:
 kernels are tested against). Bit-exactness is only guaranteed for repeated
 runs on the same backend/device (the float ops may be fused differently).
 
-Model equations and all assumptions: flysim/engine/params.py, docs/m2-report.md.
+M2b (docs/m2b-brief.md): ``params.synapse == "conductance"`` selects
+conductance-based synapses with reversal potentials. Propagation then uses two
+int32 accumulators (``acc_e`` for excitatory contacts, ``acc_i`` for |inhibitory|
+contacts) in a separate kernel, so the determinism basis is unchanged; the
+current model keeps its original single-accumulator kernel byte for byte
+(regression: tests/test_engine_conductance.py, data-provenance/m2-regression-spikes.npz).
+
+Model equations and all assumptions: flysim/engine/params.py, docs/m2-report.md,
+docs/m2b-report.md.
 """
 from __future__ import annotations
 
@@ -110,33 +118,74 @@ if _HAS_TRITON:
                         tl.atomic_add(acc_ptr + col, w, mask=m)
 
     @triton.jit
-    def _lif_kernel(v_ptr, isyn_ptr, acc_ptr, iext_ptr, noise_ptr, ref_ptr, spk_ptr,
+    def _propagate_split_kernel(spk_ptr, indptr_ptr, idx_ptr, w_ptr, acc_e_ptr, acc_i_ptr, N,
+                                NB: tl.constexpr, BLOCK: tl.constexpr):
+        """M2b: acc_e[post] += w (w > 0), acc_i[post] += -w (w < 0); int32 atomics, order-independent."""
+        base = tl.program_id(0) * NB
+        for k in range(NB):
+            n = base + k
+            if n < N:
+                s = tl.load(spk_ptr + n)
+                if s != 0:
+                    start = tl.load(indptr_ptr + n)
+                    end = tl.load(indptr_ptr + n + 1)
+                    for off in range(start, end, BLOCK):
+                        e = off + tl.arange(0, BLOCK)
+                        m = e < end
+                        col = tl.load(idx_ptr + e, mask=m, other=0)
+                        w = tl.load(w_ptr + e, mask=m, other=0)
+                        tl.atomic_add(acc_e_ptr + col, w, mask=m & (w > 0))
+                        tl.atomic_add(acc_i_ptr + col, -w, mask=m & (w < 0))
+
+    @triton.jit
+    def _lif_kernel(v_ptr, isyn_ptr, ge_ptr, gi_ptr, acc_ptr, acc_e_ptr, acc_i_ptr,
+                    iext_ptr, noise_ptr, ref_ptr, spk_ptr,
                     cnt_ptr, out_t_ptr, out_i_ptr, t_ptr, N, cap,
                     decay_m, decay_s, c_s, g, v_rest, v_reset, v_th, v_floor, noise_scale, ref_steps,
-                    NOISE: tl.constexpr, RECORD: tl.constexpr, BLOCK: tl.constexpr):
+                    decay_e, decay_i, avg_e, avg_i, inv_tau_m, E_e, E_i, dt,
+                    SYNAPSE: tl.constexpr, NOISE: tl.constexpr, RECORD: tl.constexpr, BLOCK: tl.constexpr):
         i = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
         m = i < N
         t = tl.load(t_ptr)
         v = tl.load(v_ptr + i, mask=m, other=0.0)
-        isyn = tl.load(isyn_ptr + i, mask=m, other=0.0)
-        acc = tl.load(acc_ptr + i, mask=m, other=0).to(tl.float32)
         iext = tl.load(iext_ptr + i, mask=m, other=0.0)
         if NOISE:
             iext = iext + noise_scale * tl.load(noise_ptr + i, mask=m, other=0.0)
         ref = tl.load(ref_ptr + i, mask=m, other=0)
-        # exponential synapse, exact one-step membrane integration (params.py)
-        isyn = isyn * decay_s + g * acc
-        vn = v_rest + (v - v_rest) * decay_m + (1.0 - decay_m) * iext + c_s * isyn
+        if SYNAPSE == 0:
+            # M2 current model: exponential synapse, exact one-step membrane integration (params.py)
+            isyn = tl.load(isyn_ptr + i, mask=m, other=0.0)
+            acc = tl.load(acc_ptr + i, mask=m, other=0).to(tl.float32)
+            isyn = isyn * decay_s + g * acc
+            vn = v_rest + (v - v_rest) * decay_m + (1.0 - decay_m) * iext + c_s * isyn
+            tl.store(isyn_ptr + i, isyn, mask=m)
+            tl.store(acc_ptr + i, tl.zeros_like(i), mask=m)   # acc <- 0 for the next propagate
+        else:
+            # M2b conductance model (params.py module doc): per-neuron total conductance G,
+            # exponential Euler towards v_inf with rate G.
+            ge = tl.load(ge_ptr + i, mask=m, other=0.0)
+            gi = tl.load(gi_ptr + i, mask=m, other=0.0)
+            acc_e = tl.load(acc_e_ptr + i, mask=m, other=0).to(tl.float32)
+            acc_i = tl.load(acc_i_ptr + i, mask=m, other=0).to(tl.float32)
+            ge = ge * decay_e + g * acc_e
+            gi = gi * decay_i + g * acc_i
+            ge_bar = ge * avg_e                      # step-average conductance (params.py)
+            gi_bar = gi * avg_i
+            G = inv_tau_m + ge_bar + gi_bar
+            vinf = ((v_rest + iext) * inv_tau_m + ge_bar * E_e + gi_bar * E_i) / G
+            vn = vinf + (v - vinf) * tl.exp(-dt * G)
+            tl.store(ge_ptr + i, ge, mask=m)
+            tl.store(gi_ptr + i, gi, mask=m)
+            tl.store(acc_e_ptr + i, tl.zeros_like(i), mask=m)
+            tl.store(acc_i_ptr + i, tl.zeros_like(i), mask=m)
         vn = tl.maximum(vn, v_floor)
         vn = tl.where(ref > 0, v_reset, vn)          # refractory: held at v_reset, cannot spike
         s = vn >= v_th
         vn = tl.where(s, v_reset, vn)
         ref = tl.where(s, ref_steps, tl.maximum(ref - 1, 0))
         tl.store(v_ptr + i, vn, mask=m)
-        tl.store(isyn_ptr + i, isyn, mask=m)
         tl.store(ref_ptr + i, ref, mask=m)
         tl.store(spk_ptr + i, s.to(tl.int8), mask=m)
-        tl.store(acc_ptr + i, tl.zeros_like(i), mask=m)   # acc <- 0 for the next propagate
         if RECORD:
             sm = s & m
             slot = tl.atomic_add(cnt_ptr + tl.zeros_like(i), 1, mask=sm)
@@ -166,6 +215,26 @@ def propagate_reference(spikes: torch.Tensor, indptr: torch.Tensor, indices: tor
         torch.cumsum(counts, 0) - counts, counts)
     slots = torch.repeat_interleave(starts, counts) + rel
     acc.index_add_(0, indices[slots].to(torch.int64), weight_i32[slots])
+
+
+def propagate_reference_split(spikes: torch.Tensor, indptr: torch.Tensor, indices: torch.Tensor,
+                              weight_i32: torch.Tensor, acc_e: torch.Tensor, acc_i: torch.Tensor) -> None:
+    """M2b reference for ``_propagate_split_kernel``: acc_e += w (w > 0), acc_i += -w (w < 0)."""
+    rows = spikes.nonzero().flatten()
+    if rows.numel() == 0:
+        return
+    starts = indptr[rows].to(torch.int64)
+    counts = indptr[rows + 1].to(torch.int64) - starts
+    total = int(counts.sum())
+    if total == 0:
+        return
+    rel = torch.arange(total, device=acc_e.device) - torch.repeat_interleave(
+        torch.cumsum(counts, 0) - counts, counts)
+    slots = torch.repeat_interleave(starts, counts) + rel
+    w = weight_i32[slots]
+    post = indices[slots].to(torch.int64)
+    acc_e.index_add_(0, post, w.clamp(min=0))
+    acc_i.index_add_(0, post, (-w).clamp(min=0))
 
 
 # ----------------------------------------------------------------------------
@@ -219,8 +288,12 @@ class LIFEngine:
         f32 = dict(dtype=torch.float32, device=dev)
         i32 = dict(dtype=torch.int32, device=dev)
         self.v = torch.full((n,), self.params.v_rest, **f32)
-        self.i_syn = torch.zeros(n, **f32)
-        self.acc = torch.zeros(n, **i32)
+        self.i_syn = torch.zeros(n, **f32)                        # current model
+        self.g_e = torch.zeros(n, **f32)                          # conductance model
+        self.g_i = torch.zeros(n, **f32)
+        self.acc = torch.zeros(n, **i32)                          # current model accumulator
+        self.acc_e = torch.zeros(n, **i32)                        # conductance model accumulators
+        self.acc_i = torch.zeros(n, **i32)
         self.ref = torch.zeros(n, **i32)
         self._s = torch.zeros(n, dtype=torch.int8, device=dev)   # spikes of the last step (0/1)
         self.i_ext = torch.zeros(n, **f32)                        # external current buffer
@@ -250,7 +323,11 @@ class LIFEngine:
         self.seed = int(seed)
         self.v.fill_(self.params.v_rest)
         self.i_syn.zero_()
+        self.g_e.zero_()
+        self.g_i.zero_()
         self.acc.zero_()
+        self.acc_e.zero_()
+        self.acc_i.zero_()
         self.ref.zero_()
         self._s.zero_()
         self.i_ext.zero_()
@@ -269,8 +346,8 @@ class LIFEngine:
         return int(self._t[0])
 
     def gpu_memory_bytes(self) -> int:
-        arrays = (self.indptr, self.indices, self.weight, self.v, self.i_syn, self.acc, self.ref,
-                  self._s, self.i_ext, self._noise, self._t)
+        arrays = (self.indptr, self.indices, self.weight, self.v, self.i_syn, self.g_e, self.g_i,
+                  self.acc, self.acc_e, self.acc_i, self.ref, self._s, self.i_ext, self._noise, self._t)
         return sum(a.numel() * a.element_size() for a in arrays) + self.recorder.nbytes
 
     # ---- one step ----------------------------------------------------------
@@ -305,16 +382,24 @@ class LIFEngine:
     def _kernels(self, record: bool) -> None:
         p = self.params
         n = self.n
-        _propagate_kernel[(triton.cdiv(n, PROP_NEURONS_PER_PROGRAM),)](
-            self._s, self.indptr, self.indices, self.weight, self.acc, n,
-            NB=PROP_NEURONS_PER_PROGRAM, BLOCK=PROP_BLOCK, num_warps=PROP_WARPS)
+        cond = p.synapse == "conductance"
+        if cond:
+            _propagate_split_kernel[(triton.cdiv(n, PROP_NEURONS_PER_PROGRAM),)](
+                self._s, self.indptr, self.indices, self.weight, self.acc_e, self.acc_i, n,
+                NB=PROP_NEURONS_PER_PROGRAM, BLOCK=PROP_BLOCK, num_warps=PROP_WARPS)
+        else:
+            _propagate_kernel[(triton.cdiv(n, PROP_NEURONS_PER_PROGRAM),)](
+                self._s, self.indptr, self.indices, self.weight, self.acc, n,
+                NB=PROP_NEURONS_PER_PROGRAM, BLOCK=PROP_BLOCK, num_warps=PROP_WARPS)
         rec = self.recorder
         _lif_kernel[(triton.cdiv(n, LIF_BLOCK),)](
-            self.v, self.i_syn, self.acc, self.i_ext, self._noise, self.ref, self._s,
+            self.v, self.i_syn, self.g_e, self.g_i, self.acc, self.acc_e, self.acc_i,
+            self.i_ext, self._noise, self.ref, self._s,
             rec.counter, rec.buf_t, rec.buf_i, self._t, n, rec.cap,
             p.decay_m, p.decay_syn, p.c_syn, p.g, p.v_rest, p.v_reset, p.v_thresh,
             float("-inf") if p.v_floor is None else p.v_floor, p.noise_scale, p.ref_steps,
-            NOISE=p.noise_sigma > 0, RECORD=record, BLOCK=LIF_BLOCK)
+            p.decay_e, p.decay_i, p.avg_e, p.avg_i, p.inv_tau_m, p.E_exc, p.E_inh, p.dt,
+            SYNAPSE=1 if cond else 0, NOISE=p.noise_sigma > 0, RECORD=record, BLOCK=LIF_BLOCK)
         self._t.add_(1)
 
     def _graph(self, record: bool) -> "torch.cuda.CUDAGraph":
@@ -322,8 +407,9 @@ class LIFEngine:
         if g is None:
             # Warm-up + capture mutate the state; snapshot and restore so that
             # capturing is invisible to the simulation.
-            snap = [x.clone() for x in (self.v, self.i_syn, self.acc, self.ref, self._s, self._t,
-                                        self.recorder.counter)]
+            state = (self.v, self.i_syn, self.g_e, self.g_i, self.acc, self.acc_e, self.acc_i,
+                     self.ref, self._s, self._t, self.recorder.counter)
+            snap = [x.clone() for x in state]
             side = torch.cuda.Stream()
             side.wait_stream(torch.cuda.current_stream())
             with torch.cuda.stream(side):
@@ -333,8 +419,7 @@ class LIFEngine:
             g = torch.cuda.CUDAGraph()
             with torch.cuda.graph(g):
                 self._kernels(record)
-            for dst, src in zip((self.v, self.i_syn, self.acc, self.ref, self._s, self._t,
-                                 self.recorder.counter), snap):
+            for dst, src in zip(state, snap):
                 dst.copy_(src)
             torch.cuda.synchronize()
             self._graphs[record] = g
@@ -343,12 +428,24 @@ class LIFEngine:
     def _step_torch(self, record: bool) -> None:
         """Plain-torch implementation of the same update (CPU fallback / reference)."""
         p = self.params
-        propagate_reference(self._s, self.indptr, self.indices, self.weight, self.acc)
         i_in = self.i_ext
         if p.noise_sigma > 0:
             i_in = i_in + p.noise_scale * self._noise
-        self.i_syn.mul_(p.decay_syn).add_(self.acc.to(torch.float32), alpha=p.g)
-        vn = p.v_rest + (self.v - p.v_rest) * p.decay_m + (1.0 - p.decay_m) * i_in + p.c_syn * self.i_syn
+        if p.synapse == "conductance":
+            propagate_reference_split(self._s, self.indptr, self.indices, self.weight, self.acc_e, self.acc_i)
+            self.g_e.mul_(p.decay_e).add_(self.acc_e.to(torch.float32), alpha=p.g)
+            self.g_i.mul_(p.decay_i).add_(self.acc_i.to(torch.float32), alpha=p.g)
+            ge_bar, gi_bar = self.g_e * p.avg_e, self.g_i * p.avg_i
+            G = p.inv_tau_m + ge_bar + gi_bar
+            vinf = ((p.v_rest + i_in) * p.inv_tau_m + ge_bar * p.E_exc + gi_bar * p.E_inh) / G
+            vn = vinf + (self.v - vinf) * torch.exp(-p.dt * G)
+            self.acc_e.zero_()
+            self.acc_i.zero_()
+        else:
+            propagate_reference(self._s, self.indptr, self.indices, self.weight, self.acc)
+            self.i_syn.mul_(p.decay_syn).add_(self.acc.to(torch.float32), alpha=p.g)
+            vn = p.v_rest + (self.v - p.v_rest) * p.decay_m + (1.0 - p.decay_m) * i_in + p.c_syn * self.i_syn
+            self.acc.zero_()
         if p.v_floor is not None:
             vn.clamp_(min=p.v_floor)
         vn = torch.where(self.ref > 0, torch.full_like(vn, p.v_reset), vn)
@@ -357,7 +454,6 @@ class LIFEngine:
         self.ref.copy_(torch.where(s, torch.full_like(self.ref, p.ref_steps), (self.ref - 1).clamp_(min=0)))
         self.v.copy_(vn)
         self._s.copy_(s.to(torch.int8))
-        self.acc.zero_()
         if record:
             self.recorder.append(self._t, s)
         self._t.add_(1)
