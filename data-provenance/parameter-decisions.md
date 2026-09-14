@@ -101,3 +101,13 @@ single gain). Current-model results are regression-locked (bit-identical). Findi
 **Decision:** finish phase B as approved — rerun M3 gain selection and the M4 IPI sweep with the
 conductance model (M4b) and record next to phase A. Any further mechanism (adaptation,
 short-term depression, inhibitory scaling) is a new decision for the user; none is added here.
+
+## 2026-09-14 — M4b outcome (phase B complete)
+
+M4b (9dfb23a): conductance model, g = 3.162e-4, a_in rate 320 (re-selected by the M3 rule) /
+phase-lock 2560 (fallback: no non-ignited PASS; recorded in meta.a_in_source). 5 of 18 runs
+ignited (rate IPI 20; phase-lock IPI 20–35), all at the highest pulse densities. In non-ignited
+runs propagation now reaches hop 2 (SAD ≈ 1–2, WED ≈ 3–4 spikes/pulse in phase-lock, IPI ≥ 40)
+but pC1 stays 0; pC1 > 0 appears only inside ignited runs. No 35 ms peak anywhere.
+Phase A and B are recorded side by side in `docs/m4b-report.md`. Nothing was tuned.
+Next mechanism (adaptation / short-term depression / inhibitory scaling) awaits the user.
