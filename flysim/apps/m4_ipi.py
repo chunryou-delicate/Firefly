@@ -13,10 +13,15 @@ Outputs (runs/ is gitignored; copies of the small files are committed):
     runs/m4-ipi/tuning.html      -> docs/m4-tuning.html      (single file, inline SVG)
     docs/m4-report.md
 
-Usage: python -m flysim.apps.m4_ipi
+Usage: python -m flysim.apps.m4_ipi [--synapse current|conductance] [--g G] [--tag b]
+M4b (docs/m4b-brief.md): ``--synapse conductance --g 3.162e-4 --tag b`` reruns the identical sweep with the
+M2b conductance model, a_in taken from data-provenance/m3b-results.json (selected_a_in; if a mode has no
+PASS the M3 gain is used and recorded as a fallback). Outputs: runs/m4b-ipi, data-provenance/m4b-tuning.json,
+docs/m4b-tuning.html, docs/m4b-report.md (phase A and B tables side by side).
 """
 from __future__ import annotations
 
+import argparse
 import html
 import json
 import math
@@ -48,20 +53,31 @@ G = M3.G                                         # 0.336
 SEED = M3.SEED
 BIN_MS = M3.BIN_MS
 MODES = dict(M3.MODES)                           # rate: 1.0 ms, phase-lock: 0.1 ms
-A_IN = {"rate": 640.0, "phase-lock": 2560.0}     # M3 selected values (checked against m3-results.json)
+A_IN = {"rate": 640.0, "phase-lock": 2560.0}     # phase A: M3 selected values (checked against m3-results.json)
+A_IN_PHASE_A = dict(A_IN)
 PULSE_KW = dict(pulse_ms=10.0, carrier_hz=200.0) # M3 click_train defaults (stimuli.py)
 IGNITION_LATE_FRACTION = 0.01                    # > 1 % of neurons active after 800 ms -> ignited
 FAILURE_MAX_FRACTION = M3.CRITERIA["failure_active_max_fraction"]
 REFERENCE_IPI_MS = 35.0                          # literature value shown as a guide line, not an expectation
 BASE_SETS = ["JO_AB", "JO_post", "SAD", "AMMCtype", "WED", "pC1"]   # curve panels, in this order
 
-OUT_DIR = RUNS_DIR / "m4-ipi"
+def out_paths(tag: str) -> dict:
+    """tag "" = phase A (m4-*), "b" = phase B (m4b-*)."""
+    t = f"m4{tag}"
+    return {"out_dir": RUNS_DIR / f"{t}-ipi", "doc_html": ROOT / "docs" / f"{t}-tuning.html",
+            "prov_json": ROOT / "data-provenance" / f"{t}-tuning.json", "report": ROOT / "docs" / f"{t}-report.md",
+            "m3_results": ROOT / "data-provenance" / f"m3{tag}-results.json"}
+
+
+_A = out_paths("")
+OUT_DIR = _A["out_dir"]
 TUNING_JSON = OUT_DIR / "tuning.json"
 TUNING_HTML = OUT_DIR / "tuning.html"
-DOC_HTML = ROOT / "docs" / "m4-tuning.html"
-PROV_JSON = ROOT / "data-provenance" / "m4-tuning.json"
-REPORT_MD = ROOT / "docs" / "m4-report.md"
-M3_RESULTS = ROOT / "data-provenance" / "m3-results.json"
+DOC_HTML = _A["doc_html"]
+PROV_JSON = _A["prov_json"]
+REPORT_MD = _A["report"]
+M3_RESULTS = _A["m3_results"]
+PROV_JSON_B = out_paths("b")["prov_json"]
 
 
 def log(msg: str) -> None:
@@ -84,8 +100,28 @@ def make_stimulus(ipi_ms: float):
 def check_a_in_matches_m3() -> None:
     r = json.loads(M3_RESULTS.read_text())
     sel = {m: v["selected_a_in"] for m, v in r["modes"].items()}
-    if sel != A_IN:
-        raise RuntimeError(f"A_IN {A_IN} != M3 selected {sel}; M4 must use the M3 values unchanged")
+    if sel != A_IN_PHASE_A:
+        raise RuntimeError(f"A_IN {A_IN_PHASE_A} != M3 selected {sel}; M4 must use the M3 values unchanged")
+
+
+def resolve_a_in(tag: str) -> tuple[dict, dict]:
+    """Gains for this phase: phase A = M3 selection (asserted); phase B = m3b selection per mode,
+    falling back to the M3 gain for a mode without any PASS (recorded, docs/m4b-brief.md)."""
+    if not tag:
+        check_a_in_matches_m3()
+        return dict(A_IN_PHASE_A), {m: "M3 selected" for m in A_IN_PHASE_A}
+    path = out_paths(tag)["m3_results"]
+    if not path.exists():
+        raise FileNotFoundError(f"{path} missing: run m3_click with --tag {tag} first")
+    r = json.loads(path.read_text())
+    a_in, src = {}, {}
+    for m in MODES:
+        sel = r["modes"][m]["selected_a_in"]
+        if sel is None:
+            a_in[m], src[m] = A_IN_PHASE_A[m], f"fallback: no PASS in m3{tag}; M3 gain used"
+        else:
+            a_in[m], src[m] = float(sel), f"m3{tag} selected"
+    return a_in, src
 
 
 def git_info() -> dict:
@@ -130,30 +166,40 @@ def measure(rt, sets, t_step, idx, dt_ms: float, n_pulses: int, n_neurons: int) 
 
 
 def main(argv: list[str]) -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--synapse", default="current", choices=("current", "conductance"))
+    ap.add_argument("--g", type=float, default=None, help="synaptic gain; default M3.G_BY_SYNAPSE[synapse]")
+    ap.add_argument("--tag", default="", help='"" -> phase A names (m4-*), "b" -> phase B (m4b-*)')
+    args = ap.parse_args(argv)
+    synapse = args.synapse
+    g_val = M3.G_BY_SYNAPSE[synapse] if args.g is None else float(args.g)
+    paths = out_paths(args.tag)
+    out_dir = paths["out_dir"]
+    a_in, a_in_src = resolve_a_in(args.tag)
+    phase = "A" if not args.tag else "B (conductance)" if synapse == "conductance" else f"B[{args.tag}]"
     t_all = time.time()
-    check_a_in_matches_m3()
     g = Graph.load()
     roi = load_roi(g)
     n_sites = roi["n_sites"].to_numpy()
     sets = build_probe_sets(g, roi, k_min=M3.CRITERIA["k_min"])
     coords = neuron_coords(g, roi)
-    OUT_DIR.mkdir(parents=True, exist_ok=True)
+    out_dir.mkdir(parents=True, exist_ok=True)
     gi = git_info()
-    log(f"git {gi}; probe sets {sets.sizes()}")
+    log(f"phase {phase}: synapse={synapse} g={g_val:g} a_in={a_in} ({a_in_src}); git {gi}; probe sets {sets.sizes()}")
 
     runs = []
     adapters_desc = {}
     params_by_mode = {}
     for mode, dt in MODES.items():
         n_steps = int(round(TOTAL_MS / dt))
-        params = EngineParams(g=G, dt=dt)
+        params = EngineParams(g=g_val, dt=dt, synapse=synapse)
         params_by_mode[mode] = params.to_dict()
         engine = LIFEngine(g, params, device="cuda")
-        log(f"=== mode {mode}: dt={dt} ms, a_in={A_IN[mode]:g}, {params.to_dict()}")
+        log(f"=== mode {mode}: dt={dt} ms, a_in={a_in[mode]:g}, {params.to_dict()}")
         for ipi in IPI_MS:
             st = make_stimulus(ipi)
             n_p = n_pulses_for(ipi)
-            ad = JOAdapter(g, n_sites, st, mode, a_in=A_IN[mode], device="cuda")
+            ad = JOAdapter(g, n_sites, st, mode, a_in=a_in[mode], device="cuda")
             ad.prepare(dt, n_steps)
             if ipi == REFERENCE_IPI_MS:
                 adapters_desc[mode] = ad.describe()
@@ -168,15 +214,15 @@ def main(argv: list[str]) -> int:
             rt = bin_spikes(t_step, idx, dt, BIN_MS, int(TOTAL_MS / BIN_MS), sets)
             m = measure(rt, sets, t_step, idx, dt, n_p, g.n)
             run_id = f"{'phase' if mode == 'phase-lock' else 'rate'}-ipi{int(ipi):02d}"
-            rdir = OUT_DIR / run_id
+            rdir = out_dir / run_id
             save_parquet(rdir, rt, t_step, idx, g, dt)
-            write_run_json(rdir / "run.json", run_id=f"m4-{run_id}", sensory_mode=mode, dt_ms=dt, rt=rt, sets=sets,
-                           coords=coords, input_label=f"{st.label}, {n_p} pulses, a_in={A_IN[mode]:g}",
+            write_run_json(rdir / "run.json", run_id=f"m4{args.tag}-{run_id}", sensory_mode=mode, dt_ms=dt, rt=rt, sets=sets,
+                           coords=coords, input_label=f"{st.label}, {n_p} pulses, a_in={a_in[mode]:g}",
                            envelope=st.envelope_1ms(), spikes=(rt.t_bin, idx), engine_params=params.to_dict(),
                            adapter=ad.describe(), stimulus=st.describe(),
                            extra_meta={"m4": {k: v for k, v in m.items() if k != "per_set"}})
-            rec = {"mode": mode, "ipi_ms": ipi, "run_id": f"m4-{run_id}", "n_pulses": n_p, "dt_ms": dt,
-                   "a_in": A_IN[mode], "stimulus": st.describe(), "wall_s": wall, **m}
+            rec = {"mode": mode, "ipi_ms": ipi, "run_id": f"m4{args.tag}-{run_id}", "n_pulses": n_p, "dt_ms": dt,
+                   "a_in": a_in[mode], "stimulus": st.describe(), "wall_s": wall, **m}
             runs.append(rec)
             js = m["per_set"]
             log(f"  {wall:.2f} s, {m['n_spikes']} spikes, active {m['active_fraction']:.3%}, late "
@@ -199,15 +245,17 @@ def main(argv: list[str]) -> int:
                 "spikes_per_pulse_per_neuron": [r["per_set"][name]["spikes_per_pulse_per_neuron"] for r in rows],
                 "rate_stim": [r["per_set"][name]["rate_stim_hz"] for r in rows],
                 "latency_ms": [r["per_set"][name]["latency_ms"] for r in rows],
+                "ignited": [bool(r["ignited"]) for r in rows],
             }
     tuning = {
         "meta": {
-            "milestone": "M4 phase A (model unchanged)", "git_commit": gi.get("commit"), "git_dirty": gi.get("dirty"),
+            "milestone": f"M4 phase {phase}", "phase": phase, "tag": args.tag, "synapse": synapse,
+            "git_commit": gi.get("commit"), "git_dirty": gi.get("dirty"),
             "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "seed": SEED, "bin_ms": BIN_MS,
             "ipi_ms": IPI_MS, "pre_ms": PRE_MS, "train_ms": TRAIN_MS, "total_ms": TOTAL_MS,
             "stim_window_ms": list(STIM_WINDOW_MS), "late_from_ms": LATE_FROM_MS,
             "ignition_late_fraction": IGNITION_LATE_FRACTION, "viewer_failure_max_fraction": FAILURE_MAX_FRACTION,
-            "g": G, "a_in": A_IN, "params": params_by_mode, "adapter": adapters_desc,
+            "g": g_val, "a_in": a_in, "a_in_source": a_in_src, "params": params_by_mode, "adapter": adapters_desc,
             "stimulus": {"kind": "click_train", **PULSE_KW, "window": "hann", "fs_hz": 10000.0,
                          "n_pulses_rule": "floor(train_ms / ipi_ms)",
                          "n_pulses": {str(i): n_pulses_for(i) for i in IPI_MS}},
@@ -217,13 +265,15 @@ def main(argv: list[str]) -> int:
         "curves": curves,
         "runs": runs,
     }
-    TUNING_JSON.write_text(json.dumps(tuning, indent=1, default=M3._json_default) + "\n")
-    PROV_JSON.write_text(TUNING_JSON.read_text())
-    TUNING_HTML.write_text(render_html(tuning))
-    shutil.copyfile(TUNING_HTML, DOC_HTML)
-    write_report(tuning)
-    log(f"done in {tuning['meta']['wall_total_s']} s -> {TUNING_JSON.relative_to(ROOT)}, "
-        f"{TUNING_HTML.relative_to(ROOT)}, {REPORT_MD.relative_to(ROOT)}")
+    tj, th = out_dir / "tuning.json", out_dir / "tuning.html"
+    tj.write_text(json.dumps(tuning, indent=1, default=M3._json_default) + "\n")
+    paths["prov_json"].write_text(tj.read_text())
+    th.write_text(render_html(tuning))
+    shutil.copyfile(th, paths["doc_html"])
+    phase_a = json.loads(PROV_JSON.read_text()) if (args.tag and PROV_JSON.exists()) else None
+    write_report(tuning, paths["report"], phase_a)
+    log(f"done in {tuning['meta']['wall_total_s']} s -> {tj.relative_to(ROOT)}, {th.relative_to(ROOT)}, "
+        f"{paths['report'].relative_to(ROOT)}")
     return 0
 
 
@@ -275,10 +325,16 @@ def _panel(mode: str, base: str, curve_l: dict, curve_r: dict, slot: int, W=300,
         pts = " ".join(f"{X(x):.1f},{Y(y):.1f}" for x, y in zip(curve["ipi_ms"], curve["spikes_per_pulse"]))
         p.append(f'<polyline points="{pts}" class="s{slot}" fill="none" stroke-width="2" '
                  f'stroke-linejoin="round" stroke-linecap="round"{dash}/>')
-        for x, y, r, n in zip(curve["ipi_ms"], curve["spikes_per_pulse"], curve["rate_stim"], curve["n_pulses"]):
-            p.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="4" class="s{slot} dot"><title>'
-                     f'{html.escape(base)}_{side} · IPI {x:g} ms · {n} pulses · {y:.3f} spikes/pulse · '
-                     f'{r:.3f} Hz/neuron</title></circle>')
+        ign = curve.get("ignited", [False] * len(curve["ipi_ms"]))
+        for x, y, r, n, ig in zip(curve["ipi_ms"], curve["spikes_per_pulse"], curve["rate_stim"], curve["n_pulses"], ign):
+            tip = (f'{html.escape(base)}_{side} · IPI {x:g} ms · {n} pulses · {y:.3f} spikes/pulse · '
+                   f'{r:.3f} Hz/neuron' + (' · IGNITED RUN (failed)' if ig else ''))
+            if ig:
+                cx, cy = X(x), Y(y)
+                p.append(f'<g class="s{slot} xmark"><line x1="{cx-5:.1f}" y1="{cy-5:.1f}" x2="{cx+5:.1f}" y2="{cy+5:.1f}"/>'
+                         f'<line x1="{cx-5:.1f}" y1="{cy+5:.1f}" x2="{cx+5:.1f}" y2="{cy-5:.1f}"/><title>{tip}</title></g>')
+            else:
+                p.append(f'<circle cx="{X(x):.1f}" cy="{Y(y):.1f}" r="4" class="s{slot} dot"><title>{tip}</title></circle>')
         # direct label at the right end
         p.append(f'<text x="{X(curve["ipi_ms"][-1]) + 5:.1f}" y="{Y(curve["spikes_per_pulse"][-1]) + 3.5:.1f}" '
                  f'class="lbl">{side}</text>')
@@ -305,7 +361,7 @@ h1 {{ font-size:20px; margin:0 0 4px; }} h2 {{ font-size:16px; margin:28px 0 8px
 .tick {{ font-size:10px; fill:var(--muted); font-variant-numeric:tabular-nums; }} .ptitle {{ font-size:12px; font-weight:600; fill:var(--ink); }}
 .lbl {{ font-size:11px; fill:var(--ink2); }}
 {' '.join(f'.s{i}{{stroke:var(--s{i});}}' for i in range(6))}
-.dot {{ fill:var(--surface); stroke-width:2; }} .dot:hover {{ r:6; }}
+.dot {{ fill:var(--surface); stroke-width:2; }} .dot:hover {{ r:6; }} .xmark line {{ stroke-width:2; }}
 .legend {{ display:flex; gap:18px; color:var(--ink2); margin:6px 0 4px; font-size:12px; }}
 .legend svg {{ vertical-align:middle; }}
 table {{ border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }}
@@ -314,13 +370,14 @@ th, td {{ padding:3px 8px; border-bottom:1px solid var(--grid); text-align:right
 """
     out = [f"<!doctype html><html lang='ko'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
            f"<title>M4 IPI tuning curves</title><style>{css}</style></head><body>",
-           "<h1>M4 phase A — IPI tuning curves (model unchanged)</h1>",
-           f"<p class='sub'>spikes per pulse per probe set vs inter-pulse interval · g = {meta['g']} · a_in rate {meta['a_in']['rate']:g} / "
+           f"<h1>M4 phase {html.escape(meta.get('phase', 'A'))} — IPI tuning curves</h1>",
+           f"<p class='sub'>spikes per pulse per probe set vs inter-pulse interval · synapse {meta.get('synapse', 'current')} · g = {meta['g']:g} · a_in rate {meta['a_in']['rate']:g} / "
            f"phase-lock {meta['a_in']['phase-lock']:g} · noise 0 · seed {meta['seed']} · commit {(meta['git_commit'] or '?')[:7]}"
            f"{' (dirty tree)' if meta['git_dirty'] else ''} · {html.escape(meta['generated_at'])}. "
            f"Dotted vertical line = {REFERENCE_IPI_MS:g} ms literature reference, shown for orientation only, not an expectation.</p>",
            "<div class='legend'><span><svg width='26' height='10'><line x1='0' x2='26' y1='5' y2='5' stroke='currentColor' stroke-width='2'/></svg> left (L)</span>"
            "<span><svg width='26' height='10'><line x1='0' x2='26' y1='5' y2='5' stroke='currentColor' stroke-width='2' stroke-dasharray='6 4'/></svg> right (R)</span>"
+           "<span><svg width='14' height='12'><line x1='2' y1='1' x2='12' y2='11' stroke='currentColor' stroke-width='2'/><line x1='2' y1='11' x2='12' y2='1' stroke='currentColor' stroke-width='2'/></svg> ignited run (failed; value shown for the record)</span>"
            "<span>y = spikes in 100–800 ms ÷ pulses (set total, not per neuron); y-scale is per panel</span></div>"]
     for mode in curves:
         out.append(f"<h2>Mode <code>{mode}</code> (dt {meta['params'][mode]['dt']} ms, a_in {meta['a_in'][mode]:g})</h2><div class='row'>")
@@ -334,11 +391,16 @@ th, td {{ padding:3px 8px; border-bottom:1px solid var(--grid); text-align:right
         for base in BASE_SETS:
             for side in ("L", "R"):
                 c = curves[mode][f"{base}_{side}"]
+                ign = c.get("ignited", [False] * len(c["spikes_per_pulse"]))
                 out.append(f"<tr><td>{mode}</td><td>{base}_{side} (n={T['meta']['probe_sets']['sizes'][f'{base}_{side}']})</td>"
-                           + "".join(f"<td>{v:.3f}</td>" for v in c["spikes_per_pulse"]) + "</tr>")
-    out.append("</tbody></table></div>")
+                           + "".join(f"<td>{v:.3f}{'†' if ig else ''}</td>" for v, ig in zip(c["spikes_per_pulse"], ign)) + "</tr>")
+    out.append("</tbody></table><p class='sub'>† = ignited run (failed by the ignition rule; value kept for the record).</p></div>")
     out.append("<h2>Parameters</h2><div class='wrap'><table><tbody>")
-    rows = [("g", meta["g"]), ("a_in (rate / phase-lock)", f"{meta['a_in']['rate']:g} / {meta['a_in']['phase-lock']:g}"),
+    pr = meta["params"]["rate"]
+    rows = [("synapse model", pr.get("synapse", "current")), ("g", f"{meta['g']:g}"),
+            ("E_exc / E_inh (mV), tau_e / tau_i (ms)", f"{pr.get('E_exc')} / {pr.get('E_inh')}, {pr.get('tau_e')} / {pr.get('tau_i')}"
+             if pr.get("synapse") == "conductance" else "n/a (current model)"),
+            ("a_in (rate / phase-lock)", f"{meta['a_in']['rate']:g} / {meta['a_in']['phase-lock']:g} — {meta.get('a_in_source', {})}"),
             ("noise_sigma / v_floor", "0 / None"), ("seed", meta["seed"]),
             ("neuron params (rate mode)", json.dumps({k: meta['params']['rate'][k] for k in ('tau_m', 'tau_syn', 't_ref', 'v_rest', 'v_reset', 'v_thresh')})),
             ("dt (rate / phase-lock)", f"{meta['params']['rate']['dt']} / {meta['params']['phase-lock']['dt']} ms"),
@@ -359,18 +421,24 @@ th, td {{ padding:3px 8px; border-bottom:1px solid var(--grid); text-align:right
 
 
 # ---------------------------------------------------------------------------
-def write_report(T: dict) -> None:
+def write_report(T: dict, path=REPORT_MD, phase_a: dict | None = None) -> None:
     meta, curves, runs = T["meta"], T["curves"], T["runs"]
-    L = [f"# M4 report — phase A: IPI tuning curves, model unchanged\n",
+    phase = meta.get("phase", "A")
+    pr = meta["params"]["rate"]
+    L = [f"# M4 report — phase {phase}: IPI tuning curves"
+         + (", model unchanged" if phase == "A" else ", conductance synapses (M2b), same protocol as phase A") + "\n",
          f"Generated by `python -m flysim.apps.m4_ipi` on {meta['generated_at']} at commit "
          f"`{(meta['git_commit'] or '?')[:7]}`{' (dirty tree at run time)' if meta['git_dirty'] else ''}. "
          f"Figure: `docs/m4-tuning.html` (inline SVG, single file). Numbers: `data-provenance/m4-tuning.json`. "
          f"Spec: `docs/m4-brief.md`. Wall time {meta['wall_total_s']} s for {len(runs)} runs.\n",
          "## 1. Parameters (nothing adjusted)\n",
-         f"- `g = {meta['g']}`, `noise_sigma = 0`, `v_floor = None`, seed {meta['seed']}; neuron parameters = M2 defaults "
+         f"- synapse model `{pr.get('synapse', 'current')}`"
+         + (f": E_exc {pr['E_exc']} mV, E_inh {pr['E_inh']} mV, tau_e {pr['tau_e']} ms, tau_i {pr['tau_i']} ms (M2b defaults, assumptions)"
+            if pr.get("synapse") == "conductance" else "") + ".",
+         f"- `g = {meta['g']:g}`, `noise_sigma = 0`, `v_floor = None`, seed {meta['seed']}; neuron parameters = M2 defaults "
          f"(`{json.dumps({k: meta['params']['rate'][k] for k in ('tau_m', 'tau_syn', 't_ref', 'v_rest', 'v_reset', 'v_thresh')})}`).",
-         f"- `a_in` = M3 selected values, unchanged: rate {meta['a_in']['rate']:g}, phase-lock {meta['a_in']['phase-lock']:g} "
-         f"(asserted against `data-provenance/m3-results.json` at start).",
+         f"- `a_in`: rate {meta['a_in']['rate']:g}, phase-lock {meta['a_in']['phase-lock']:g} — source "
+         f"{meta.get('a_in_source', 'M3 selected (asserted against data-provenance/m3-results.json)')}.",
          f"- dt: rate {meta['params']['rate']['dt']} ms, phase-lock {meta['params']['phase-lock']['dt']} ms. Bin {meta['bin_ms']} ms.",
          f"- Stimulus: {meta['pre_ms']:g} ms silence, click train of fixed length {meta['train_ms']:g} ms "
          f"(n_pulses = floor({meta['train_ms']:g} / IPI)), silence to {meta['total_ms']:g} ms. Pulse {meta['stimulus']['pulse_ms']:g} ms "
@@ -396,6 +464,7 @@ def write_report(T: dict) -> None:
 
     for mode in curves:
         L.append(f"## 3. Curves — mode `{mode}`\n")
+        L.append("† = ignited run (failed by the ignition rule; numbers kept for the record).\n")
         for metric, title, fmt in (("spikes_per_pulse", "spikes per pulse (set total, stimulus window 100–800 ms) — the primary curve", "{:.3f}"),
                                    ("rate_stim", "mean rate in the stimulus window (Hz per neuron)", "{:.3f}"),
                                    ("latency_ms", "latency from first pulse onset to first spike of the set (ms; – = none)", "{:.1f}")):
@@ -404,42 +473,81 @@ def write_report(T: dict) -> None:
             for name in [f"{b}_{s}" for b in BASE_SETS for s in ("L", "R")] + \
                         [n for n in curves[mode] if n.endswith("_unk")] + ["rest"]:
                 c = curves[mode][name]
-                cells = [("–" if v is None else fmt.format(v)) for v in c[metric]]
+                cells = [("–" if v is None else fmt.format(v) + ("†" if ig else ""))
+                         for v, ig in zip(c[metric], c.get("ignited", [False] * len(c[metric])))]
                 L.append(f"| `{name}` | {meta['probe_sets']['sizes'][name]:,} | " + " | ".join(cells) + " |")
             L.append("")
 
-    L.append("## 4. Observations (numbers only)\n")
+    if phase_a is not None:
+        L.append("## 3b. Phase A vs phase B — spikes per pulse (set total), side by side\n")
+        L.append("† = ignited run (failed); its numbers describe the ignited state, not a stimulus response.\n")
+        L.append(f"Phase A = `data-provenance/m4-tuning.json` (current model, g {phase_a['meta']['g']:g}, a_in "
+                 f"{phase_a['meta']['a_in']['rate']:g}/{phase_a['meta']['a_in']['phase-lock']:g}); phase B = this run "
+                 f"({pr.get('synapse')}, g {meta['g']:g}, a_in {meta['a_in']['rate']:g}/{meta['a_in']['phase-lock']:g}).\n")
+        for mode in curves:
+            L.append(f"**mode `{mode}`**\n")
+            L.append("| set | phase | " + " | ".join(f"{i:g}" for i in meta["ipi_ms"]) + " |\n|---|---|" + "---|" * len(meta["ipi_ms"]))
+            for name in [f"{b}_{s}" for b in BASE_SETS for s in ("L", "R")] + ["rest"]:
+                for lab, src in (("A", phase_a["curves"][mode][name]), ("B", curves[mode][name])):
+                    ign = src.get("ignited", [False] * len(src["spikes_per_pulse"]))
+                    L.append(f"| `{name}` | {lab} | " + " | ".join(f"{v:.3f}{'†' if ig else ''}" for v, ig in zip(src["spikes_per_pulse"], ign)) + " |")
+            L.append("")
+    L.append("## 4. Observations (numbers only; ignited runs excluded, listed separately)\n")
     for mode in curves:
         c = curves[mode]
+        ign_ipi = [i for i, ig in zip(meta["ipi_ms"], c["JO_AB_L"].get("ignited", [])) if ig]
+        L.append(f"- `{mode}` ignited runs: {[f'{i:g}' for i in ign_ipi] if ign_ipi else 'none'}.")
         for base in BASE_SETS:
             for side in ("L", "R"):
-                v = c[f"{base}_{side}"]["spikes_per_pulse"]
+                cc = c[f"{base}_{side}"]
+                keep = [not ig for ig in cc.get("ignited", [False] * len(cc["spikes_per_pulse"]))]
+                v = [x for x, k in zip(cc["spikes_per_pulse"], keep) if k]
+                ipis = [x for x, k in zip(meta["ipi_ms"], keep) if k]
+                if not v:
+                    L.append(f"- `{mode}` `{base}_{side}`: every run ignited.")
+                    continue
                 if max(v) == 0:
-                    L.append(f"- `{mode}` `{base}_{side}`: 0 spikes at every IPI.")
+                    L.append(f"- `{mode}` `{base}_{side}`: 0 spikes at every non-ignited IPI.")
                 else:
                     i_max, i_min = int(np.argmax(v)), int(np.argmin(v))
-                    L.append(f"- `{mode}` `{base}_{side}`: spikes/pulse ranges {min(v):.3f} (IPI {meta['ipi_ms'][i_min]:g}) to "
-                             f"{max(v):.3f} (IPI {meta['ipi_ms'][i_max]:g}); at 35 ms {v[meta['ipi_ms'].index(35.0)]:.3f}.")
+                    at35 = f"{v[ipis.index(35.0)]:.3f}" if 35.0 in ipis else "ignited"
+                    L.append(f"- `{mode}` `{base}_{side}`: spikes/pulse ranges {min(v):.3f} (IPI {ipis[i_min]:g}) to "
+                             f"{max(v):.3f} (IPI {ipis[i_max]:g}) over non-ignited runs; at 35 ms {at35}.")
     L.append("")
     L.append("## 5. Verdict (CLAUDE.md §6 M4 / m4-brief)\n")
-    L.append(f"- [{'x' if n_ign == 0 else ' '}] 18 runs completed, no run ignited ({n_ign} ignited).")
-    L.append("- [x] curves rendered in `runs/m4-ipi/tuning.html` = `docs/m4-tuning.html` (inline SVG, no external resources). "
+    L.append(f"- [{'x' if n_ign == 0 else ' '}] {len(runs)} runs completed; ignited runs: {n_ign} (each is a failed run, kept in the tables).")
+    L.append(f"- [x] curves rendered in `{path.with_suffix('.html').name.replace('-report', '-tuning')}` (inline SVG, no external resources). "
              "Not opened in a browser in this session; `tests/test_m4.py` parses the file and checks the SVG panels, "
              "so that is the substitute check.")
     L.append("- [x] every parameter recorded in `tuning.json` (`meta.params`, `meta.adapter`, `meta.stimulus`, `meta.a_in`, `meta.g`) and above.")
     L.append("- [x] `pytest tests/` — see commit message.")
-    L.append("- pC1 response: " + "; ".join(
-        f"`{mode}` L/R max spikes/pulse {max(curves[mode]['pC1_L']['spikes_per_pulse']):.3f} / "
-        f"{max(curves[mode]['pC1_R']['spikes_per_pulse']):.3f}" for mode in curves) + ".")
+    def _mx(mode, name, only_ok):
+        c = curves[mode][name]
+        ign = c.get("ignited", [False] * 9)
+        vals = [v for v, ig in zip(c["spikes_per_pulse"], ign) if (not ig) or not only_ok]
+        return max(vals) if vals else float("nan")
+    L.append("- pC1 response, max spikes/pulse L/R over non-ignited runs: " + "; ".join(
+        f"`{mode}` {_mx(mode, 'pC1_L', True):.3f} / {_mx(mode, 'pC1_R', True):.3f}" for mode in curves)
+        + ". Over all runs incl. ignited: " + "; ".join(
+        f"`{mode}` {_mx(mode, 'pC1_L', False):.3f} / {_mx(mode, 'pC1_R', False):.3f}" for mode in curves) + ".")
     L.append("")
     L.append("## 6. Interpretation (one paragraph; causes are marked as assumptions)\n")
-    L.append("Under this model the click train drives JO_AB and its direct postsynaptic set; the tables above show how far "
+    if phase != "A":
+        L.append("Same protocol as phase A with conductance synapses at the M2b default gain; the side-by-side tables in §3b "
+                 "show what changed per set and IPI, and the run table shows which runs ignited. Assumed (not tested here) "
+                 "reason for any remaining stop at hop 1: the RESPONSIVE g window of the conductance model is narrow "
+                 "(docs/m2b-report.md) and, without background activity, summed input from JO_post does not reach threshold "
+                 "downstream; with correlated JO drive, ignition marks the upper edge of that window. No mechanism was added.\n")
+    else:
+        L.append("Under this model the click train drives JO_AB and its direct postsynaptic set; the tables above show how far "
              "activity gets at each IPI and whether the first hop depends on IPI. Where a set reads 0 at every IPI, that is "
              "the result of this stage and is reported as such. Assumed (not tested here) reason for activity stopping "
              "at the first hop: at g = 0.336 with no background activity the summed excitation from JO_post spikes does "
              "not reach threshold in the next stage, and no fluctuation-driven low-rate state exists in this "
              "current-based model (data-provenance/parameter-decisions.md). Any model change belongs to phase B and is "
              "the user's decision.\n")
+    if phase != "A":
+        L.append("- Phase B outputs are separate files (`m4b-*`); phase A files are untouched.")
     L.append("## 7. Deviations / notes\n")
     L.append("- No parameter was swept or adjusted; the only variable is IPI. No attempt was made to change curve shapes.")
     L.append("- The post-train silence is 200 ms minus the tail of the last pulse ((n−1)·IPI + 10 ms ends before 800 ms), "
@@ -449,7 +557,7 @@ def write_report(T: dict) -> None:
     L.append("- The figure uses small multiples (one panel per set, per mode) with a per-panel y-scale, because the sets "
              "differ by orders of magnitude; the table under the figure carries the exact values.")
     L.append("")
-    REPORT_MD.write_text("\n".join(L))
+    path.write_text("\n".join(L))
 
 
 if __name__ == "__main__":

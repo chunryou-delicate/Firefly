@@ -95,3 +95,52 @@ def test_tuning_html_parses_and_is_self_contained():
     assert p.polylines == 2 * p.svgs                 # L and R per panel
     assert p.tables >= 2 and p.external == []
     assert "35" in M4.DOC_HTML.read_text()
+
+
+# ---- M4b: phase B (conductance model), docs/m4b-brief.md ---------------------------
+def _tuning_b():
+    if not M4.PROV_JSON_B.exists():
+        pytest.skip("data-provenance/m4b-tuning.json not generated yet")
+    return json.loads(M4.PROV_JSON_B.read_text())
+
+
+def test_phase_b_parameters_fixed_and_schema():
+    from flysim.engine.params import DEFAULT_G_CONDUCTANCE
+    T = _tuning_b()
+    m = T["meta"]
+    assert m["synapse"] == "conductance" and m["g"] == DEFAULT_G_CONDUCTANCE == 3.162e-4
+    assert m["ipi_ms"] == M4.IPI_MS and m["tag"] == "b"
+    for mode in ("rate", "phase-lock"):
+        p = m["params"][mode]
+        assert p["synapse"] == "conductance" and p["g"] == 3.162e-4 and p["noise_sigma"] == 0 and p["v_floor"] is None
+        assert (p["E_exc"], p["E_inh"], p["tau_e"], p["tau_i"]) == (0.0, -75.0, 5.0, 10.0)
+        assert (p["tau_m"], p["t_ref"], p["v_rest"], p["v_reset"], p["v_thresh"]) == (20.0, 2.0, -65.0, -65.0, -50.0)
+        assert m["adapter"][mode]["a_in"] == m["a_in"][mode] and mode in m["a_in_source"]
+    # a_in traceable to the m3b re-selection (or the documented fallback)
+    r = json.loads(M4.out_paths("b")["m3_results"].read_text())
+    assert r["synapse"] == "conductance" and r["g"] == 3.162e-4
+    for mode in ("rate", "phase-lock"):
+        sel = r["modes"][mode]["selected_a_in"]
+        if sel is None:
+            assert m["a_in"][mode] == M4.A_IN_PHASE_A[mode] and "fallback" in m["a_in_source"][mode]
+        else:
+            assert m["a_in"][mode] == sel and "selected" in m["a_in_source"][mode]
+        for s in r["modes"][mode]["sweep"]:
+            assert not (s["verdict"] == "PASS" and s["ignited"])       # an ignited point is never a PASS
+    assert len(T["runs"]) == 18
+    for r_ in T["runs"]:
+        assert r_["n_pulses"] == M4.n_pulses_for(r_["ipi_ms"]) and isinstance(r_["ignited"], bool)
+    for mode in T["curves"]:
+        for base in M4.BASE_SETS:
+            for side in ("L", "R"):
+                assert len(T["curves"][mode][f"{base}_{side}"]["spikes_per_pulse"]) == 9
+
+
+def test_phase_b_html_parses():
+    path = M4.out_paths("b")["doc_html"]
+    if not path.exists():
+        pytest.skip("docs/m4b-tuning.html not generated yet")
+    p = _Svg()
+    p.feed(path.read_text())
+    assert p.svgs == 2 * len(M4.BASE_SETS) and p.polylines == 2 * p.svgs and p.external == []
+    assert "phase B (conductance)" in path.read_text()

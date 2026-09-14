@@ -10,6 +10,10 @@ Judgement criteria are the module constants below. They were fixed before the
 first run; any later change must be recorded in data-provenance/parameter-decisions.md.
 
 Usage: python -m flysim.apps.m3_click [--modes rate,phase-lock] [--a-in 10,20,...]
+       [--synapse current|conductance] [--g G] [--tag b]
+M4b (docs/m4b-brief.md): ``--synapse conductance --g 3.162e-4 --tag b`` reruns the identical protocol
+with the M2b conductance model; outputs go to runs/m3b-*, data-provenance/m3b-results.json,
+docs/m3b-report.md. An ignited point is never a PASS (verdict FAIL_IGNITED).
 """
 from __future__ import annotations
 
@@ -23,6 +27,7 @@ import torch
 
 from ..data.download import ROOT
 from ..engine import EngineParams, LIFEngine
+from ..engine.params import DEFAULT_G_CONDUCTANCE
 from ..graph import Graph
 from ..probe import bin_spikes, build_probe_sets, load_roi, neuron_coords, write_run_json
 from ..probe.export import RUNS_DIR, write_neurons_json
@@ -30,7 +35,8 @@ from ..probe.probe import save_parquet, window_mean_rate, window_spikes
 from ..sensory import JOAdapter, click_train, silence
 
 # ---- fixed operating point (data-provenance/parameter-decisions.md) -----------------
-G = 0.336                       # DO NOT CHANGE here; DEFAULT_G (0.886) is the ignited state
+G = 0.336                       # current model (M3/M4 phase A); DEFAULT_G (0.886) is the ignited state
+G_BY_SYNAPSE = {"current": G, "conductance": DEFAULT_G_CONDUCTANCE}   # M4b: 3.162e-4 (M2b rule)
 SEED = 0
 BIN_MS = 1.0
 MODES = {"rate": 1.0, "phase-lock": 0.1}          # mode -> dt_ms
@@ -56,8 +62,15 @@ CRITERIA = {
     "failure_active_max_fraction": 0.90,  # viewer rule: >= 90 % active -> failure
     "k_min": 5,                           # JO_post membership (ASSUMPTION)
 }
-RESULTS_JSON = ROOT / "data-provenance" / "m3-results.json"
-REPORT_MD = ROOT / "docs" / "m3-report.md"
+def out_paths(tag: str) -> dict:
+    """tag "" = phase A names (m3-*); tag "b" = m3b-* (M4b, conductance model)."""
+    t = f"m3{tag}"
+    return {"results": ROOT / "data-provenance" / f"{t}-results.json", "report": ROOT / "docs" / f"{t}-report.md",
+            "run_prefix": t}
+
+
+RESULTS_JSON = out_paths("")["results"]
+REPORT_MD = out_paths("")["report"]
 US_PER_STEP_ESTIMATE = 60.0               # docs/m2-report.md §3 (triton-eager, recorder on, <=1 % activity)
 
 OBS_SETS = ["JO_AB", "JO_post", "SAD", "WED", "pC1", "AMMCtype"]
@@ -128,9 +141,16 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--modes", default=",".join(MODES))
     ap.add_argument("--a-in", default=",".join(str(a) for a in A_IN_GRID))
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--synapse", default="current", choices=("current", "conductance"))
+    ap.add_argument("--g", type=float, default=None, help="synaptic gain; default G_BY_SYNAPSE[synapse]")
+    ap.add_argument("--tag", default="", help='output name tag: "" -> m3-*, "b" -> m3b-*')
     args = ap.parse_args(argv)
     modes = [m for m in args.modes.split(",") if m]
     a_grid = [float(a) for a in args.a_in.split(",")]
+    synapse = args.synapse
+    g_val = G_BY_SYNAPSE[synapse] if args.g is None else float(args.g)
+    paths = out_paths(args.tag)
+    log(f"synapse={synapse} g={g_val:g} tag={args.tag!r} -> {paths['results'].relative_to(ROOT)}")
 
     t_all = time.time()
     g = Graph.load()
@@ -146,7 +166,7 @@ def main(argv: list[str]) -> int:
     stim = click_train(**STIM)
     quiet = silence(TOTAL_MS, stim.fs)
     assert stim.duration_ms == TOTAL_MS and stim.params["stim_offset_ms"] == STIM_WINDOW_MS[1]
-    results = {"g": G, "seed": SEED, "bin_ms": BIN_MS, "criteria": CRITERIA, "a_in_grid": a_grid,
+    results = {"g": g_val, "synapse": synapse, "tag": args.tag, "seed": SEED, "bin_ms": BIN_MS, "criteria": CRITERIA, "a_in_grid": a_grid,
                "a_in_max": A_IN_MAX, "a_in_points_above_pass": A_IN_POINTS_ABOVE_PASS,
                "stimulus": stim.describe(), "probe_sets": {"sizes": sets.sizes(), "log": sets.log},
                "coords": coords[2], "modes": {}, "generated_at": time.strftime("%Y-%m-%dT%H:%M:%S%z")}
@@ -154,7 +174,7 @@ def main(argv: list[str]) -> int:
     for mode in modes:
         dt = MODES[mode]
         n_steps = int(round(TOTAL_MS / dt))
-        params = EngineParams(g=G, dt=dt)
+        params = EngineParams(g=g_val, dt=dt, synapse=synapse)
         engine = LIFEngine(g, params, device=args.device)
         log(f"=== mode {mode}: dt={dt} ms, engine params {params.to_dict()}")
         mres = {"dt_ms": dt, "n_steps": n_steps, "engine_params": params.to_dict(),
@@ -165,7 +185,7 @@ def main(argv: list[str]) -> int:
         t_step, idx, rt, wall = run_once(engine, ctrl_ad, n_steps, dt, sets, f"{mode} silence")
         ctrl = analyze(rt, sets, g.n, dt, t_step, idx, STIM_WINDOW_MS[1])
         ctrl["wall_s"] = wall
-        run_id = f"m3-silence-{'phase' if mode == 'phase-lock' else 'rate'}"
+        run_id = f"{paths['run_prefix']}-silence-{'phase' if mode == 'phase-lock' else 'rate'}"
         out_dir = RUNS_DIR / run_id
         save_parquet(out_dir, rt, t_step, idx, g, dt)
         write_run_json(out_dir / "run.json", run_id=run_id, sensory_mode=mode, dt_ms=dt, rt=rt, sets=sets,
@@ -186,18 +206,18 @@ def main(argv: list[str]) -> int:
             t_step, idx, rt, wall = run_once(engine, ad, n_steps, dt, sets, f"{mode} click a_in={a_in:g}")
             res = analyze(rt, sets, g.n, dt, t_step, idx, STIM_WINDOW_MS[1], control=ctrl)
             res.update(a_in=a_in, wall_s=wall, peak_current=float(ad.table_np.max()))
-            res["verdict"] = ("FAILURE" if res["failure"] else "IGNITED" if res["ignited"]
+            res["verdict"] = ("FAILURE" if res["failure"] else "FAIL_IGNITED" if res["ignited"]
                               else "PASS" if res["transfer_pass"] else "NO_TRANSFER")
             log(f"  a_in={a_in:g}: {res['verdict']}  JO L/R spikes {res['transfer']['L']['JO_spikes']}/"
                 f"{res['transfer']['R']['JO_spikes']}, JO_post L/R {res['transfer']['L']['JO_post_rate_hz']:.2f}/"
                 f"{res['transfer']['R']['JO_post_rate_hz']:.2f} Hz, active {res['active_fraction']:.3%}, "
                 f"late {res['late_active_fraction']:.3%}")
-            sdir = RUNS_DIR / f"m3-click-{'phase' if mode == 'phase-lock' else 'rate'}" / "sweep" / f"a_in={a_in:g}"
+            sdir = RUNS_DIR / f"{paths['run_prefix']}-click-{'phase' if mode == 'phase-lock' else 'rate'}" / "sweep" / f"a_in={a_in:g}"
             save_parquet(sdir, rt, t_step, idx, g, dt)
             sweep.append(res)
             if res["verdict"] == "PASS" and selected is None:
                 selected = a_in
-                run_id = f"m3-click-{'phase' if mode == 'phase-lock' else 'rate'}"
+                run_id = f"{paths['run_prefix']}-click-{'phase' if mode == 'phase-lock' else 'rate'}"
                 out_dir = RUNS_DIR / run_id
                 save_parquet(out_dir, rt, t_step, idx, g, dt)
                 write_run_json(out_dir / "run.json", run_id=run_id, sensory_mode=mode, dt_ms=dt, rt=rt, sets=sets,
@@ -206,7 +226,7 @@ def main(argv: list[str]) -> int:
                                stimulus=stim.describe(), extra_meta={"judgement": res, "criteria": CRITERIA})
                 log(f"  -> exported {out_dir.relative_to(ROOT)}/run.json")
             # extension rule (see A_IN_MAX)
-            if not queue and res["verdict"] not in ("IGNITED",) and not (res["failure"] and res["active_neurons"] > 0):
+            if not queue and res["verdict"] != "FAIL_IGNITED" and not (res["failure"] and res["active_neurons"] > 0):
                 if selected is None and a_in * 2 <= A_IN_MAX:
                     queue.append(a_in * 2)
                     log(f"  grid exhausted without PASS/ignition -> extending to a_in={a_in * 2:g}")
@@ -223,10 +243,13 @@ def main(argv: list[str]) -> int:
         torch.cuda.empty_cache() if torch.cuda.is_available() else None
 
     results["wall_total_s"] = round(time.time() - t_all, 1)
-    RESULTS_JSON.write_text(json.dumps(results, indent=1, default=_json_default) + "\n")
-    write_report(results, sets, g)
-    log(f"all done in {results['wall_total_s']} s; results -> {RESULTS_JSON.relative_to(ROOT)}, "
-        f"report -> {REPORT_MD.relative_to(ROOT)}")
+    paths["results"].write_text(json.dumps(results, indent=1, default=_json_default) + "\n")
+    if args.tag:
+        write_short_report(results, sets, paths["report"])
+    else:
+        write_report(results, sets, g)
+    log(f"all done in {results['wall_total_s']} s; results -> {paths['results'].relative_to(ROOT)}, "
+        f"report -> {paths['report'].relative_to(ROOT)}")
     return 0
 
 
@@ -245,6 +268,45 @@ def _json_default(o):
 # ---------------------------------------------------------------------------
 # report
 # ---------------------------------------------------------------------------
+def sweep_table(M: dict) -> list[str]:
+    hdr = ["a_in", "peak I", "spikes", "active", "late", "JO_AB L/R spk", "JO_post L/R Hz", "SAD L/R Hz",
+           "WED L/R Hz", "pC1 L/R Hz", "AMMCtype L/R Hz", "rest Hz", "ignited", "verdict"]
+    L = ["| " + " | ".join(hdr) + " |", "|" + "---|" * len(hdr)]
+    for s in M["sweep"]:
+        r, sp = s["window_rate_hz"], s["window_spikes"]
+        def lr(base, d=r, fmt="{:.2f}"):
+            return f"{fmt.format(d[base + '_L'])} / {fmt.format(d[base + '_R'])}"
+        L.append(f"| {s['a_in']:g} | {s['peak_current']:.1f} | {s['n_spikes']:,} | {s['active_fraction']:.3%} | "
+                 f"{s['late_active_fraction']:.3%} | {lr('JO_AB', sp, '{}')} | {lr('JO_post')} | {lr('SAD')} | "
+                 f"{lr('WED')} | {lr('pC1')} | {lr('AMMCtype')} | {r['rest']:.4f} | {s['ignited']} | **{s['verdict']}** |")
+    return L
+
+
+def write_short_report(R: dict, sets, path) -> None:
+    """M4b stage 1 (docs/m4b-brief.md): tables only."""
+    L = [f"# M3b report — gain re-selection with the conductance model (M4b stage 1)\n",
+         f"Generated by `python -m flysim.apps.m3_click --synapse {R['synapse']} --g {R['g']:g} --tag {R['tag']}` on "
+         f"{R['generated_at']}. Protocol, stimulus, probe sets and judgement criteria identical to M3 "
+         f"(`docs/m3-report.md`), plus: an ignited point (late-window active ≥ "
+         f"{R['criteria']['ignition_active_fraction']:.0%}) is FAIL_IGNITED, never PASS. "
+         f"Raw numbers: `data-provenance/m3{R['tag']}-results.json`. Wall {R['wall_total_s']} s.\n"]
+    p0 = next(iter(R["modes"].values()))["engine_params"]
+    L.append("| parameter | value |\n|---|---|")
+    for k in ("synapse", "g", "E_exc", "E_inh", "tau_e", "tau_i", "tau_m", "t_ref", "v_rest", "v_reset", "v_thresh", "noise_sigma", "v_floor"):
+        L.append(f"| `{k}` | {p0.get(k)} |")
+    L.append(f"| a_in grid | {R['a_in_grid']} + doubling extension to {R['a_in_max']:g} (M3 rule) |")
+    L.append(f"| probe set sizes | {', '.join(f'{k} {v}' for k, v in sets.sizes().items())} |\n")
+    for mode, M in R["modes"].items():
+        c = M["control"]
+        L.append(f"## Mode `{mode}` (dt {M['dt_ms']} ms)\n")
+        L.append(f"Silence control: {c['n_spikes']} spikes → quiet = **{c['quiet']}**.\n")
+        L += sweep_table(M)
+        sel = M["selected_a_in"]
+        L.append(f"\nSelected a_in (smallest PASS without ignition): **{sel if sel is not None else 'none — no PASS'}**; "
+                 f"ignited points: {sum(1 for s in M['sweep'] if s['ignited'])}.\n")
+    path.write_text("\n".join(L))
+
+
 def write_report(R: dict, sets, g) -> None:
     L = []
     L.append("# M3 report — JO adapter, auditory-pathway probes, viewer export\n")
@@ -313,16 +375,7 @@ def write_report(R: dict, sets, g) -> None:
                  f"→ quiet = **{c['quiet']}**. Wall {c['wall_s']:.2f} s.\n")
         L.append("**a_in sweep** (stimulus window 100–600 ms; rates = mean Hz per neuron of the set in that window; "
                  "late = fraction of all neurons spiking from 700 ms on):\n")
-        hdr = ["a_in", "peak I", "spikes", "active", "late", "JO_AB L/R spk", "JO_post L/R Hz", "SAD L/R Hz",
-               "WED L/R Hz", "pC1 L/R Hz", "AMMCtype L/R Hz", "rest Hz", "verdict"]
-        L.append("| " + " | ".join(hdr) + " |\n|" + "---|" * len(hdr))
-        for s in M["sweep"]:
-            r, sp = s["window_rate_hz"], s["window_spikes"]
-            def lr(base, d=r, fmt="{:.2f}"):
-                return f"{fmt.format(d[base + '_L'])} / {fmt.format(d[base + '_R'])}"
-            L.append(f"| {s['a_in']:g} | {s['peak_current']:.1f} | {s['n_spikes']:,} | {s['active_fraction']:.3%} | "
-                     f"{s['late_active_fraction']:.3%} | {lr('JO_AB', sp, '{}')} | {lr('JO_post')} | {lr('SAD')} | "
-                     f"{lr('WED')} | {lr('pC1')} | {lr('AMMCtype')} | {r['rest']:.4f} | **{s['verdict']}** |")
+        L += sweep_table(M)
         sel = M["selected_a_in"]
         L.append(f"\nSelected (smallest PASS): **a_in = {sel}**" + ("" if sel is not None else " — none passed") + ".")
         if sel is not None:
