@@ -86,3 +86,18 @@ any result; (2) it has no low-rate state under any noise. This is a model-struct
 not a parameter tuned to a target curve. Phase A results stay in `m4-tuning.json` /
 `docs/m4-report.md` and every phase-B result is labelled as such. Reversal potentials and
 the sweep criteria for phase B are fixed in `docs/m2b-brief.md` before any run.
+
+## 2026-09-14 — M2b outcome: voltages bounded, bistability unchanged
+
+M2b (883c124, M2 session) added `synapse="conductance"` (E_exc 0 / E_inh −75 mV, τ_e 5 / τ_i 10 ms,
+single gain). Current-model results are regression-locked (bit-identical). Findings:
+- v stays in [−75, −50] mV at every g and seed (M2 current model reached −4,000 mV). Fixed.
+- The network is still bistable: SILENT below g ≈ 1.3e-4, IGNITED above ≈ 5.5e-4 (14–35 % active at
+  150–245 Hz), first-order transition. Common RESPONSIVE window across 3 seeds is only
+  [2.64e-4, 3.79e-4]; `DEFAULT_G_CONDUCTANCE = 3.162e-4` (geometric mean, rule fixed beforehand).
+- Background noise at that g: silent up to σ = 20, ignites from σ = 22. **No fluctuation-driven
+  low-rate state**, same transition point as the current model.
+
+**Decision:** finish phase B as approved — rerun M3 gain selection and the M4 IPI sweep with the
+conductance model (M4b) and record next to phase A. Any further mechanism (adaptation,
+short-term depression, inhibitory scaling) is a new decision for the user; none is added here.
