@@ -76,3 +76,13 @@ dominating by contact count (77.3 M exc vs 46.8 M inh contacts) give no saturati
 and records whatever appears at each stage; a flat pC1 curve is an acceptable result. Whether to move
 to conductance-based synapses (phase B) is deferred to the user. No parameter is adjusted to obtain
 propagation beyond hop 1.
+
+## 2026-09-14 — phase B approved: conductance-based synapses (M2b)
+
+User approved after M4 phase A (67f85c8) showed propagation stops at hop 1 and no
+fluctuation-driven state exists in the current-based model. Reasons recorded: (1) the
+current-based model's ignited state reaches v ≈ −4,000 mV, which is unphysical regardless of
+any result; (2) it has no low-rate state under any noise. This is a model-structure change,
+not a parameter tuned to a target curve. Phase A results stay in `m4-tuning.json` /
+`docs/m4-report.md` and every phase-B result is labelled as such. Reversal potentials and
+the sweep criteria for phase B are fixed in `docs/m2b-brief.md` before any run.
