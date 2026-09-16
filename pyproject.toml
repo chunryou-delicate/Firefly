@@ -10,6 +10,7 @@ dependencies = [
   "torch>=2.4",
   "pytest>=8",
   "setuptools>=68",  # required by triton import (torch cu124 ships triton 3.2)
+  "websockets>=13",  # flysim-live cockpit server (approved 2026-09-16)
 ]
 
 [tool.uv.sources]
