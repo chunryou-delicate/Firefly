@@ -119,3 +119,47 @@ b chosen by pre-registered sweep, default 0 keeps bit-identical regression). M5 
 server (M5a) and browser cockpit (M5b) under the contract `docs/m5-protocol.md`; every control
 action is logged and snapshots use the existing run.json contract, so exploration never
 replaces reproducible runs. New dependency: `websockets` (approved).
+
+## 2026-09-16 — M2c outcome: adaptation works but is NOT adopted as-is
+
+M2c (c5d7178, engine session) added a per-neuron spike-frequency adaptation current
+(`w`, tau_w = 100 ms fixed, `adapt_b` default 0.0; current-model and conductance-model
+regressions stay bit-identical, verified including a forced ADAPT-branch no-op case).
+A target low-rate state does exist: the rule "smallest grid b at which some sigma reaches
+0.1-5 Hz, stable, and dies after the noise stops" gives `DEFAULT_ADAPT_B = 56.2145`.
+
+**It is recorded but not adopted.** Three findings, all reproduced independently by the
+planning session from `data-provenance/m2c-noise-sweep.json`:
+
+1. **Unphysical hyperpolarisation returns.** `w` sits in the current slot, so it is not
+   bounded by any reversal potential. v_min at b = 56.2 is -834 mV (-828...-868 across sigma),
+   and -1,420 mV at b = 300. This is the same class of artefact that M2b removed from the
+   synapses (M2 current model reached -4,136 mV).
+2. **The "low-rate" state has almost every neuron firing.** Active fraction over the last
+   second is 24.9 % at sigma = 29.1, but 96.6 % at 47.1, 99.99 % at 76.3 and 100 % at 123.6.
+   CLAUDE.md 3.3 and the viewer call >= 90 % a parameter failure, so only the single
+   sigma = 29.1 point is admissible.
+3. **`DEFAULT_ADAPT_B` and `DEFAULT_G_CONDUCTANCE` are not a usable pair.** With b = 56.2
+   the RESPONSIVE window moves up to ~4.33e-4 and g = 3.162e-4 becomes SILENT at all three
+   seeds. The window did not widen; the transition stays first-order.
+
+Adaptation does do what it was added for - it lowers rates monotonically and it removes
+self-sustained activity sharply between b = 24.3 (3.9-7.6 % tail) and b = 56.2 (<= 0.22 %) -
+but the state it leaves is not usable as a background regime.
+
+**Decision: hold.** No parameter is changed; `adapt_b` stays 0.0 everywhere, so M3/M4/live
+behaviour is unchanged. The next step, if the user approves, is to model adaptation as an
+outward *conductance* with a reversal potential (g_sra, E ~ E_inh) instead of a current, so
+it is structurally bounded the way M2b's synapses are, together with a pre-registered joint
+(b, g) selection rule. The engine session also noted, untested, that a longer tau_w might
+reach the same suppression with smaller per-spike jumps.
+
+## 2026-09-16 - M5 flysim-live complete and verified end to end
+
+Server 8c2c2cf (M5a), cockpit 11452e3 + 3cf2ba2 (M5b), contract v1.1 (0f11e2e).
+Verified by the planning session against a live server, not by either implementing session:
+silence gives 0.000 Hz in every region; a 35 ms click train drives JO_AB to the 1,000 Hz
+bin ceiling, JO_post to 57/50 Hz and WED to 4.5 Hz (hop 2, matching M4b); `params`
+broadcast, `n_bins`, `get_hops` and `snapshot` all behave per contract; the snapshot is a
+valid viewer run.json (1,000 frames, 0.57 % of neurons active, no failure warning); static
+serving works and path escape returns 404. Pacing: speed 1 holds at dt 1.0 ms and 0.1 ms.
