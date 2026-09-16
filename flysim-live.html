@@ -14,10 +14,13 @@
     · 재생기 : 끝난 런의 run.json을 열어 되감기·재생한다. 결과 제출용.
     · 조종석 : 살아 있는 엔진에 웹소켓으로 붙어 자극과 파라미터를 만진다. 탐색용.
 
-  프로토콜 계약은 docs/m5-protocol.md에 있다. 이 파일은 계약을 구현만 하고
-  바꾸지 않는다. 계약에 없는 메시지는 보내지 않는다.
+  프로토콜 계약은 docs/m5-protocol.md에 있다(v1.1 기준). 이 파일은 계약을 구현만
+  하고 바꾸지 않는다. 계약에 없는 메시지는 보내지 않는다.
 
-  서버 → 조종석 : hello, frame, ack, hops, snapshot_done, warning, error
+  파라미터 값은 hello와 params 브로드캐스트에서만 갱신한다. frame.params_version이
+  앞서면 params가 곧 온다는 뜻이므로 그때까지 값을 추측하지 않는다(낙관적 갱신 금지).
+
+  서버 → 조종석 : hello, frame, ack, params, hops, snapshot_done, warning, error
   조종석 → 서버 : set_params, stimulus, audio_start, audio_stop, inject,
                   pause, resume, step, reset, get_hops, snapshot, set_frame_every
   오디오        : 같은 웹소켓의 바이너리 프레임 = float32 LE 모노 PCM
@@ -649,7 +652,7 @@ footer span b{color:var(--ink-dim);font-weight:400}
 //  계약 (docs/m5-protocol.md) — 여기 없는 메시지는 쓰지 않는다
 // ═══════════════════════════════════════════════════════
 const SERVER_MESSAGE_TYPES = [
-  "hello", "frame", "ack", "hops", "snapshot_done", "warning", "error",
+  "hello", "frame", "ack", "params", "hops", "snapshot_done", "warning", "error",
 ];
 const CLIENT_MESSAGE_TYPES = [
   "set_params", "stimulus", "audio_start", "audio_stop", "inject",
@@ -691,17 +694,16 @@ const S = {
   regions: [],
   setSizes: {},
   setMembers: {},
-  params: {},                // 서버가 확인해 준 값만 들어간다 (낙관적 갱신 금지)
-  dirty: new Set(),          // ack 대기 중인 파라미터 키
-  paramsVersion: -1,
-  versionWarned: false,
+  params: {},                // 화면에 그리는 값. hello와 params 브로드캐스트로만 쓴다
+  dirty: new Set(),          // 보냈고 아직 params 브로드캐스트로 확정되지 않은 키
+  paramsVersion: -1,         // S.params가 담고 있는 버전
+  serverVersion: -1,         // ack·frame이 알려 준 최신 버전 (앞서면 params 대기 중)
 
   neurons: null,             // {x, y, region} — neurons_url 또는 모의 데이터
   nNeurons: 0,
   binMs: 1,
 
   lastFrame: null,
-  lastT: null,               // 직전 프레임의 t_ms — 묶음 크기를 여기서 유도한다
   status: "—",
   pendingSpikes: [],         // 렌더 사이에 도착한 스파이크
   activation: null,
@@ -805,6 +807,20 @@ function dispatch(msg){
   h(msg);
 }
 
+// 파라미터 값이 화면에 반영되는 유일한 경로. 계약 v1.1: hello와 params 브로드캐스트만.
+function applyParams(params, version){
+  S.params = Object.assign({}, params || {});
+  S.paramsVersion = version;
+  S.serverVersion = Math.max(S.serverVersion, version);
+  S.dirty.clear();
+  syncParamUI();
+}
+
+function onParams(msg){
+  applyParams(msg.params, msg.params_version);
+  log("← params v" + msg.params_version + " (" + Object.keys(msg.params || {}).length + "개 값)");
+}
+
 function onHello(msg){
   S.hello = msg;
   S.regions = msg.regions || [];
@@ -812,31 +828,25 @@ function onHello(msg){
   S.setMembers = msg.sets || {};
   S.nNeurons = msg.n_neurons || 0;
   S.binMs = msg.bin_ms || 1;
-  S.params = Object.assign({}, msg.params || {});
-  S.paramsVersion = msg.params_version ?? 0;
-  S.dirty.clear();
+  S.serverVersion = -1;
 
   el("engineLine").textContent =
     "engine " + (msg.engine?.synapse ?? "?") + " · " + (msg.engine?.git_commit ?? "commit?").slice(0, 7);
   el("binLine").textContent = "bin " + S.binMs + " ms · " + S.nNeurons.toLocaleString() + " 뉴런";
   el("histSec").textContent = HIST_SECONDS;
 
-  S.lastT = null;
   initHistory();
   buildLrRows();
   buildInjectSets();
-  syncParamUI();
+  applyParams(msg.params, msg.params_version);
   log("hello — 영역 " + S.regions.length + "개, 집합 " + Object.keys(S.setSizes).length + "개");
 
   loadNeurons(msg);
 }
 
 function onFrame(msg){
-  // frame_every > 1이면 한 메시지가 여러 빈을 묶는다. 계약의 frame에는 묶음 크기
-  // 필드가 없으므로 t_ms 차이에서 유도한다(첫 프레임과 reset 뒤에는 1로 본다).
-  const dt = (S.lastT == null) ? S.binMs : (msg.t_ms - S.lastT);
-  const nBins = clamp(Math.round(dt / S.binMs) || 1, 1, 500);
-  S.lastT = msg.t_ms;
+  // 계약 v1.1: 한 메시지가 묶은 빈 수는 frame.n_bins가 알려 준다.
+  const nBins = clamp(msg.n_bins || 1, 1, S.histCols || 1);
   S.lastFrame = msg;
   S.frameCount++;
   S.framesSinceFps++;
@@ -847,16 +857,7 @@ function onFrame(msg){
     setConnected(S.connected, "연결됨 · " + msg.status);
     el("pauseBtn").textContent = msg.status === "paused" ? "▶" : "❚❚";
   }
-  if(typeof msg.params_version === "number" && msg.params_version !== S.paramsVersion){
-    // 다른 클라이언트가 바꿨을 수 있다. 계약상 frame은 값을 싣지 않으므로
-    // 조종석은 버전 불일치를 표시만 하고 슬라이더를 추측해 옮기지 않는다.
-    if(S.dirty.size === 0 && !S.versionWarned){
-      S.versionWarned = true;
-      log("params_version " + S.paramsVersion + " → " + msg.params_version + " (이 조종석이 보낸 변경이 아님)");
-    }
-    S.paramsVersion = msg.params_version;
-    el("versionBadge").textContent = "params v" + S.paramsVersion + (S.versionWarned ? "*" : "");
-  }
+  if(typeof msg.params_version === "number") noteServerVersion(msg.params_version);
   el("speedBadge").textContent = "speed " + (msg.speed ?? S.params.speed ?? "—");
 
   // 히트맵의 시간축이 실제 5초가 되도록 묶인 빈 수만큼 채운다
@@ -873,27 +874,34 @@ function onFrame(msg){
     (msg.spikes?.n_total ?? 0).toLocaleString() + " 스파이크/빈)";
 }
 
+// ack·frame이 알려 준 최신 버전. S.params보다 앞서면 params 브로드캐스트를 기다리는 중이다.
+function noteServerVersion(v){
+  if(v > S.serverVersion) S.serverVersion = v;
+  const behind = S.serverVersion > S.paramsVersion;
+  el("versionBadge").textContent = "params v" + S.serverVersion + (behind ? " ⋯" : "");
+  el("versionBadge").title = behind
+    ? "서버는 v" + S.serverVersion + ", 화면은 v" + S.paramsVersion + " — params 브로드캐스트 대기 중"
+    : "화면과 서버가 같은 버전이다";
+}
+
 function onAck(msg){
   const p = S.pending.get(msg.req_id);
   S.pending.delete(msg.req_id);
-  if(typeof msg.params_version === "number"){
-    S.paramsVersion = msg.params_version;
-    el("versionBadge").textContent = "params v" + S.paramsVersion + (S.versionWarned ? "*" : "");
-  }
+  if(typeof msg.params_version === "number") noteServerVersion(msg.params_version);
   if(!p){ log("← ack (모르는 req " + msg.req_id + ")"); return; }
 
   if(p.type === "set_params"){
     const sent = p.payload.params || {};
     if(msg.ok){
-      // 서버가 받아들인 뒤에만 반영한다 (낙관적 갱신 금지).
-      Object.assign(S.params, sent);
+      // 값은 params 브로드캐스트가 올 때까지 반영하지 않는다 (계약 v1.1 클라이언트 의무).
+      // 슬라이더는 그때까지 ⟳ 상태로 남는다.
     }else{
       for(const k of Object.keys(sent)){
         if(k === "adapt_b" || k === "adapt_tau_w") lockAdaptation(msg.msg || "서버가 거절");
+        S.dirty.delete(k);                       // 거절 → 화면을 확정값으로 되돌린다
       }
+      syncParamUI();
     }
-    for(const k of Object.keys(sent)) S.dirty.delete(k);
-    syncParamUI();
   }
   if(p.type === "snapshot" && !msg.ok) el("snapInfo").textContent = "스냅샷 거절: " + (msg.msg || "");
   log("← ack " + p.type + " " + (msg.ok ? "ok" : "거절") + (msg.msg ? " — " + msg.msg : ""));
@@ -945,6 +953,7 @@ const SERVER_HANDLERS = {
   hello: onHello,
   frame: onFrame,
   ack: onAck,
+  params: onParams,
   hops: onHops,
   snapshot_done: onSnapshotDone,
   warning: onWarning,
@@ -1402,7 +1411,7 @@ function syncParamUI(){
   el("modeBadge").textContent  = "감각 모드 " + (p.mode ?? "—");
   el("dtBadge").textContent    = "dt " + (p.dt_ms ?? "—") + " ms";
   el("speedBadge").textContent = "speed " + (p.speed ?? "—");
-  el("versionBadge").textContent = "params v" + S.paramsVersion + (S.versionWarned ? "*" : "");
+  noteServerVersion(S.paramsVersion);
   el("gHint").textContent = p.synapse === "current"
     ? "기준값: current 0.336 (M3/M4 동작점). 0.55 위는 점화."
     : "기준값: conductance 3.162e-4. RESPONSIVE 창 [2.6e-4, 3.8e-4].";
@@ -1767,6 +1776,12 @@ class MockServer{
 
   emit(obj){ this.onmessage && this.onmessage({data: JSON.stringify(obj)}); }
 
+  // 계약 v1.1: 버전이 바뀌면 전체 params를 모든 클라이언트에 브로드캐스트한다
+  bumpVersion(){
+    this.version++;
+    this.emit({type:"params", params:{...this.params}, params_version:this.version});
+  }
+
   send(data){
     if(typeof data !== "string"){                // 바이너리 = PCM 청크
       const f = new Float32Array(data);
@@ -1793,9 +1808,9 @@ class MockServer{
         const resets = ("dt_ms" in p && p.dt_ms !== this.params.dt_ms)
                     || ("synapse" in p && p.synapse !== this.params.synapse);
         Object.assign(this.params, p);
-        this.version++;
         if(resets) this.reset(0);
         this.ack(m, true, resets ? "엔진 재생성 + reset 수행" : "");
+        this.bumpVersion();                       // ack 뒤에 브로드캐스트
         return;
       }
       case "stimulus":
@@ -1860,6 +1875,9 @@ class MockServer{
 
   advance(){
     let bins = Math.max(0, Math.round(25 * this.params.speed / this.binMs));
+    // 실제 서버는 벽시계를 못 따라갈 때 lagging을 보고한다. 모의에서는 한 틱에
+    // 생성해야 할 빈 수가 임계를 넘으면 같은 신호를 낸다.
+    this.reported = this.status === "paused" ? "paused" : (bins > 60 ? "lagging" : "running");
     if(this.status === "paused"){
       bins = Math.min(this.pendingSteps, 200);
       this.pendingSteps -= bins;
@@ -1938,7 +1956,7 @@ class MockServer{
       rates, spikes:{idx:capped, n_total:total, sample_ratio: total ? capped.length / total : 1},
       active_frac_100ms: clamp(act / this.N, 0, 1),
       input_level: clamp(level, 0, 1),
-      status:this.status, speed:this.params.speed, params_version:this.version,
+      status:this.reported || this.status, speed:this.params.speed, params_version:this.version,
     });
   }
 

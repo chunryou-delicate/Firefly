@@ -195,12 +195,54 @@ def test_client_side_normalisation_only(script):
 
 
 def test_no_optimistic_param_updates(script):
-    """S.params may only be written from hello and from a successful ack."""
-    writes = re.findall(r"Object\.assign\(S\.params", script)
-    assert len(writes) == 1, "S.params should be merged in exactly one place (the ack handler)"
+    """Contract v1.1: displayed parameter values come only from `hello` and the `params`
+    broadcast. An `ack` must not write values, or another client's change would be guessed."""
+    writes = re.findall(r"S\.params = ", script)
+    assert len(writes) == 1, "S.params should be assigned in exactly one place (applyParams)"
+    assert re.search(r"function applyParams\(params, version\)\{", script)
+    callers = re.findall(r"applyParams\(([^)]*)\)", script)
+    assert len(callers) == 3, f"applyParams should be defined once and called twice, got {callers}"
     ack = re.search(r"function onAck\(msg\)\{(.*?)\n\}", script, re.S).group(1)
-    assert "Object.assign(S.params, sent)" in ack
-    assert "if(msg.ok)" in ack, "params must only be applied when the server accepted them"
+    assert "S.params" not in ack, "the ack handler must not touch parameter values"
+    assert "onParams" in re.search(r"const SERVER_HANDLERS = \{(.*?)\};", script, re.S).group(1)
+
+
+def test_params_broadcast_is_the_only_value_source(script):
+    hello = re.search(r"function onHello\(msg\)\{(.*?)\n\}", script, re.S).group(1)
+    params = re.search(r"function onParams\(msg\)\{(.*?)\n\}", script, re.S).group(1)
+    assert "applyParams(msg.params, msg.params_version)" in hello, "hello must seed the values"
+    assert "applyParams(msg.params, msg.params_version)" in params
+
+
+def test_hello_params_version_is_used(script):
+    """v1.1 added params_version to hello; it is the baseline, not a `?? 0` guess."""
+    hello = re.search(r"function onHello\(msg\)\{(.*?)\n\}", script, re.S).group(1)
+    assert "msg.params_version ?? 0" not in hello
+    assert "applyParams(msg.params, msg.params_version)" in hello
+
+
+def test_frame_n_bins_drives_the_time_axis(script):
+    """v1.1 added frame.n_bins; deriving the bin count from t_ms deltas is wrong after a reset."""
+    frame = re.search(r"function onFrame\(msg\)\{(.*?)\n\}", script, re.S).group(1)
+    assert "msg.n_bins" in frame, "n_bins must be read from the frame"
+    assert "S.lastT" not in script, "the t_ms-delta derivation must be gone"
+    assert "pushHistory(msg.rates || [], nBins)" in frame
+
+
+def test_pending_version_is_shown_not_guessed(script):
+    """When the server reports a newer version, show that we are behind instead of moving sliders."""
+    assert "function noteServerVersion" in script
+    assert "serverVersion" in script and "S.serverVersion > S.paramsVersion" in script
+
+
+def test_lagging_status_is_accepted(script, html):
+    assert '"lagging"' in script or "lagging" in html, "frame.status may be 'lagging' (v1.1)"
+    assert "dot.lagging" in html, "the connection dot needs a lagging state"
+
+
+def test_contract_version_is_the_one_implemented():
+    text = PROTOCOL.read_text(encoding="utf-8")
+    assert "**계약 버전 v1.1**" in text, "this cockpit implements contract v1.1"
 
 
 def test_reconnect_interval(script):

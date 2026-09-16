@@ -1,7 +1,7 @@
 # M5b report — flysim-live cockpit (browser client)
 
-Built 2026-09-16 against the contract in `docs/m5-protocol.md` (commit `8607699`), spec `docs/m5b-brief.md`.
-Deliverables: `flysim-live.html` (single file, no build, no dependencies) and `tests/test_live_html.py` (39 tests).
+Built 2026-09-16 against **contract v1.1** (`docs/m5-protocol.md`, commit `0f11e2e`), spec `docs/m5b-brief.md`.
+Deliverables: `flysim-live.html` (single file, no build, no dependencies) and `tests/test_live_html.py` (46 tests).
 The result player `flysim-viewer.html` is untouched and stays the way runs are submitted; the cockpit is a second,
 exploratory surface. Verified only against the built-in mock server — the real M5a server did not exist yet.
 
@@ -56,15 +56,25 @@ constructed. Blocks are accumulated and cut into fixed **20 ms float32 mono** ch
 of the same socket. The transmitted RMS is displayed as a number; the meter bar stays reserved for the server's
 `input_level` so the two are never confused.
 
-## 4. Protocol handling
+## 4. Protocol handling (contract v1.1)
 
-- Every incoming type has a named handler in one `SERVER_HANDLERS` table: `hello`, `frame`, `ack`, `hops`,
-  `snapshot_done`, `warning`, `error`. Every outgoing type goes through one `send()` that stamps `req_id` and
-  refuses any type not in `CLIENT_MESSAGE_TYPES`. The tests read both lists out of `docs/m5-protocol.md`, so the
-  cockpit cannot silently drift from the contract.
-- **No optimistic updates.** A slider sends `set_params` and marks the key dirty (a ⟳ next to the value);
-  `S.params` is merged only inside `onAck` and only when `ok` is true. A rejected `adapt_b` locks both adaptation
-  sliders and shows the server's reason.
+- Every incoming type has a named handler in one `SERVER_HANDLERS` table: `hello`, `frame`, `ack`, `params`,
+  `hops`, `snapshot_done`, `warning`, `error`. Every outgoing type goes through one `send()` that stamps `req_id`
+  and refuses any type not in `CLIENT_MESSAGE_TYPES`. The tests read both lists out of `docs/m5-protocol.md`, so
+  the cockpit cannot silently drift from the contract — the v1.1 `params` message was caught by those tests
+  before it was implemented.
+- **Parameter values have exactly one entry point.** `applyParams()` is the only writer of `S.params`, and only
+  `hello` and the `params` broadcast call it. Moving a slider sends `set_params` and marks that key dirty (⟳ next
+  to the value); the displayed value stays at the last confirmed one until the broadcast arrives. An `ack` never
+  writes values — that is what lets another client's change be shown correctly instead of guessed. A rejected
+  change clears the dirty mark, so the display snaps back, and a rejected `adapt_b` also locks both adaptation
+  sliders with the server's reason.
+- **Version display.** `S.paramsVersion` is the version of what is on screen; `S.serverVersion` is the newest
+  version any `ack` or `frame` mentioned. While the second is ahead the badge shows `⋯` and a tooltip naming both
+  numbers, which is the honest state: the broadcast is in flight. (This assumes versions only increase, which the
+  contract guarantees.)
+- **Time axis.** `frame.n_bins` advances the heatmap, so a bundled message moves the window by the number of bins
+  it actually covers. The earlier `t_ms`-delta derivation is gone.
 - Warnings use the viewer's exact wording for `all_silent` and `runaway`, plus new text for `ignited` and
   `recorder_overflow`; `<code>_cleared` removes them.
 - Reconnect every 2 s; the last frame stays on screen under a "disconnected" curtain.
@@ -94,7 +104,11 @@ no browser automation was added to the test suite):
 | snapshot | `snapshot_done` path shown with the "not for submission" wording, `run_id` auto-increments to live-001 |
 | `noise_sigma` 30 | server raises `runaway`; the viewer's runaway sentence appears over the field; returning to 0 clears it |
 | audio messages | `audio_start`, one binary frame, `audio_stop` in that order |
-| `frame_every` 10 | 159 msg/s but 968 bin/s — the heatmap time axis is unchanged |
+| `frame_every` 10 | 110 msg/s but 919 bin/s from `n_bins` — the heatmap time axis is unchanged |
+| drag `g` with the mock's reply delayed 400 ms | ⟳ appears, the label shows the requested 1.905e-3 while `S.params.g` stays at the old 3.162e-4; when the `params` broadcast lands the value is adopted and ⟳ clears |
+| a second client changes `a_in` and `noise_sigma` (injected straight into the mock, bypassing this page) | the `params` broadcast moves both sliders (320 → 2560, 0 → 7) and the badge goes to v3 without this cockpit having sent anything |
+| force the badge to a version ahead of the screen | badge reads `params v6 ⋯`, tooltip "서버는 v6, 화면은 v3 — params 브로드캐스트 대기 중" |
+| `speed` to 4 | mock reports `lagging`; the dot turns amber and the header reads "연결됨 · lagging"; back at 1 it returns to running |
 | close the socket | curtain appears, reconnects on its own after 2 s and re-runs `hello` |
 | 400 px viewport | single column, no horizontal overflow |
 
@@ -118,18 +132,17 @@ reappears.
 - Recorded-but-unshown: `frame.step`, `hops.k` beyond the layer counts, and `engine.git_commit` beyond 7 characters.
 - Mock `speed` only paces bin generation; it does not model the server's wall-clock pacing or `lagging`.
 
-## 7. Contract gaps to decide (not changed here)
+## 7. Contract history
 
-1. **`hello` has no `params_version`.** `ack` and `frame` both carry one, but a freshly connected client has no
-   baseline number. The cockpit reads `msg.params_version ?? 0`. Suggest adding it to the `hello` row.
-2. **`frame` carries `params_version` but no parameter values.** When another client changes a parameter, this
-   cockpit sees the version move without knowing the new values; it marks the badge with `*` and refuses to guess
-   slider positions (guessing would be an optimistic update). A `params` object on the frame that follows a version
-   change, or a client-initiated re-`hello`, would close this.
-3. **No group-size field on `frame`.** With `frame_every > 1` the client must know how many bins a message covers
-   to keep a correct time axis. Derived from `t_ms` deltas here, which works but breaks on the first frame after a
-   `reset`. An explicit `n_bins` would be cheaper and exact.
-4. **`frame.status` values.** The table lists `"running"` / `"paused"`, while the server-duties section also
-   requires `"lagging"`. The cockpit accepts all three; worth listing all of them in the table.
+Four gaps were reported after the first build and all four were closed in contract **v1.1** (`0f11e2e`); this
+cockpit implements that version.
 
-None of these block M5a; items 1–3 only affect fidelity of the display.
+| gap (v1.0) | resolution (v1.1) | in the cockpit |
+|---|---|---|
+| `hello` had no `params_version` | added | used as the baseline instead of a `?? 0` guess |
+| `frame` carried a version but no values, so another client's change could only be flagged | new `params` broadcast carrying the whole object on every version change | `onParams` → `applyParams`; sliders follow other clients, the `*` marker is replaced by a `⋯` "broadcast in flight" state |
+| no group-size field, so a bundled `frame` had to be sized from `t_ms` deltas (wrong right after a `reset`) | `frame.n_bins` added | drives the heatmap time axis; the derivation is removed |
+| `lagging` appeared in the duties text but not in the `status` list | listed | already accepted; now exercised in the mock |
+
+The mock server speaks v1.1 as well: it broadcasts `params` after every accepted `set_params`, reports `n_bins`,
+and reports `lagging` when one tick would have to generate more than 60 bins.
