@@ -1,5 +1,7 @@
 # flysim-live 프로토콜 계약 (M5) — 서버(M5a)와 조종석 클라이언트(M5b)의 공통 원본
 
+**계약 버전 v1.1** (2026-09-16 개정. 변경 내역은 맨 아래 "개정 이력").
+
 총괄 세션 작성 (2026-09-16). **이 문서가 계약이다.** 서버와 클라이언트를 다른 세션이 만들므로 여기 없는 메시지는 쓰지 않는다.
 
 > **보고 대상:** 총괄 세션. 세션 이름은 재시작 때마다 바뀌므로 **이 지시를 전달한 메시지의 `from-name`**(또는 사용자가 알려준 이름)을 그대로 쓴다. 문서에 적힌 옛 이름은 무효다. 이름을 모르면 `ListAgents`로 `fruit-fly-*` 세션을 확인하고, 애매하면 사용자에게 묻는다.
@@ -15,9 +17,10 @@
 ## 서버 → 클라이언트
 | type | 필드 | 언제 |
 |---|---|---|
-| `hello` | `n_neurons`, `regions:[str]`, `sets:{name:[idx…]}`(프로브 집합, 크기 표시용은 `set_sizes`), `params`(아래 params 객체), `dt_ms`, `bin_ms`, `engine:{synapse, git_commit}`, `neurons_url` | 접속 직후 |
-| `frame` | `t_ms`, `step`, `rates:[float…]`(영역별 Hz/뉴런, **정규화 안 함**), `spikes:{idx:[int…], n_total:int, sample_ratio:float}`(빈당 상한 1,500 균일 샘플), `active_frac_100ms`(최근 100 ms 발화 뉴런 비율), `input_level`(0~1, 현재 자극 포락선), `status`(`"running"`/`"paused"`), `speed`, `params_version` | 빈마다(bin_ms=1이면 1 ms마다; 클라이언트 부하를 위해 서버는 `frame_every`(기본 1) 빈마다 묶어 보낼 수 있고 그때 `rates`/`spikes`는 묶음 평균/합집합) |
+| `hello` | `n_neurons`, `regions:[str]`, `sets:{name:[idx…]}`(프로브 집합, 크기 표시용은 `set_sizes`), `params`(아래 params 객체), **`params_version:int`**, `dt_ms`, `bin_ms`, `engine:{synapse, git_commit}`, `neurons_url` | 접속 직후 |
+| `frame` | `t_ms`, `step`, `rates:[float…]`(영역별 Hz/뉴런, **정규화 안 함**), `spikes:{idx:[int…], n_total:int, sample_ratio:float}`(빈당 상한 1,500 균일 샘플), `active_frac_100ms`(최근 100 ms 발화 뉴런 비율), `input_level`(0~1, 현재 자극 포락선), `status`(`"running"`/`"paused"`/`"lagging"`), `speed`, `params_version`, **`n_bins:int`**(이 메시지가 묶은 빈 수. `frame_every`와 같되 reset·pause 경계에서는 실제로 묶인 수) | 빈마다(bin_ms=1이면 1 ms마다; 클라이언트 부하를 위해 서버는 `frame_every`(기본 1) 빈마다 묶어 보낼 수 있고 그때 `rates`/`spikes`는 묶음 평균/합집합) |
 | `ack` | `req_id`, `ok:bool`, `msg`, `params_version` | 모든 제어 메시지에 대해 |
+| `params` | `params`(전체 객체), `params_version:int` | `params_version`이 바뀔 때마다 **모든 클라이언트에 브로드캐스트**. 다른 클라이언트가 바꾼 값을 화면에 반영하는 유일한 경로다 |
 | `hops` | `req_id`, `src`, `k`, `layers:[[idx…],…]` | `get_hops` 응답 |
 | `snapshot_done` | `req_id`, `run_id`, `path`, `n_frames` | `snapshot` 완료 |
 | `warning` | `code`(`"ignited"`, `"all_silent"`, `"runaway"`, `"recorder_overflow"`), `msg` | 감지 시 1회, 해제 시 `code+"_cleared"` |
@@ -50,3 +53,9 @@
 - `hello`의 `regions`/`sets` 순서를 그대로 쓴다. 정규화·색은 전부 클라이언트가 한다(서버는 원시 Hz).
 - 연결이 끊기면 마지막 프레임 위에 "disconnected" 표시. 자동 재접속 2 s 간격.
 - 모든 슬라이더 변경은 `set_params` 하나로 보내고 `ack`의 `params_version`으로 화면을 동기화한다(낙관적 갱신 금지).
+- 화면의 파라미터 값은 `hello`와 `params` 브로드캐스트에서만 갱신한다. `frame.params_version`이 마지막으로 받은 버전보다 크면 `params`가 곧 온다는 뜻이므로 그때까지 값을 추측하지 않는다.
+- `frame.n_bins`로 시간축을 전진시킨다. `t_ms` 차이로 유도하지 않는다(reset 직후 어긋난다).
+
+## 개정 이력
+- **v1.1** (2026-09-16, 조종석 세션의 계약 미비 보고 4건 반영): `hello`에 `params_version` 추가 · `params` 브로드캐스트 메시지 신설 · `frame`에 `n_bins` 추가 · `frame.status`에 `lagging` 명시.
+- v1.0 (2026-09-16) 최초 작성.
