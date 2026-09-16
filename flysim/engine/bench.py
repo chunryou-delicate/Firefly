@@ -13,6 +13,14 @@ phase-lock target) for the record.
 Timing: warm-up steps excluded, ``torch.cuda.synchronize()`` then
 ``time.perf_counter`` around ``LIFEngine.run`` (so Python loop overhead, the
 input callback and recorder flushes are all included).
+
+M2c: ``--adapt`` adds a pass with the adaptation branch compiled in. Per-step cost
+depends on whether the ``ADAPT`` constexpr is set, not on the value of ``adapt_b``
+(the branch is a fixed load / multiply / subtract / select / store per neuron), so
+the bench uses ``ADAPT_BENCH_B`` = 1e-6: large enough to switch the branch on,
+small enough (w_ss = b/(1 - exp(-dt/tau_w)) = 1e-3 against i_ext = 1e4) to leave
+the forced activity level of the protocol exactly as it is. The printed
+spikes/step confirms the forcing still holds.
 """
 from __future__ import annotations
 
@@ -30,6 +38,7 @@ from .lif import LIFEngine
 from .params import EngineParams
 
 ACTIVITY_LEVELS = (0.0, 0.001, 0.01, 0.05)
+ADAPT_BENCH_B = 1e-6          # switches the ADAPT branch on without perturbing the forced activity
 STIM_CURRENT = 1.0e4          # >> threshold gap / (1 - decay_m): fires every step with t_ref = 0
 TARGET_US = 100.0
 
@@ -47,13 +56,13 @@ def _time_run(engine: LIFEngine, steps: int, warmup: int, record: bool) -> tuple
 
 
 def run_bench(steps: int = 10_000, warmup: int = 100, seed: int = 0, synapse: str = "current",
-              graph: Graph | None = None) -> dict:
+              graph: Graph | None = None, adapt_b: float = 0.0) -> dict:
     if not torch.cuda.is_available():
         raise SystemExit("bench requires CUDA (the target is the GPU kernel)")
     graph = graph or Graph.load()
     n = graph.n
-    print(f"graph: {graph!r}  synapse={synapse}")
-    params = EngineParams(dt=0.1, g=0.0, t_ref=0.0, synapse=synapse)
+    print(f"graph: {graph!r}  synapse={synapse}  adapt_b={adapt_b:g}")
+    params = EngineParams(dt=0.1, g=0.0, t_ref=0.0, synapse=synapse, adapt_b=adapt_b)
     rng = np.random.default_rng(seed)
     perm = rng.permutation(n)
     rows = []
@@ -80,7 +89,8 @@ def run_bench(steps: int = 10_000, warmup: int = 100, seed: int = 0, synapse: st
                 us, n_spk = _time_run(eng, n_steps, warmup, record)
                 transient = (torch.cuda.max_memory_allocated() - static_alloc) / 2**20
                 spk_per_step = n_spk / n_steps if n_spk >= 0 else k
-                rows.append(dict(synapse=synapse, backend=name, activity=p, forced_neurons=k, record=record,
+                rows.append(dict(synapse=synapse, adapt=params.adapt, adapt_b=adapt_b,
+                                 backend=name, activity=p, forced_neurons=k, record=record,
                                  steps=n_steps, us_per_step=round(us, 1),
                                  spikes_per_step=round(spk_per_step, 1),
                                  transient_peak_mib=round(transient, 1)))
@@ -98,10 +108,11 @@ def run_bench(steps: int = 10_000, warmup: int = 100, seed: int = 0, synapse: st
 
 
 def markdown_table(result: dict) -> str:
-    lines = ["| synapse | backend | activity | forced neurons | recorder | steps | us/step | spikes/step | transient peak MiB | <100us |",
-             "|---|---|---|---|---|---|---|---|---|---|"]
+    lines = ["| synapse | adapt | backend | activity | forced neurons | recorder | steps | us/step | spikes/step | transient peak MiB | <100us |",
+             "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in result["rows"]:
-        lines.append(f"| {r.get('synapse', 'current')} | {r['backend']} | {r['activity']:.1%} | {r['forced_neurons']:,} | "
+        lines.append(f"| {r.get('synapse', 'current')} | {'on' if r.get('adapt') else 'off'} | "
+                     f"{r['backend']} | {r['activity']:.1%} | {r['forced_neurons']:,} | "
                      f"{'on' if r['record'] else 'off'} | {r['steps']:,} | {r['us_per_step']:.1f} | "
                      f"{r['spikes_per_step']:.1f} | {r['transient_peak_mib']:.0f} | "
                      f"{'yes' if r['us_per_step'] < result['target_us'] else 'NO'} |")
@@ -114,16 +125,23 @@ def main() -> None:
     ap.add_argument("--warmup", type=int, default=100)
     ap.add_argument("--out", type=Path, default=Path("data-provenance/m2-bench.json"))
     ap.add_argument("--synapse", choices=("current", "conductance", "both"), default="current")
+    ap.add_argument("--adapt", action="store_true",
+                    help="M2c: also bench each synapse model with the adaptation branch compiled in")
     a = ap.parse_args()
-    if a.synapse == "both":
-        graph = Graph.load()
-        res = run_bench(a.steps, a.warmup, synapse="current", graph=graph)
+    configs = [("current", 0.0), ("conductance", 0.0)] if a.synapse == "both" else [(a.synapse, 0.0)]
+    if a.adapt:
+        configs += [(syn, ADAPT_BENCH_B) for syn, _ in list(configs)]
+    graph = Graph.load()
+    res = None
+    for syn, b in configs:
+        r = run_bench(a.steps, a.warmup, synapse=syn, graph=graph, adapt_b=b)
         torch.cuda.empty_cache()
-        res_c = run_bench(a.steps, a.warmup, synapse="conductance", graph=graph)
-        res["rows"] += res_c["rows"]
-        res["params_conductance"] = res_c["params"]
-    else:
-        res = run_bench(a.steps, a.warmup, synapse=a.synapse)
+        if res is None:
+            res = r
+        else:
+            res["rows"] += r["rows"]
+            res[f"params_{syn}_adapt{b:g}"] = r["params"]
+    res["configs"] = [dict(synapse=syn, adapt_b=b) for syn, b in configs]
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(res, indent=1))
     print()

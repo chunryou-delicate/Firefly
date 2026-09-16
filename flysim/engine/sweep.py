@@ -142,17 +142,58 @@ def markdown_table(res: dict) -> str:
     return "\n".join(lines)
 
 
+def _m2c(a, sc) -> None:
+    """M2c adaptation sweeps (docs/m2c-brief.md). Grids and criteria live in sweep_conductance."""
+    from ..graph import Graph
+    graph = Graph.load()
+    g = a.g if a.g is not None else sc.DEFAULT_G_CONDUCTANCE
+    if a.g_resweep:
+        b = a.b
+        if b is None:
+            prev = json.loads(Path("data-provenance/m2c-noise-sweep.json").read_text())
+            b = prev["default_adapt_b"]
+            if not b:
+                raise SystemExit("no b reached the target state in m2c-noise-sweep.json; pass --b explicitly")
+        res = sc.run_g_sweep(sc.G_REGRID, adapt_b=float(b), graph=graph)
+        out = a.out or Path("data-provenance/m2c-g-resweep.json")
+        out.write_text(json.dumps(res, indent=1))
+        print(); print(sc.markdown_g_table(res))
+        print(f"\nadapt_b = {b}\nRESPONSIVE (all seeds): {res['responsive_range']} "
+              f"contiguous={res['responsive_contiguous']}\nwritten: {out}")
+        return
+    if a.noise:
+        res = sc.run_b_noise_sweep(g=g, graph=graph)
+        out = a.out or Path("data-provenance/m2c-noise-sweep.json")
+        out.write_text(json.dumps(res, indent=1))
+        print(); print(sc.markdown_b_noise_table(res))
+        print(f"\nb reaching the target state: {res['target_state_b'] or 'NONE'}"
+              f"\nDEFAULT_ADAPT_B ({res['default_adapt_b_rule']}): {res['default_adapt_b']}\nwritten: {out}")
+        return
+    res = sc.run_b_sweep(g=g, graph=graph)
+    out = a.out or Path("data-provenance/m2c-b-sweep.json")
+    out.write_text(json.dumps(res, indent=1))
+    print(); print(sc.markdown_b_table(res))
+    print(f"\nwritten: {out}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--synapse", choices=("current", "conductance"), default="current")
     ap.add_argument("--noise", action="store_true", help="M2b: noise sweep at g_mid of the recorded RESPONSIVE range")
     ap.add_argument("--g", type=float, default=None, help="M2b noise sweep: override g_mid")
+    ap.add_argument("--adapt", action="store_true",
+                    help="M2c: adaptation sweeps (b response sweep; with --noise the b x sigma sweep)")
+    ap.add_argument("--g-resweep", action="store_true",
+                    help="M2c: g re-sweep at --b (default: the b chosen by the recorded rule)")
+    ap.add_argument("--b", type=float, default=None, help="M2c g re-sweep: override adapt_b")
     a = ap.parse_args()
     if not torch.cuda.is_available():
         raise SystemExit("sweep requires CUDA")
     if a.synapse == "conductance":
         from . import sweep_conductance as sc
+        if a.adapt or a.g_resweep:
+            return _m2c(a, sc)
         if a.noise:
             g = a.g
             if g is None:

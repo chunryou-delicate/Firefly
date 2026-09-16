@@ -46,8 +46,9 @@ def reference():
         return {k: z[k] for k in z.files}
 
 
-@pytest.mark.parametrize("name", list(rc.CASES))
+@pytest.mark.parametrize("name", rc.CURRENT_CASES)
 def test_current_model_regression_bit_identical(name, reference, real_graph, synth_graph):
+    """The conductance cases are replayed in tests/test_engine_adapt.py (M2c)."""
     kind, pkw, ekw, *_ = rc.CASES[name]
     if ekw.get("device", "cuda") == "cuda" and not CUDA:
         pytest.skip("CUDA required")

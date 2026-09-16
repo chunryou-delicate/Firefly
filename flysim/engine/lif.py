@@ -25,8 +25,16 @@ contacts) in a separate kernel, so the determinism basis is unchanged; the
 current model keeps its original single-accumulator kernel byte for byte
 (regression: tests/test_engine_conductance.py, data-provenance/m2-regression-spikes.npz).
 
+M2c (docs/m2c-brief.md): spike-frequency adaptation. One extra float32 state ``w``
+per neuron, decayed every step and incremented by ``params.adapt_b`` on each spike;
+the membrane update sees ``i_ext - w``. It is a per-neuron quantity with no
+cross-thread reduction, so the determinism basis (int32 atomics only) is unchanged.
+Guarded by an ``ADAPT`` constexpr that is False when ``adapt_b == 0``, so the
+default engine compiles to the pre-M2c kernel (regression: real_cond_default in
+data-provenance/m2-regression-spikes.npz).
+
 Model equations and all assumptions: flysim/engine/params.py, docs/m2-report.md,
-docs/m2b-report.md.
+docs/m2b-report.md, docs/m2c-report.md.
 """
 from __future__ import annotations
 
@@ -139,11 +147,12 @@ if _HAS_TRITON:
 
     @triton.jit
     def _lif_kernel(v_ptr, isyn_ptr, ge_ptr, gi_ptr, acc_ptr, acc_e_ptr, acc_i_ptr,
-                    iext_ptr, noise_ptr, ref_ptr, spk_ptr,
+                    iext_ptr, noise_ptr, ref_ptr, spk_ptr, w_ptr,
                     cnt_ptr, out_t_ptr, out_i_ptr, t_ptr, N, cap,
                     decay_m, decay_s, c_s, g, v_rest, v_reset, v_th, v_floor, noise_scale, ref_steps,
-                    decay_e, decay_i, avg_e, avg_i, inv_tau_m, E_e, E_i, dt,
-                    SYNAPSE: tl.constexpr, NOISE: tl.constexpr, RECORD: tl.constexpr, BLOCK: tl.constexpr):
+                    decay_e, decay_i, avg_e, avg_i, inv_tau_m, E_e, E_i, dt, decay_w, adapt_b,
+                    SYNAPSE: tl.constexpr, NOISE: tl.constexpr, RECORD: tl.constexpr,
+                    ADAPT: tl.constexpr, BLOCK: tl.constexpr):
         i = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
         m = i < N
         t = tl.load(t_ptr)
@@ -151,6 +160,12 @@ if _HAS_TRITON:
         iext = tl.load(iext_ptr + i, mask=m, other=0.0)
         if NOISE:
             iext = iext + noise_scale * tl.load(noise_ptr + i, mask=m, other=0.0)
+        if ADAPT:
+            # M2c: w decays, then occupies the external-current slot as (i_ext - w).
+            # Everything below is textually unchanged, so ADAPT = False reproduces
+            # the pre-M2c codegen exactly (params.py).
+            w = tl.load(w_ptr + i, mask=m, other=0.0) * decay_w
+            iext = iext - w
         ref = tl.load(ref_ptr + i, mask=m, other=0)
         if SYNAPSE == 0:
             # M2 current model: exponential synapse, exact one-step membrane integration (params.py)
@@ -183,6 +198,8 @@ if _HAS_TRITON:
         s = vn >= v_th
         vn = tl.where(s, v_reset, vn)
         ref = tl.where(s, ref_steps, tl.maximum(ref - 1, 0))
+        if ADAPT:
+            tl.store(w_ptr + i, tl.where(s, w + adapt_b, w), mask=m)
         tl.store(v_ptr + i, vn, mask=m)
         tl.store(ref_ptr + i, ref, mask=m)
         tl.store(spk_ptr + i, s.to(tl.int8), mask=m)
@@ -294,6 +311,7 @@ class LIFEngine:
         self.acc = torch.zeros(n, **i32)                          # current model accumulator
         self.acc_e = torch.zeros(n, **i32)                        # conductance model accumulators
         self.acc_i = torch.zeros(n, **i32)
+        self.w = torch.zeros(n, **f32)                            # M2c adaptation current
         self.ref = torch.zeros(n, **i32)
         self._s = torch.zeros(n, dtype=torch.int8, device=dev)   # spikes of the last step (0/1)
         self.i_ext = torch.zeros(n, **f32)                        # external current buffer
@@ -328,6 +346,7 @@ class LIFEngine:
         self.acc.zero_()
         self.acc_e.zero_()
         self.acc_i.zero_()
+        self.w.zero_()
         self.ref.zero_()
         self._s.zero_()
         self.i_ext.zero_()
@@ -347,7 +366,7 @@ class LIFEngine:
 
     def gpu_memory_bytes(self) -> int:
         arrays = (self.indptr, self.indices, self.weight, self.v, self.i_syn, self.g_e, self.g_i,
-                  self.acc, self.acc_e, self.acc_i, self.ref, self._s, self.i_ext, self._noise, self._t)
+                  self.acc, self.acc_e, self.acc_i, self.w, self.ref, self._s, self.i_ext, self._noise, self._t)
         return sum(a.numel() * a.element_size() for a in arrays) + self.recorder.nbytes
 
     # ---- one step ----------------------------------------------------------
@@ -394,12 +413,14 @@ class LIFEngine:
         rec = self.recorder
         _lif_kernel[(triton.cdiv(n, LIF_BLOCK),)](
             self.v, self.i_syn, self.g_e, self.g_i, self.acc, self.acc_e, self.acc_i,
-            self.i_ext, self._noise, self.ref, self._s,
+            self.i_ext, self._noise, self.ref, self._s, self.w,
             rec.counter, rec.buf_t, rec.buf_i, self._t, n, rec.cap,
             p.decay_m, p.decay_syn, p.c_syn, p.g, p.v_rest, p.v_reset, p.v_thresh,
             float("-inf") if p.v_floor is None else p.v_floor, p.noise_scale, p.ref_steps,
             p.decay_e, p.decay_i, p.avg_e, p.avg_i, p.inv_tau_m, p.E_exc, p.E_inh, p.dt,
-            SYNAPSE=1 if cond else 0, NOISE=p.noise_sigma > 0, RECORD=record, BLOCK=LIF_BLOCK)
+            p.decay_w, p.adapt_b,
+            SYNAPSE=1 if cond else 0, NOISE=p.noise_sigma > 0, RECORD=record,
+            ADAPT=p.adapt, BLOCK=LIF_BLOCK)
         self._t.add_(1)
 
     def _graph(self, record: bool) -> "torch.cuda.CUDAGraph":
@@ -408,7 +429,7 @@ class LIFEngine:
             # Warm-up + capture mutate the state; snapshot and restore so that
             # capturing is invisible to the simulation.
             state = (self.v, self.i_syn, self.g_e, self.g_i, self.acc, self.acc_e, self.acc_i,
-                     self.ref, self._s, self._t, self.recorder.counter)
+                     self.w, self.ref, self._s, self._t, self.recorder.counter)
             snap = [x.clone() for x in state]
             side = torch.cuda.Stream()
             side.wait_stream(torch.cuda.current_stream())
@@ -431,6 +452,9 @@ class LIFEngine:
         i_in = self.i_ext
         if p.noise_sigma > 0:
             i_in = i_in + p.noise_scale * self._noise
+        if p.adapt:
+            self.w.mul_(p.decay_w)              # M2c: external-current slot becomes i_ext - w
+            i_in = i_in - self.w
         if p.synapse == "conductance":
             propagate_reference_split(self._s, self.indptr, self.indices, self.weight, self.acc_e, self.acc_i)
             self.g_e.mul_(p.decay_e).add_(self.acc_e.to(torch.float32), alpha=p.g)
@@ -451,6 +475,8 @@ class LIFEngine:
         vn = torch.where(self.ref > 0, torch.full_like(vn, p.v_reset), vn)
         s = vn >= p.v_thresh
         vn = torch.where(s, torch.full_like(vn, p.v_reset), vn)
+        if p.adapt:
+            self.w.add_(s.to(self.w.dtype), alpha=p.adapt_b)
         self.ref.copy_(torch.where(s, torch.full_like(self.ref, p.ref_steps), (self.ref - 1).clamp_(min=0)))
         self.v.copy_(vn)
         self._s.copy_(s.to(torch.int8))

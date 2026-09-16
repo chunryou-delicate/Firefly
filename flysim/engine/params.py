@@ -38,6 +38,23 @@ any dt); the remaining discretisation error is the one of a piecewise-constant
 G within a step. With the start-of-step value instead, dt = 1 ms overdrives by
 ~10 % relative to dt = 0.1 ms (tau_e = 5 ms) and spike times differ by > 1 ms.
 
+M2c (docs/m2c-brief.md): spike-frequency adaptation. One extra per-neuron state w
+(an outward current, in the same units and the same place as i_ext), shared by both
+synapse models:
+
+    w <- w * exp(-dt/tau_w)                   every step, before the membrane update
+    (the external-current slot becomes i_ext - w)
+    w <- w + adapt_b                          for every neuron that spiked this step
+
+so a neuron that fires accumulates its own hyperpolarising drive, which decays with
+tau_w. tau_w = 100 ms is FIXED (ASSUMPTION; the usual range is 50-300 ms) and
+adapt_b comes from the pre-registered sweep in docs/m2c-report.md. adapt_b = 0
+(the default) disables the whole path, and the engine then runs the pre-M2c kernel
+branch byte for byte (regression: data-provenance/m2-regression-spikes.npz).
+Rationale, recorded before the sweep: both models are bistable (silent or ignited
+at 150-245 Hz) with no low-rate state, because nothing makes a neuron's own firing
+oppose itself. This adds that mechanism; it is not a parameter tuned to a result.
+
 i_ext enters as (v_rest + i_ext)/tau_m, i.e. with g_e = g_i = 0 a constant i_ext
 drives v towards v_rest + i_ext exactly as in the current model. One gain g for
 both signs (no inhibitory scale factor — no extra free parameter). Reversal
@@ -62,6 +79,19 @@ DEFAULT_G = 0.886
 # stimulus seeds 0, 1, 2 in data-provenance/m2b-sweep.json. Set once from the sweep.
 DEFAULT_G_CONDUCTANCE = 3.162e-4   # sqrt(2.637e-4 * 3.793e-4), data-provenance/m2b-sweep.json (2026-09-14)
 
+# M2c adaptation increment per spike (same units as i_ext, i.e. mV of steady-state
+# drive at R = 1). Rule fixed before the sweep (docs/m2c-brief.md): the smallest b
+# on the grid at which the noise sweep reaches the pre-registered target state.
+# Set once from data-provenance/m2c-noise-sweep.json; do not tune by hand.
+#
+# NOTE: this is NOT the dataclass default. ``EngineParams.adapt_b`` defaults to 0.0
+# (adaptation off = the pre-M2c engine, bit for bit) exactly as the brief requires,
+# so M3/M4/live call sites are unaffected until someone opts in by passing
+# ``adapt_b=DEFAULT_ADAPT_B``. Whether to adopt it is a planning decision: at this b
+# the adaptation current drives v to about -830 mV and the target state has 25-100 %
+# of neurons active. See docs/m2c-report.md §4.3 and §5 before using it.
+DEFAULT_ADAPT_B = 56.21452268581154   # data-provenance/m2c-noise-sweep.json (2026-09-16)
+
 SYNAPSE_MODELS = ("current", "conductance")
 
 
@@ -85,6 +115,10 @@ class EngineParams:
     E_inh: float = -75.0       # mV, inhibitory reversal potential (GABA-A / GluCl)
     tau_e: float = 5.0         # ms, excitatory conductance decay
     tau_i: float = 10.0        # ms, inhibitory conductance decay (slower, GABA-A)
+    # ---- M2c spike-frequency adaptation (ASSUMPTIONS; both synapse models) ----
+    adapt_b: float = 0.0       # increment of w per spike; 0 = off (pre-M2c path, bit-identical).
+                               #   The sweep-selected value is DEFAULT_ADAPT_B — opt in explicitly.
+    adapt_tau_w: float = 100.0         # ms, adaptation decay. FIXED by the brief; do not tune.
 
     def __post_init__(self) -> None:
         if self.synapse not in SYNAPSE_MODELS:
@@ -102,6 +136,10 @@ class EngineParams:
             raise ValueError("need E_inh <= v_reset and E_exc > v_thresh")
         if self.t_ref < 0 or self.noise_sigma < 0:
             raise ValueError("t_ref and noise_sigma must be >= 0")
+        if self.adapt_b < 0:
+            raise ValueError("adapt_b must be >= 0 (w is an outward/hyperpolarising current)")
+        if self.adapt_tau_w <= 0:
+            raise ValueError("adapt_tau_w must be > 0")
         if not (self.v_reset < self.v_thresh):
             raise ValueError("need v_reset < v_thresh")
         if self.v_floor is not None and self.v_floor > self.v_reset:
@@ -154,6 +192,16 @@ class EngineParams:
         return 1.0 / self.tau_m
 
     @property
+    def decay_w(self) -> float:
+        """Per-step decay of the M2c adaptation current."""
+        return math.exp(-self.dt / self.adapt_tau_w)
+
+    @property
+    def adapt(self) -> bool:
+        """Whether the adaptation path runs at all (adapt_b = 0 keeps the pre-M2c kernel)."""
+        return self.adapt_b > 0.0
+
+    @property
     def noise_scale(self) -> float:
         """Per-step current-noise std. ASSUMPTION: scaled by sqrt(1 ms / dt) so the
         stationary voltage variance driven by the noise is independent of dt."""
@@ -163,5 +211,5 @@ class EngineParams:
         d = asdict(self)
         d.update(decay_m=self.decay_m, decay_syn=self.decay_syn, c_syn=self.c_syn, ref_steps=self.ref_steps,
                  noise_scale=self.noise_scale, decay_e=self.decay_e, decay_i=self.decay_i,
-                 avg_e=self.avg_e, avg_i=self.avg_i)
+                 avg_e=self.avg_e, avg_i=self.avg_i, decay_w=self.decay_w, adapt=self.adapt)
         return d
