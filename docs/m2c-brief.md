@@ -1,6 +1,9 @@
 # M2c 구현 지시서 — 스파이크 빈도 적응 전류
 
 총괄 세션 작성 (2026-09-16). 대상: 엔진 세션(M2·M2b를 한 세션이 적합). 먼저 읽을 것: `docs/m2b-report.md`, `data-provenance/parameter-decisions.md` 전체,
+
+> **보고 대상:** 총괄 세션. 세션 이름은 재시작 때마다 바뀌므로 **이 지시를 전달한 메시지의 `from-name`**(또는 사용자가 알려준 이름)을 그대로 쓴다. 문서에 적힌 옛 이름은 무효다. 이름을 모르면 `ListAgents`로 `fruit-fly-*` 세션을 확인하고, 애매하면 사용자에게 묻는다.
+
 `flysim/engine/{params,lif}.py`, `tests/test_engine_conductance.py`, `docs/backlog.md`.
 
 의존성: 기존 그대로.
@@ -31,7 +34,7 @@ w ← w · exp(−dt/τ_w)            # 매 스텝
 - 엔진 변경, 테스트, `sweep_conductance.py` 확장(`--adapt`), 벤치 재실행(표 형식 동일, 100 μs 목표).
 - `docs/m2c-report.md`, `data-provenance/m2c-*.json`, 회귀 npz 갱신(추가 케이스만).
 - "M2c: ..." 커밋 하나. `flysim/live`, `flysim/sensory`, `flysim/probe`, `flysim/apps`, 뷰어는 건드리지 않는다.
-- 끝나면 fruit-fly-4c에 보고: 커밋, pytest, 회귀, 벤치, b 응답 스윕 표, 노이즈 스윕 표(목표 상태 존재 여부), g 재스윕 창, DEFAULT_ADAPT_B, Deviations.
+- 끝나면 총괄 세션에 보고: 커밋, pytest, 회귀, 벤치, b 응답 스윕 표, 노이즈 스윕 표(목표 상태 존재 여부), g 재스윕 창, DEFAULT_ADAPT_B, Deviations.
 
 ## 하지 말 것
 - τ_w 조정, 억제 배율 추가, 판정 기준 사후 변경, 그래프 축소, 새 의존성.

@@ -1,6 +1,9 @@
 # M5b 구현 지시서 — flysim-live 조종석 (브라우저 클라이언트)
 
 총괄 세션 작성 (2026-09-16). 대상: 새 세션. **`docs/m5-protocol.md`가 계약이다.** 먼저 읽을 것: 계약서, `flysim-viewer.html` 전체(시각 언어와 그리기 방식을 이어받는다), `CLAUDE.md` §5.5,
+
+> **보고 대상:** 총괄 세션. 세션 이름은 재시작 때마다 바뀌므로 **이 지시를 전달한 메시지의 `from-name`**(또는 사용자가 알려준 이름)을 그대로 쓴다. 문서에 적힌 옛 이름은 무효다. 이름을 모르면 `ListAgents`로 `fruit-fly-*` 세션을 확인하고, 애매하면 사용자에게 묻는다.
+
 `docs/backlog.md`("Viewer normalisation" 항목), `docs/m3-report.md`(집합 이름).
 
 의존성: 없음. **단일 HTML 파일 `flysim-live.html`**, 외부 스크립트·CSS 없음(폰트는 뷰어와 같은 Google Fonts 링크 허용). 빌드 없음.
@@ -31,5 +34,5 @@ M5a 서버가 아직 없을 수 있으므로 **내장 모의 서버 모드**(`?m
 
 ## 산출물·완료 조건
 - `flysim-live.html`, `tests/test_live_html.py`, `docs/m5b-report.md`(화면 설명, 정규화 방식, 오디오 경로, 한계).
-- "M5b: ..." 커밋 하나. 다른 파일 수정 금지(특히 `flysim-viewer.html`, `docs/m5-protocol.md`). 계약이 부족하면 fruit-fly-4c에 보고.
-- 끝나면 fruit-fly-4c에 커밋 해시, 테스트, 구현된 패널 목록, 미구현 항목을 보고.
+- "M5b: ..." 커밋 하나. 다른 파일 수정 금지(특히 `flysim-viewer.html`, `docs/m5-protocol.md`). 계약이 부족하면 총괄 세션에 보고.
+- 끝나면 총괄 세션에 커밋 해시, 테스트, 구현된 패널 목록, 미구현 항목을 보고.

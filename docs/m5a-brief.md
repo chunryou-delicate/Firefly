@@ -1,6 +1,9 @@
 # M5a 구현 지시서 — flysim-live 서버
 
 총괄 세션 작성 (2026-09-16). 대상: 새 세션. **`docs/m5-protocol.md`가 계약이다.** 먼저 읽을 것: 계약서, `CLAUDE.md`, `flysim/engine/lif.py`(run/step, i_ext 규약, recorder),
+
+> **보고 대상:** 총괄 세션. 세션 이름은 재시작 때마다 바뀌므로 **이 지시를 전달한 메시지의 `from-name`**(또는 사용자가 알려준 이름)을 그대로 쓴다. 문서에 적힌 옛 이름은 무효다. 이름을 모르면 `ListAgents`로 `fruit-fly-*` 세션을 확인하고, 애매하면 사용자에게 묻는다.
+
 `flysim/sensory/{base,jo,stimuli}.py`, `flysim/probe/{sets,probe,export}.py`, `docs/m3-report.md`.
 
 의존성: `websockets`(승인됨, 설치돼 있음) + 표준 라이브러리(`http.server`, `asyncio`, `threading`, `json`). 그 외 금지.
@@ -41,7 +44,7 @@ docs/m5a-report.md
 - [ ] 제어 로그 재생으로 동일 스파이크(결정론) 확인
 - [ ] 스냅샷이 기존 `flysim-viewer.html`에서 열림(HTML 파싱·계약 키 테스트로 대체 가능, 그렇게 적는다)
 - [ ] 벽시계 페이싱 측정치 리포트
-- "M5a: ..." 커밋 하나. `flysim/engine`, 뷰어, `docs/m5-protocol.md` 수정 금지. 계약이 부족하면 fruit-fly-4c에 보고.
+- "M5a: ..." 커밋 하나. `flysim/engine`, 뷰어, `docs/m5-protocol.md` 수정 금지. 계약이 부족하면 총괄 세션에 보고.
 
 ## 원격 접속 (코드 아님, 리포트에 한 절)
 Tailscale 등 터널로 노트북의 8080/8765에 붙는 방법을 한 단락으로 적는다. 인증은 없다(취미용, 공개망에 노출 금지 문구).
