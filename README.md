@@ -64,10 +64,25 @@ data-provenance/ 해시, 유지 규칙, 엣지 부호, 파라미터 결정 이�
 - 점화 아래 영역에서 JO 클릭 입력은 첫 홉(전류 모델) 또는 둘째 홉(전도도 모델)까지 전달되고 pC1에는 닿지 않는다. 구애노래 IPI 35 ms 근처의 피크는 어느 집합에도 없다. CLAUDE.md M4 규칙대로 이것은 정상 결과다.
 - 모델 가정(뉴런 파라미터, 부호 규칙, 역전전위, 지연 없음 등)과 그 결정 시점·이유는 전부 [parameter-decisions.md](data-provenance/parameter-decisions.md)에 있다.
 
-### 진행 중 (2026-09-16 착수)
+### flysim-live 조종석 (2026-09-16 완료)
 
-- M2c 스파이크 빈도 적응 전류 — [m2c-brief.md](docs/m2c-brief.md)
-- M5 flysim-live 조종석: 서버 [m5a-brief.md](docs/m5a-brief.md), 브라우저 [m5b-brief.md](docs/m5b-brief.md), 계약 [m5-protocol.md](docs/m5-protocol.md)
+엔진을 상주시키고 브라우저에서 실시간으로 조종·관찰한다. 계약은 [m5-protocol.md](docs/m5-protocol.md) v1.1.
+
+```bash
+uv run python -m flysim.live.server        # ws 8765 + http 8080
+# 브라우저에서 http://127.0.0.1:8080/  (원격은 터널 경유, 인증 없음 — 공개망 금지)
+```
+
+| 부분 | 커밋 | 내용 |
+|---|---|---|
+| 서버 | 8c2c2cf | 웹소켓 제어·텔레메트리, 오디오 스트리밍, 제어 로그 재생으로 결정론 보장, 정적 서빙 ([m5a-report.md](docs/m5a-report.md)) |
+| 조종석 | 11452e3, 3cf2ba2 | 단일 HTML. 자극·파라미터 조종, 실시간 뉴런 필드, 하류 2홉 추적, 좌우 차이, 스냅샷 ([m5b-report.md](docs/m5b-report.md)) |
+
+총괄 세션이 실서버로 확인: 무음은 전 영역 0.000 Hz, 35 ms 클릭 트레인은 JO_AB → JO_post(57/50 Hz) → WED(4.5 Hz)로 홉 2까지 전달, 스냅샷은 뷰어 계약을 만족한다. speed 1이 dt 1.0 ms·0.1 ms 모두 유지된다.
+
+### 적응 전류 (2026-09-16, 기록만 하고 미채택)
+
+[m2c-report.md](docs/m2c-report.md), 커밋 c5d7178. 낮은 발화율 상태가 생기긴 하지만 세 가지 이유로 채택하지 않았다 — 막전위가 −834 mV까지 내려가고(M2b가 없앤 것과 같은 종류의 인공물), 그 상태에서 뉴런의 96~100 %가 발화 중이며(CLAUDE.md §3.3의 실패 기준), 선택된 b와 기존 g가 함께 쓸 수 없는 쌍이다. `adapt_b`는 0으로 남아 있어 기존 결과는 그대로다. 사유는 [parameter-decisions.md](data-provenance/parameter-decisions.md)에.
 
 ### 다음 후보
 - 다리 기계수용 구심신경 어댑터(바닥 진동), 중앙복합체 EPG 방향 추정, 버섯체 KC→MBON 가소성 — [CLAUDE.md §6](CLAUDE.md) M5 이후
