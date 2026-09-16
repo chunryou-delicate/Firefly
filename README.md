@@ -64,9 +64,12 @@ data-provenance/ 해시, 유지 규칙, 엣지 부호, 파라미터 결정 이�
 - 점화 아래 영역에서 JO 클릭 입력은 첫 홉(전류 모델) 또는 둘째 홉(전도도 모델)까지 전달되고 pC1에는 닿지 않는다. 구애노래 IPI 35 ms 근처의 피크는 어느 집합에도 없다. CLAUDE.md M4 규칙대로 이것은 정상 결과다.
 - 모델 가정(뉴런 파라미터, 부호 규칙, 역전전위, 지연 없음 등)과 그 결정 시점·이유는 전부 [parameter-decisions.md](data-provenance/parameter-decisions.md)에 있다.
 
-### 다음 후보
+### 진행 중 (2026-09-16 착수)
 
-- 스파이크 빈도 적응 전류 또는 단기 시냅스 억압으로 포화 억제 (M2c, 결정 대기)
+- M2c 스파이크 빈도 적응 전류 — [m2c-brief.md](docs/m2c-brief.md)
+- M5 flysim-live 조종석: 서버 [m5a-brief.md](docs/m5a-brief.md), 브라우저 [m5b-brief.md](docs/m5b-brief.md), 계약 [m5-protocol.md](docs/m5-protocol.md)
+
+### 다음 후보
 - 다리 기계수용 구심신경 어댑터(바닥 진동), 중앙복합체 EPG 방향 추정, 버섯체 KC→MBON 가소성 — [CLAUDE.md §6](CLAUDE.md) M5 이후
 
 ## 작업 방식

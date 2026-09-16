@@ -111,3 +111,11 @@ runs propagation now reaches hop 2 (SAD ≈ 1–2, WED ≈ 3–4 spikes/pulse in
 but pC1 stays 0; pC1 > 0 appears only inside ignited runs. No 35 ms peak anywhere.
 Phase A and B are recorded side by side in `docs/m4b-report.md`. Nothing was tuned.
 Next mechanism (adaptation / short-term depression / inhibitory scaling) awaits the user.
+
+## 2026-09-16 — approved: M2c (adaptation current) and M5 flysim-live cockpit
+
+User approved both. M2c adds a per-neuron spike-frequency adaptation current (τ_w = 100 ms fixed,
+b chosen by pre-registered sweep, default 0 keeps bit-identical regression). M5 adds a live
+server (M5a) and browser cockpit (M5b) under the contract `docs/m5-protocol.md`; every control
+action is logged and snapshots use the existing run.json contract, so exploration never
+replaces reproducible runs. New dependency: `websockets` (approved).
