@@ -1,0 +1,1975 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flysim-live — 조종석</title>
+
+<!--
+════════════════════════════════════════════════════════════════════
+  flysim-live 조종석 (M5b)
+
+  이 파일은 실시간 조종석이다. 결과 재생기(flysim-viewer.html)와는 별개이며
+  서로를 대체하지 않는다.
+    · 재생기 : 끝난 런의 run.json을 열어 되감기·재생한다. 결과 제출용.
+    · 조종석 : 살아 있는 엔진에 웹소켓으로 붙어 자극과 파라미터를 만진다. 탐색용.
+
+  프로토콜 계약은 docs/m5-protocol.md에 있다. 이 파일은 계약을 구현만 하고
+  바꾸지 않는다. 계약에 없는 메시지는 보내지 않는다.
+
+  서버 → 조종석 : hello, frame, ack, hops, snapshot_done, warning, error
+  조종석 → 서버 : set_params, stimulus, audio_start, audio_stop, inject,
+                  pause, resume, step, reset, get_hops, snapshot, set_frame_every
+  오디오        : 같은 웹소켓의 바이너리 프레임 = float32 LE 모노 PCM
+
+  ?mock=1 을 붙이면 서버 없이 브라우저 안의 모의 서버에 붙는다.
+  모의 모드의 뉴런 좌표와 발화율은 전부 합성이다. 과학적 의미가 없고,
+  화면 상단에 그 사실을 계속 띄운다.
+
+  정규화에 관하여 (docs/backlog.md "Viewer normalisation")
+    서버는 정규화하지 않은 Hz를 보낸다. 정규화는 전부 이쪽에서 한다.
+    JO 집합이 동기 발화하는 빈 하나가 전역 최대값을 차지해 나머지 영역이
+    전부 검게 보이는 문제가 있었으므로, 히트맵 기본값은 "영역별 최대"다.
+    전역 최대 / 로그 / 고정 상한도 고를 수 있고, 어느 쪽이든 각 행의 실제
+    최대 Hz를 행 끝에 숫자로 적어 절대 크기를 숨기지 않는다.
+════════════════════════════════════════════════════════════════════
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* 시각 언어는 flysim-viewer.html에서 이어받는다: 같은 색 토큰, 같은 폰트,
+   차가운 색 = 집어넣은 것, 따뜻한 색 = 나온 것. */
+:root{
+  --ground:#10161D;
+  --panel:#161E27;
+  --panel-2:#1B242F;
+  --rule:#243040;
+  --rule-soft:#1C2632;
+  --ink:#C9D3DD;
+  --ink-dim:#6D7C8C;
+  --ink-faint:#4A5766;
+
+  --stimulus:#3FBFCF;
+  --idle:#3A4756;
+  --warm-lo:#B0762E;
+  --warm-hi:#E8A13A;
+  --hot:#E5484D;
+
+  --alert:#E5484D;
+  --pending:#C8922F;
+  --ok:#4FA97B;
+
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.45;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+#app{
+  height:100%;
+  overflow:hidden;              /* 스크롤 패널이 아래 창 위로 새는 것을 막는다 */
+  display:grid;
+  grid-template-columns:302px minmax(0,1fr) 258px;
+  grid-template-rows:auto minmax(0,1fr) 208px auto;
+  grid-template-areas:
+    "head head  head"
+    "left field right"
+    "heat heat  heat"
+    "foot foot  foot";
+}
+
+/* ── 상단 바 ──────────────────────────────────────────── */
+header{
+  grid-area:head;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:9px 16px;
+  border-bottom:1px solid var(--rule);
+  background:var(--panel);
+  flex-wrap:wrap;
+}
+.mark{font-weight:600;letter-spacing:-0.01em;white-space:nowrap}
+.mark small{color:var(--ink-faint);font-weight:400;font-size:11px;margin-left:5px}
+.spacer{flex:1}
+
+.badge{
+  font-size:11px;
+  font-family:var(--mono);
+  padding:3px 8px;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  color:var(--ink-dim);
+  white-space:nowrap;
+}
+.badge.synthetic{color:var(--alert);border-color:color-mix(in srgb,var(--alert) 45%,transparent)}
+.badge b{color:var(--ink);font-weight:500}
+
+.conn{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--ink-dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);flex:none}
+.dot.live{background:var(--ok)}
+.dot.paused{background:var(--pending)}
+.dot.lagging{background:var(--warm-hi)}
+.dot.down{background:var(--alert)}
+
+button{
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  background:transparent;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:5px 11px;
+  cursor:pointer;
+}
+button:hover:not(:disabled){border-color:var(--ink-faint);background:var(--panel-2)}
+button:focus-visible{outline:2px solid var(--stimulus);outline-offset:1px}
+button:disabled{opacity:.42;cursor:not-allowed}
+button.on{border-color:var(--stimulus);color:var(--stimulus)}
+button.primary{border-color:color-mix(in srgb,var(--stimulus) 55%,transparent)}
+
+/* ── 사이드 패널 ──────────────────────────────────────── */
+aside{
+  background:var(--panel);
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:12px 14px 20px;
+}
+#leftPane{grid-area:left;border-right:1px solid var(--rule)}
+#rightPane{grid-area:right;border-left:1px solid var(--rule)}
+
+.group{margin-bottom:20px}
+.group > h2{
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--ink-faint);
+  font-weight:500;
+  margin-bottom:9px;
+  padding-bottom:5px;
+  border-bottom:1px solid var(--rule-soft);
+}
+.note{font-size:11px;color:var(--ink-faint);line-height:1.5;margin-top:7px}
+.note.caution{color:var(--pending)}
+
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{flex:1 1 auto;padding:5px 6px;font-size:12px;min-width:56px}
+
+.ctl{margin:11px 0}
+.ctl-head{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:8px;
+  font-size:12px;
+  margin-bottom:3px;
+}
+.ctl-head label{color:var(--ink-dim)}
+.ctl-head .val{
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+.ctl-head .val.dirty{color:var(--pending)}
+.ctl-head .val.dirty::after{content:" ⟳";font-size:10px}
+input[type=range]{
+  width:100%;
+  accent-color:var(--stimulus);
+  height:3px;
+  cursor:pointer;
+  display:block;
+}
+input[type=range]:disabled{accent-color:var(--ink-faint);cursor:not-allowed;opacity:.45}
+input[type=text],input[type=number]{
+  width:100%;
+  font-family:var(--mono);
+  font-size:12px;
+  color:var(--ink);
+  background:var(--ground);
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:4px 7px;
+}
+input:focus-visible{outline:1px solid var(--stimulus);outline-offset:0}
+.row{display:flex;gap:7px;align-items:flex-end}
+.row > *{flex:1}
+.row > button{flex:none}
+
+/* 입력 레벨 미터 */
+.meter{
+  height:7px;
+  background:var(--ground);
+  border:1px solid var(--rule);
+  border-radius:2px;
+  overflow:hidden;
+  margin-top:6px;
+}
+.meter i{
+  display:block;
+  height:100%;
+  width:0%;
+  background:var(--stimulus);
+  transition:width .05s linear;
+}
+
+/* ── 뉴런 필드 ────────────────────────────────────────── */
+#fieldPane{
+  grid-area:field;
+  position:relative;
+  background:#0C1218;
+  min-width:0;
+  min-height:0;
+}
+#fieldPane canvas{display:block;width:100%;height:100%;cursor:crosshair}
+.pane-label{
+  position:absolute;
+  top:7px;left:12px;
+  font-size:11px;
+  color:var(--ink-faint);
+  pointer-events:none;
+  z-index:2;
+}
+.field-readout{
+  position:absolute;
+  right:14px;top:10px;
+  text-align:right;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-faint);
+  line-height:1.7;
+  pointer-events:none;
+  z-index:2;
+}
+.field-readout b{
+  display:block;
+  font-size:22px;
+  font-weight:500;
+  color:var(--warm-hi);
+  font-variant-numeric:tabular-nums;
+}
+/* 뉴런 필드 위에만 쓰는 절대 배치 오버레이. 패널 안 경고 문구는 .note.caution. */
+.warn{
+  position:absolute;
+  left:12px;bottom:10px;right:12px;
+  font-size:12px;
+  color:var(--alert);
+  font-family:var(--mono);
+  line-height:1.6;
+  pointer-events:none;
+  z-index:2;
+}
+.field-hint{
+  position:absolute;
+  left:12px;top:26px;
+  font-size:11px;
+  color:var(--ink-faint);
+  font-family:var(--mono);
+  pointer-events:none;
+  z-index:2;
+}
+#disconnected{
+  position:absolute;inset:0;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  flex-direction:column;
+  gap:8px;
+  background:color-mix(in srgb,var(--ground) 72%,transparent);
+  color:var(--alert);
+  font-family:var(--mono);
+  font-size:14px;
+  z-index:5;
+  text-align:center;
+  padding:16px;
+}
+body.disconnected #disconnected{display:flex}
+#disconnected small{color:var(--ink-dim);font-size:11px}
+
+/* ── 히트맵 ───────────────────────────────────────────── */
+#heatPane{
+  grid-area:heat;
+  background:var(--panel);
+  border-top:1px solid var(--rule);
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+#heatPane canvas{display:block;width:100%;flex:1;min-height:0}
+.heat-bar{
+  flex:none;
+  display:flex;
+  gap:5px;
+  align-items:center;
+  padding:3px 10px 3px 12px;
+  border-bottom:1px solid var(--rule-soft);
+}
+.heat-bar .title{font-size:11px;color:var(--ink-faint);margin-right:auto}
+.heat-bar button{padding:2px 7px;font-size:11px}
+.heat-bar input[type=number]{width:62px;padding:2px 5px}
+.heat-bar span{font-size:11px;color:var(--ink-faint);font-family:var(--mono)}
+
+/* ── 좌우 창 ──────────────────────────────────────────── */
+.lr-row{margin:7px 0}
+.lr-name{
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-dim);
+  display:flex;
+  justify-content:space-between;
+  gap:6px;
+}
+.lr-name b{color:var(--ink);font-weight:500;font-variant-numeric:tabular-nums}
+.lr-bar{
+  position:relative;
+  height:9px;
+  background:var(--ground);
+  border:1px solid var(--rule-soft);
+  border-radius:2px;
+  margin-top:2px;
+  overflow:hidden;
+}
+.lr-bar .mid{position:absolute;left:50%;top:0;bottom:0;width:1px;background:var(--rule)}
+.lr-bar i{position:absolute;top:0;bottom:0;background:var(--idle)}
+
+/* ── 하단 상태줄 ──────────────────────────────────────── */
+footer{
+  grid-area:foot;
+  display:flex;
+  gap:18px;
+  align-items:center;
+  padding:6px 16px;
+  font-family:var(--mono);
+  font-size:11px;
+  color:var(--ink-faint);
+  background:var(--ground);
+  border-top:1px solid var(--rule-soft);
+  flex-wrap:wrap;
+}
+footer span b{color:var(--ink-dim);font-weight:400}
+#logLine{color:var(--ink-dim);flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ── 좁은 화면: 한 줄로 쌓고 패널은 접는다 ────────────── */
+.fold > h2{cursor:pointer;user-select:none}
+.fold > h2::after{content:" −";color:var(--ink-faint)}
+.fold.closed > h2::after{content:" +"}
+.fold.closed > .fold-body{display:none}
+
+@media (max-width:900px){
+  body{overflow-y:auto}
+  #app{
+    height:auto;
+    min-height:100%;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto auto auto auto;
+    grid-template-areas:"head" "field" "heat" "left" "right" "foot";
+  }
+  #fieldPane{height:56vh;min-height:280px}
+  #heatPane{height:190px}
+  #leftPane,#rightPane{border:0;border-top:1px solid var(--rule)}
+  aside{overflow:visible}              /* 좁은 화면에서는 패널이 세로로 늘어난다 */
+}
+@media (max-width:420px){
+  header{gap:8px;padding:8px 10px}
+  aside{padding:10px 10px 16px}
+  footer{gap:10px;padding:6px 10px}
+  .heat-bar{flex-wrap:wrap;gap:4px}
+  .heat-bar .title{flex:1 0 100%;margin:0 0 2px}
+  #heatPane{height:auto;padding-bottom:6px}
+  #heatPane canvas{flex:none;height:170px}
+  .seg button{min-width:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <span class="mark">flysim-live<small>조종석</small></span>
+    <span class="conn"><i class="dot down" id="connDot"></i><span id="connText">연결 대기</span></span>
+    <span class="badge synthetic" id="mockBadge" hidden>모의 서버 — 합성 데이터, 과학적 의미 없음</span>
+    <span class="spacer"></span>
+    <span class="badge" id="modeBadge">감각 모드 —</span>
+    <span class="badge" id="dtBadge">dt —</span>
+    <span class="badge" id="speedBadge">speed —</span>
+    <span class="badge" id="versionBadge">params v—</span>
+    <button id="pauseBtn" title="정지/재개">❚❚</button>
+    <button id="stepBtn" title="한 번에 n스텝 진행">▸ step</button>
+    <button id="resetBtn" title="상태 초기화 (파라미터 유지)">reset</button>
+  </header>
+
+  <!-- ── 왼쪽: 자극 + 파라미터 ───────────────────────── -->
+  <aside id="leftPane">
+
+    <section class="group fold" id="stimGroup">
+      <h2>자극</h2>
+      <div class="fold-body">
+        <div class="seg" id="stimKind">
+          <button data-kind="silence" class="on">무음</button>
+          <button data-kind="click_train">클릭 트레인</button>
+          <button data-kind="tone">순음</button>
+          <button data-kind="audio">오디오</button>
+        </div>
+
+        <div class="ctl" data-for="click_train tone">
+          <div class="ctl-head"><label for="ipi">IPI</label><span class="val" id="ipiVal">35 ms</span></div>
+          <input type="range" id="ipi" min="10" max="100" step="1" value="35">
+        </div>
+        <div class="ctl" data-for="click_train tone">
+          <div class="ctl-head"><label for="carrier">반송주파수</label><span class="val" id="carrierVal">200 Hz</span></div>
+          <input type="range" id="carrier" min="50" max="1000" step="10" value="200">
+        </div>
+        <div class="ctl" data-for="click_train tone">
+          <div class="ctl-head"><label for="pulse">펄스 길이</label><span class="val" id="pulseVal">10 ms</span></div>
+          <input type="range" id="pulse" min="1" max="50" step="1" value="10">
+        </div>
+        <div class="ctl" data-for="click_train tone audio">
+          <div class="ctl-head"><label for="ild">ILD (좌−우)</label><span class="val" id="ildVal">0.0 dB</span></div>
+          <input type="range" id="ild" min="-20" max="20" step="0.5" value="0">
+        </div>
+        <div class="ctl" data-for="click_train tone">
+          <div class="ctl-head"><label for="dur">지속</label><span class="val" id="durVal">계속</span></div>
+          <input type="range" id="dur" min="0" max="5000" step="50" value="0">
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <button class="primary" id="stimApply">자극 적용</button>
+          <button id="stimSilence">무음으로</button>
+        </div>
+        <p class="note">대역은 어댑터 고정값 100–400 Hz다. 여기 값은 자극 생성기에만 들어간다.</p>
+      </div>
+    </section>
+
+    <section class="group fold" id="audioGroup">
+      <h2>오디오 입력</h2>
+      <div class="fold-body">
+        <div class="row">
+          <button id="micBtn">마이크</button>
+          <button id="fileBtn">파일</button>
+          <button id="audioStopBtn" disabled>정지</button>
+        </div>
+        <input type="file" id="audioFile" accept="audio/*" hidden>
+        <div class="meter" title="입력 레벨 (RMS)"><i id="levelBar"></i></div>
+        <p class="note" id="audioNote">보내지 않음. float32 모노 PCM 20 ms 청크를 바이너리 프레임으로 올린다.</p>
+        <p class="note">보낸 RMS <span id="audioRms">0.000</span> · 위 미터는 서버가 돌려준 input_level이다.</p>
+      </div>
+    </section>
+
+    <section class="group fold" id="paramGroup">
+      <h2>파라미터</h2>
+      <div class="fold-body">
+        <div class="seg" id="synapseSeg">
+          <button data-synapse="current">current</button>
+          <button data-synapse="conductance" class="on">conductance</button>
+        </div>
+        <div class="seg" id="modeSeg" style="margin-top:5px">
+          <button data-mode="rate" class="on">rate</button>
+          <button data-mode="phase-lock">phase-lock</button>
+        </div>
+
+        <div class="ctl">
+          <div class="ctl-head"><label for="g">g (시냅스 이득, 로그)</label><span class="val" id="gVal">—</span></div>
+          <input type="range" id="g" min="0" max="1000" step="1" value="500">
+          <p class="note" id="gHint">기준값: conductance 3.162e-4, current 0.336(M3/M4 동작점).</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="ain">a_in (입력 이득, 로그)</label><span class="val" id="ainVal">—</span></div>
+          <input type="range" id="ain" min="0" max="1000" step="1" value="500">
+          <p class="note">M3 통과 이득: rate 320–640, phase-lock 2560.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="noise">noise_sigma</label><span class="val" id="noiseVal">—</span></div>
+          <input type="range" id="noise" min="0" max="60" step="0.5" value="0">
+          <p class="note">σ≥22에서 점화한다(전류·전도도 모두). 기본 0.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="adaptB">adapt_b (M2c)</label><span class="val" id="adaptBVal">—</span></div>
+          <input type="range" id="adaptB" min="0" max="5" step="0.05" value="0">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="adaptTau">adapt_tau_w (M2c)</label><span class="val" id="adaptTauVal">—</span></div>
+          <input type="range" id="adaptTau" min="10" max="500" step="5" value="100">
+          <p class="note" id="adaptNote">M2c 전에는 서버가 거절한다. 거절되면 잠긴다.</p>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="speed">speed (벽시계 배속)</label><span class="val" id="speedVal">—</span></div>
+          <input type="range" id="speed" min="0" max="1000" step="1" value="500">
+        </div>
+        <div class="seg" id="dtSeg">
+          <button data-dt="1">dt 1.0 ms</button>
+          <button data-dt="0.1">dt 0.1 ms</button>
+        </div>
+        <p class="note caution">dt·synapse를 바꾸면 엔진이 새로 만들어지고 상태가 초기화된다.</p>
+        <p class="note">모든 조작은 서버의 control-log.jsonl에 기록된다. 조종석은 탐색용이고 재현은 그 로그로 한다.</p>
+      </div>
+    </section>
+
+    <section class="group fold" id="injectGroup">
+      <h2>전류 주입</h2>
+      <div class="fold-body">
+        <div class="ctl">
+          <div class="ctl-head"><label for="injAmp">진폭</label><span class="val" id="injAmpVal">30</span></div>
+          <input type="range" id="injAmp" min="0" max="300" step="1" value="30">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="injDur">지속</label><span class="val" id="injDurVal">50 ms</span></div>
+          <input type="range" id="injDur" min="1" max="500" step="1" value="50">
+        </div>
+        <div class="row">
+          <select id="injSet" style="flex:1;font-family:var(--mono);font-size:12px;color:var(--ink);background:var(--ground);border:1px solid var(--rule);border-radius:2px;padding:4px 6px">
+            <option value="">— 집합 선택 —</option>
+          </select>
+          <button id="injSetBtn" disabled>주입</button>
+        </div>
+        <p class="note">필드에서 Shift+클릭하면 그 뉴런 하나에 같은 값으로 주입한다.</p>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ── 가운데: 뉴런 필드 ───────────────────────────── -->
+  <section id="fieldPane">
+    <span class="pane-label">뉴런 활동</span>
+    <span class="field-hint" id="fieldHint">클릭 = 하류 2홉 · Shift+클릭 = 전류 주입</span>
+    <canvas id="fieldCanvas"></canvas>
+    <div class="field-readout">
+      <b id="activeCount">0</b>
+      최근 100 ms 발화
+    </div>
+    <div class="warn" id="warnMsg"></div>
+    <div id="disconnected">
+      disconnected
+      <small id="discDetail">2초마다 다시 붙는다. 마지막 프레임을 그대로 두었다.</small>
+    </div>
+  </section>
+
+  <!-- ── 오른쪽: 좌우 창 + 홉 + 스냅샷 ───────────────── -->
+  <aside id="rightPane">
+    <section class="group fold" id="lrGroup">
+      <h2>좌우 차이 (L − R)</h2>
+      <div class="fold-body">
+        <div id="lrList"></div>
+        <p class="note">Hz/뉴런. 따뜻한 색 = 왼쪽이 높음, 차가운 색 = 오른쪽이 높음, 회색 = 0.</p>
+      </div>
+    </section>
+
+    <section class="group fold" id="hopsGroup">
+      <h2>하류 홉</h2>
+      <div class="fold-body">
+        <div class="row">
+          <button id="hopsToggle" class="on">강조 켬</button>
+          <button id="hopsClear">지움</button>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="hopsMin">min_contacts</label><span class="val" id="hopsMinVal">5</span></div>
+          <input type="range" id="hopsMin" min="1" max="50" step="1" value="5">
+        </div>
+        <p class="note" id="hopsInfo">필드에서 뉴런을 클릭하면 k=2 하류 층을 받아 강조한다.</p>
+      </div>
+    </section>
+
+    <section class="group fold" id="snapGroup">
+      <h2>스냅샷</h2>
+      <div class="fold-body">
+        <div class="ctl">
+          <div class="ctl-head"><label for="snapId">run_id</label></div>
+          <input type="text" id="snapId" value="live-000" spellcheck="false">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="snapSec">길이</label><span class="val" id="snapSecVal">5.0 s</span></div>
+          <input type="range" id="snapSec" min="0.5" max="10" step="0.5" value="5">
+        </div>
+        <button id="snapBtn" style="width:100%">최근 구간 저장</button>
+        <p class="note" id="snapInfo">재생기로 열어 보는 탐색 기록이다. <b>결과 제출용이 아니다</b> — 제출하는 런은 스크립트로 재현한다.</p>
+      </div>
+    </section>
+
+    <section class="group fold" id="frameGroup">
+      <h2>표시</h2>
+      <div class="fold-body">
+        <div class="ctl">
+          <div class="ctl-head"><label for="frameEvery">frame_every (묶음)</label><span class="val" id="frameEveryVal">1</span></div>
+          <input type="range" id="frameEvery" min="1" max="50" step="1" value="1">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="glow">잔광</label><span class="val" id="glowVal">0.80</span></div>
+          <input type="range" id="glow" min="0" max="97" step="1" value="80">
+        </div>
+        <p class="note" id="rateInfo">—</p>
+      </div>
+    </section>
+  </aside>
+
+  <!-- ── 하단: 영역 히트맵 ───────────────────────────── -->
+  <section id="heatPane">
+    <div class="heat-bar">
+      <span class="title">영역별 발화율 · 최근 <span id="histSec">5</span> s · 행 끝 숫자는 그 행의 실제 최대 Hz</span>
+      <span>정규화</span>
+      <button data-norm="region" class="on">영역별</button>
+      <button data-norm="global">전역</button>
+      <button data-norm="log">로그</button>
+      <button data-norm="fixed">고정</button>
+      <input type="number" id="normCap" min="0.01" step="1" value="50" title="고정 상한 Hz" disabled>
+      <span>Hz</span>
+    </div>
+    <canvas id="heatCanvas"></canvas>
+  </section>
+
+  <footer>
+    <span id="hostLine">—</span>
+    <span id="engineLine">—</span>
+    <span id="binLine">—</span>
+    <span id="fpsLine">—</span>
+    <span id="logLine">모든 제어는 서버에 기록된다</span>
+  </footer>
+
+</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════
+//  계약 (docs/m5-protocol.md) — 여기 없는 메시지는 쓰지 않는다
+// ═══════════════════════════════════════════════════════
+const SERVER_MESSAGE_TYPES = [
+  "hello", "frame", "ack", "hops", "snapshot_done", "warning", "error",
+];
+const CLIENT_MESSAGE_TYPES = [
+  "set_params", "stimulus", "audio_start", "audio_stop", "inject",
+  "pause", "resume", "step", "reset", "get_hops", "snapshot", "set_frame_every",
+];
+const PARAM_KEYS = [
+  "synapse", "g", "a_in", "noise_sigma", "adapt_b", "adapt_tau_w",
+  "dt_ms", "speed", "mode",
+];
+const WARNING_CODES = ["ignited", "all_silent", "runaway", "recorder_overflow"];
+
+// 경고 문구는 재생기(flysim-viewer.html)의 것을 그대로 잇는다.
+const WARNING_TEXT = {
+  all_silent:        "발화 뉴런 없음 — 입력이 닿지 않았거나 임계값이 너무 높다",
+  runaway:           "전체의 90% 이상 발화 — 활동 폭주, 억제 부호를 확인할 것",
+  ignited:           "점화 — 입력이 없는데 자기유지 활동이 이어진다. 결과로 제출하지 말 것",
+  recorder_overflow: "기록기 오버플로 — 스파이크가 버퍼를 넘쳤다. 이 구간은 불완전하다",
+};
+
+const HIST_SECONDS = 5;
+const AUDIO_CHUNK_MS = 20;
+const RECONNECT_MS = 2000;
+
+const el = id => document.getElementById(id);
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+
+// ═══════════════════════════════════════════════════════
+//  상태
+// ═══════════════════════════════════════════════════════
+const S = {
+  sock: null,
+  mock: false,
+  url: "",
+  connected: false,
+  reqId: 1,
+  pending: new Map(),        // req_id -> {type, payload, t}
+
+  hello: null,
+  regions: [],
+  setSizes: {},
+  setMembers: {},
+  params: {},                // 서버가 확인해 준 값만 들어간다 (낙관적 갱신 금지)
+  dirty: new Set(),          // ack 대기 중인 파라미터 키
+  paramsVersion: -1,
+  versionWarned: false,
+
+  neurons: null,             // {x, y, region} — neurons_url 또는 모의 데이터
+  nNeurons: 0,
+  binMs: 1,
+
+  lastFrame: null,
+  lastT: null,               // 직전 프레임의 t_ms — 묶음 크기를 여기서 유도한다
+  status: "—",
+  pendingSpikes: [],         // 렌더 사이에 도착한 스파이크
+  activation: null,
+  hopLayer: null,            // Uint8Array: 0 없음, 1 = 1홉, 2 = 2홉
+  hopSrc: -1,
+  hopsOn: true,
+
+  hist: null,                // Float32Array[region] 링버퍼 (원시 Hz)
+  histCols: 0,
+  histPos: 0,
+  histCount: 0,
+  norm: "region",
+  normCap: 50,
+
+  warnings: new Map(),
+  frameCount: 0,
+  lastFpsAt: 0,
+  framesSinceFps: 0,
+  binsSinceFps: 0,
+  audio: null,
+  glow: 0.80,
+};
+
+// ═══════════════════════════════════════════════════════
+//  전송 — 웹소켓 또는 모의 서버
+// ═══════════════════════════════════════════════════════
+function wsUrl(){
+  const q = new URLSearchParams(location.search);
+  if(q.get("ws")) return q.get("ws");
+  const host = q.get("host") || location.hostname || "localhost";
+  const port = q.get("wsport") || "8765";
+  return `ws://${host}:${port}/ws`;
+}
+
+function connect(){
+  const q = new URLSearchParams(location.search);
+  S.mock = q.get("mock") === "1";
+  S.url = S.mock ? "mock://내장 모의 서버" : wsUrl();
+  el("mockBadge").hidden = !S.mock;
+  el("hostLine").textContent = S.url;
+
+  setConnected(false, S.mock ? "모의 서버 시작" : "접속 중…");
+
+  const sock = S.mock ? new MockServer() : new WebSocket(S.url);
+  sock.binaryType = "arraybuffer";
+  S.sock = sock;
+
+  sock.onopen = () => {
+    setConnected(true, "연결됨");
+    log(S.mock ? "모의 서버에 붙었다" : "서버에 붙었다");
+  };
+  sock.onmessage = ev => {
+    if(typeof ev.data !== "string") return;   // 서버는 바이너리를 보내지 않는다
+    let msg;
+    try{ msg = JSON.parse(ev.data); }
+    catch(err){ log("JSON 파싱 실패: " + err.message); return; }
+    dispatch(msg);
+  };
+  sock.onclose = () => {
+    setConnected(false, "끊김 — " + (RECONNECT_MS / 1000) + "초 후 재시도");
+    S.sock = null;
+    setTimeout(connect, RECONNECT_MS);
+  };
+  sock.onerror = () => { /* onclose가 재접속을 맡는다 */ };
+}
+
+function setConnected(v, text){
+  S.connected = v;
+  document.body.classList.toggle("disconnected", !v);
+  el("connText").textContent = text;
+  const dot = el("connDot");
+  dot.className = "dot " + (!v ? "down"
+    : S.status === "paused" ? "paused"
+    : S.status === "lagging" ? "lagging" : "live");
+  if(!v){ el("discDetail").textContent = text; }
+}
+
+// 조종석 → 서버. 모든 메시지에 req_id가 붙는다.
+function send(type, fields){
+  if(!CLIENT_MESSAGE_TYPES.includes(type)) throw new Error("계약에 없는 메시지: " + type);
+  if(!S.sock || !S.connected){ log("연결 없음 — " + type + " 보류"); return -1; }
+  const req_id = S.reqId++;
+  const msg = Object.assign({type, req_id}, fields || {});
+  S.pending.set(req_id, {type, payload: msg, t: performance.now()});
+  S.sock.send(JSON.stringify(msg));
+  log("→ " + type + (fields && fields.params ? " " + Object.keys(fields.params).join(",") : ""));
+  return req_id;
+}
+
+function sendBinary(buf){
+  if(!S.sock || !S.connected) return;
+  S.sock.send(buf);
+}
+
+// ═══════════════════════════════════════════════════════
+//  서버 → 조종석 디스패치
+// ═══════════════════════════════════════════════════════
+function dispatch(msg){
+  const h = SERVER_HANDLERS[msg.type];
+  if(!h){ log("모르는 메시지 type: " + msg.type); return; }
+  h(msg);
+}
+
+function onHello(msg){
+  S.hello = msg;
+  S.regions = msg.regions || [];
+  S.setSizes = msg.set_sizes || {};
+  S.setMembers = msg.sets || {};
+  S.nNeurons = msg.n_neurons || 0;
+  S.binMs = msg.bin_ms || 1;
+  S.params = Object.assign({}, msg.params || {});
+  S.paramsVersion = msg.params_version ?? 0;
+  S.dirty.clear();
+
+  el("engineLine").textContent =
+    "engine " + (msg.engine?.synapse ?? "?") + " · " + (msg.engine?.git_commit ?? "commit?").slice(0, 7);
+  el("binLine").textContent = "bin " + S.binMs + " ms · " + S.nNeurons.toLocaleString() + " 뉴런";
+  el("histSec").textContent = HIST_SECONDS;
+
+  S.lastT = null;
+  initHistory();
+  buildLrRows();
+  buildInjectSets();
+  syncParamUI();
+  log("hello — 영역 " + S.regions.length + "개, 집합 " + Object.keys(S.setSizes).length + "개");
+
+  loadNeurons(msg);
+}
+
+function onFrame(msg){
+  // frame_every > 1이면 한 메시지가 여러 빈을 묶는다. 계약의 frame에는 묶음 크기
+  // 필드가 없으므로 t_ms 차이에서 유도한다(첫 프레임과 reset 뒤에는 1로 본다).
+  const dt = (S.lastT == null) ? S.binMs : (msg.t_ms - S.lastT);
+  const nBins = clamp(Math.round(dt / S.binMs) || 1, 1, 500);
+  S.lastT = msg.t_ms;
+  S.lastFrame = msg;
+  S.frameCount++;
+  S.framesSinceFps++;
+  S.binsSinceFps += nBins;
+
+  if(msg.status && msg.status !== S.status){
+    S.status = msg.status;
+    setConnected(S.connected, "연결됨 · " + msg.status);
+    el("pauseBtn").textContent = msg.status === "paused" ? "▶" : "❚❚";
+  }
+  if(typeof msg.params_version === "number" && msg.params_version !== S.paramsVersion){
+    // 다른 클라이언트가 바꿨을 수 있다. 계약상 frame은 값을 싣지 않으므로
+    // 조종석은 버전 불일치를 표시만 하고 슬라이더를 추측해 옮기지 않는다.
+    if(S.dirty.size === 0 && !S.versionWarned){
+      S.versionWarned = true;
+      log("params_version " + S.paramsVersion + " → " + msg.params_version + " (이 조종석이 보낸 변경이 아님)");
+    }
+    S.paramsVersion = msg.params_version;
+    el("versionBadge").textContent = "params v" + S.paramsVersion + (S.versionWarned ? "*" : "");
+  }
+  el("speedBadge").textContent = "speed " + (msg.speed ?? S.params.speed ?? "—");
+
+  // 히트맵의 시간축이 실제 5초가 되도록 묶인 빈 수만큼 채운다
+  pushHistory(msg.rates || [], nBins);
+  const idx = msg.spikes?.idx;
+  if(idx && idx.length) S.pendingSpikes.push(idx);
+
+  el("activeCount").textContent =
+    Math.round((msg.active_frac_100ms || 0) * S.nNeurons).toLocaleString();
+  el("levelBar").style.width = ((msg.input_level || 0) * 100).toFixed(1) + "%";
+  el("rateInfo").textContent =
+    "현재 최대 " + maxRateNow().toFixed(2) + " Hz · 샘플 비율 " +
+    ((msg.spikes?.sample_ratio ?? 1) * 100).toFixed(0) + "% (" +
+    (msg.spikes?.n_total ?? 0).toLocaleString() + " 스파이크/빈)";
+}
+
+function onAck(msg){
+  const p = S.pending.get(msg.req_id);
+  S.pending.delete(msg.req_id);
+  if(typeof msg.params_version === "number"){
+    S.paramsVersion = msg.params_version;
+    el("versionBadge").textContent = "params v" + S.paramsVersion + (S.versionWarned ? "*" : "");
+  }
+  if(!p){ log("← ack (모르는 req " + msg.req_id + ")"); return; }
+
+  if(p.type === "set_params"){
+    const sent = p.payload.params || {};
+    if(msg.ok){
+      // 서버가 받아들인 뒤에만 반영한다 (낙관적 갱신 금지).
+      Object.assign(S.params, sent);
+    }else{
+      for(const k of Object.keys(sent)){
+        if(k === "adapt_b" || k === "adapt_tau_w") lockAdaptation(msg.msg || "서버가 거절");
+      }
+    }
+    for(const k of Object.keys(sent)) S.dirty.delete(k);
+    syncParamUI();
+  }
+  if(p.type === "snapshot" && !msg.ok) el("snapInfo").textContent = "스냅샷 거절: " + (msg.msg || "");
+  log("← ack " + p.type + " " + (msg.ok ? "ok" : "거절") + (msg.msg ? " — " + msg.msg : ""));
+}
+
+function onHops(msg){
+  if(!S.hopLayer) return;
+  S.hopLayer.fill(0);
+  S.hopSrc = msg.src;
+  const layers = msg.layers || [];
+  for(let L = 0; L < layers.length; L++){
+    const lv = Math.min(L + 1, 3);
+    for(const i of layers[L]) if(i >= 0 && i < S.hopLayer.length && !S.hopLayer[i]) S.hopLayer[i] = lv;
+  }
+  const counts = layers.map(a => a.length);
+  el("hopsInfo").textContent =
+    "뉴런 " + msg.src + " 하류 " + (msg.k ?? layers.length) + "홉: " + counts.join(" → ") + " 개";
+  log("← hops src=" + msg.src + " [" + counts.join(",") + "]");
+}
+
+function onSnapshotDone(msg){
+  el("snapInfo").innerHTML =
+    "저장됨: <b>" + escapeHtml(msg.path || "?") + "</b> (" + (msg.n_frames ?? "?") +
+    " 프레임). 재생기로 열어 보는 탐색 기록이며 <b>결과 제출용이 아니다</b>.";
+  log("← snapshot_done " + msg.run_id + " → " + msg.path);
+  const n = el("snapId").value.match(/^(.*?)(\d+)$/);
+  if(n) el("snapId").value = n[1] + String(+n[2] + 1).padStart(n[2].length, "0");
+}
+
+function onWarning(msg){
+  const code = String(msg.code || "");
+  if(code.endsWith("_cleared")){
+    S.warnings.delete(code.slice(0, -"_cleared".length));
+  }else{
+    S.warnings.set(code, msg.msg || WARNING_TEXT[code] || code);
+  }
+  renderWarnings();
+  log("← warning " + code);
+}
+
+function onServerError(msg){
+  if(msg.req_id != null) S.pending.delete(msg.req_id);
+  log("← error " + (msg.msg || ""));
+  el("logLine").style.color = "var(--alert)";
+  setTimeout(() => { el("logLine").style.color = ""; }, 2500);
+}
+
+const SERVER_HANDLERS = {
+  hello: onHello,
+  frame: onFrame,
+  ack: onAck,
+  hops: onHops,
+  snapshot_done: onSnapshotDone,
+  warning: onWarning,
+  error: onServerError,
+};
+
+function renderWarnings(){
+  const lines = [];
+  for(const [code, msg] of S.warnings) lines.push((WARNING_TEXT[code] || code) + (msg && !WARNING_TEXT[code] ? " — " + msg : ""));
+  el("warnMsg").textContent = lines.join("\n");
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+function log(line){
+  const t = new Date().toLocaleTimeString("ko-KR", {hour12:false});
+  el("logLine").textContent = t + "  " + line;
+}
+
+// ═══════════════════════════════════════════════════════
+//  뉴런 좌표
+//  서버는 neurons_url로 뷰어 계약의 neurons+regions와 같은 형식을 준다.
+// ═══════════════════════════════════════════════════════
+async function loadNeurons(hello){
+  if(hello.neurons_inline){           // 모의 모드
+    setNeurons(hello.neurons_inline);
+    return;
+  }
+  if(!hello.neurons_url){ log("neurons_url 없음 — 필드를 그릴 수 없다"); return; }
+  try{
+    const r = await fetch(hello.neurons_url);
+    if(!r.ok) throw new Error("HTTP " + r.status);
+    setNeurons(await r.json());
+    log("뉴런 좌표 로드: " + hello.neurons_url);
+  }catch(err){
+    log("뉴런 좌표 로드 실패 (" + err.message + ") — 필드 비활성");
+  }
+}
+
+function setNeurons(doc){
+  const nx = Float32Array.from(doc.neurons.x);
+  const ny = Float32Array.from(doc.neurons.y);
+  let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+  for(let i = 0; i < nx.length; i++){
+    if(nx[i] < x0) x0 = nx[i]; if(nx[i] > x1) x1 = nx[i];
+    if(ny[i] < y0) y0 = ny[i]; if(ny[i] > y1) y1 = ny[i];
+  }
+  const sx = (x1 - x0) || 1, sy = (y1 - y0) || 1;
+  for(let i = 0; i < nx.length; i++){
+    nx[i] = (nx[i] - x0) / sx;
+    ny[i] = (ny[i] - y0) / sy;
+  }
+  S.neurons = {x: nx, y: ny, region: Uint8Array.from(doc.neurons.region || new Uint8Array(nx.length))};
+  S.activation = new Float32Array(nx.length);
+  S.hopLayer = new Uint8Array(nx.length);
+  resize();
+}
+
+// ═══════════════════════════════════════════════════════
+//  히트맵 — 원시 Hz 링버퍼 + 클라이언트 정규화
+//  (백로그 "Viewer normalisation": 기본값은 영역별 최대)
+// ═══════════════════════════════════════════════════════
+function initHistory(){
+  S.histCols = Math.max(16, Math.round(HIST_SECONDS * 1000 / S.binMs));
+  S.hist = S.regions.map(() => new Float32Array(S.histCols));
+  S.histPos = 0;
+  S.histCount = 0;
+}
+
+function pushHistory(rates, nBins = 1){
+  if(!S.hist) return;
+  const reps = clamp(nBins, 1, S.histCols);
+  for(let k = 0; k < reps; k++){
+    const c = S.histPos;
+    for(let r = 0; r < S.hist.length; r++) S.hist[r][c] = rates[r] || 0;
+    S.histPos = (c + 1) % S.histCols;
+    S.histCount = Math.min(S.histCount + 1, S.histCols);
+  }
+}
+
+function histIndex(k){                      // k번째로 오래된 열
+  const start = (S.histPos - S.histCount + S.histCols) % S.histCols;
+  return (start + k) % S.histCols;
+}
+
+function maxRateNow(){
+  const f = S.lastFrame;
+  if(!f || !f.rates) return 0;
+  let m = 0;
+  for(const v of f.rates) if(v > m) m = v;
+  return m;
+}
+
+// 행 그룹: JO 집합을 따로 묶는다 (계약의 regions 순서는 그대로 지킨다)
+function rowGroups(){
+  const jo = [], rest = [];
+  S.regions.forEach((name, i) => (name.startsWith("JO") ? jo : rest).push(i));
+  const out = [];
+  if(jo.length) out.push({label: "JO (입력)", rows: jo});
+  if(rest.length) out.push({label: "하류 · 그 외", rows: rest});
+  return out;
+}
+
+function drawHeat(){
+  const W = heat.width, H = heat.height;
+  hctx.clearRect(0, 0, W, H);
+  if(!S.hist || !S.histCount) return;
+
+  const groups = rowGroups();
+  const nRows = S.regions.length;
+  const gapPx = Math.round(7 * dpr);
+  const labelH = Math.round(13 * dpr);
+  const avail = H - groups.length * labelH - (groups.length - 1) * gapPx;
+  const rowH = Math.max(2, avail / nRows);
+
+  // 행별 최대 (표시 창 안에서) — 정규화와 행 끝 숫자에 함께 쓴다
+  const rowMax = new Float32Array(nRows);
+  let gmax = 0;
+  for(let r = 0; r < nRows; r++){
+    const buf = S.hist[r];
+    let m = 0;
+    for(let k = 0; k < S.histCount; k++){ const v = buf[histIndex(k)]; if(v > m) m = v; }
+    rowMax[r] = m;
+    if(m > gmax) gmax = m;
+  }
+
+  const img = hctx.createImageData(W, H);
+  const px = img.data;
+  for(let i = 0; i < px.length; i += 4){ px[i] = 16; px[i+1] = 22; px[i+2] = 29; px[i+3] = 255; }
+
+  const labels = [];
+  let y = 0;
+  for(const grp of groups){
+    labels.push({text: grp.label, y, group: true});
+    y += labelH;
+    for(const r of grp.rows){
+      const buf = S.hist[r];
+      const y0 = Math.floor(y), y1 = Math.floor(y + rowH) - 1;
+      const denom = S.norm === "region" ? rowMax[r]
+                  : S.norm === "fixed"  ? S.normCap
+                  : gmax;
+      for(let x = 0; x < W; x++){
+        const a = Math.floor(x / W * S.histCount);
+        const b = Math.max(a + 1, Math.floor((x + 1) / W * S.histCount));
+        let m = 0;
+        for(let k = a; k < b && k < S.histCount; k++){ const v = buf[histIndex(k)]; if(v > m) m = v; }
+        let u;
+        if(S.norm === "log"){
+          const eps = 0.05;                                  // Hz
+          u = gmax > 0 ? Math.log1p(m / eps) / Math.log1p(gmax / eps) : 0;
+        }else{
+          u = denom > 0 ? m / denom : 0;
+        }
+        const [cr, cg, cb] = ramp(clamp(u, 0, 1));
+        for(let yy = Math.max(0, y0); yy <= Math.min(H - 1, y1); yy++){
+          const o = (yy * W + x) * 4;
+          px[o] = cr; px[o+1] = cg; px[o+2] = cb;
+        }
+      }
+      labels.push({text: S.regions[r], y, max: rowMax[r]});
+      y += rowH;
+    }
+    y += gapPx;
+  }
+  hctx.putImageData(img, 0, 0);
+
+  hctx.textBaseline = "middle";
+  for(const L of labels){
+    if(L.group){
+      hctx.font = `${10 * dpr}px "IBM Plex Mono", monospace`;
+      hctx.fillStyle = "#4A5766";
+      hctx.fillText(L.text, 5 * dpr, L.y + labelH / 2);
+      continue;
+    }
+    const fs = Math.min(10.5, Math.max(7, rowH / dpr - 1.5));
+    hctx.font = `${fs * dpr}px "IBM Plex Mono", monospace`;
+    const mid = L.y + rowH / 2;
+    hctx.fillStyle = "rgba(16,22,29,0.72)";
+    const w = hctx.measureText(L.text).width + 10 * dpr;
+    hctx.fillRect(0, Math.floor(L.y), w, Math.ceil(rowH));
+    hctx.fillStyle = "#93A2B2";
+    hctx.fillText(L.text, 5 * dpr, mid);
+    // 절대 크기를 숨기지 않는다: 행 끝에 그 행의 최대 Hz
+    const t = L.max >= 100 ? L.max.toFixed(0) : L.max >= 1 ? L.max.toFixed(1) : L.max.toFixed(2);
+    const tw = hctx.measureText(t).width;
+    hctx.fillStyle = "rgba(16,22,29,0.72)";
+    hctx.fillRect(W - tw - 10 * dpr, Math.floor(L.y), tw + 10 * dpr, Math.ceil(rowH));
+    hctx.fillStyle = L.max > 0 ? "#6D7C8C" : "#3A4756";
+    hctx.fillText(t, W - tw - 5 * dpr, mid);
+  }
+}
+
+// 활동 색 램프 — 재생기와 같은 정지점 (유휴 회청 → 앰버 → 적색)
+function ramp(v){
+  v = clamp(v, 0, 1);
+  const stops = [
+    [0.00,  22,  30,  40],
+    [0.06,  58,  71,  86],
+    [0.35, 176, 118,  46],
+    [0.70, 232, 161,  58],
+    [1.00, 229,  72,  77],
+  ];
+  for(let i = 1; i < stops.length; i++){
+    if(v <= stops[i][0]){
+      const a = stops[i-1], b = stops[i];
+      const t = (v - a[0]) / (b[0] - a[0] || 1);
+      return [
+        Math.round(a[1] + (b[1] - a[1]) * t),
+        Math.round(a[2] + (b[2] - a[2]) * t),
+        Math.round(a[3] + (b[3] - a[3]) * t),
+      ];
+    }
+  }
+  return [229, 72, 77];
+}
+
+// ═══════════════════════════════════════════════════════
+//  뉴런 필드
+//  ImageData 가산 합성 방식은 flysim-viewer.html의 render()에서 가져왔다.
+// ═══════════════════════════════════════════════════════
+const field = el("fieldCanvas"), heat = el("heatCanvas");
+const fctx = field.getContext("2d", {alpha:false});
+const hctx = heat.getContext("2d");
+let dpr = 1;
+let layout = {ox:0, oy:0, scale:1};
+
+function fit(c){
+  const r = c.getBoundingClientRect();
+  dpr = Math.min(window.devicePixelRatio || 1, 2);
+  c.width  = Math.max(1, Math.round(r.width  * dpr));
+  c.height = Math.max(1, Math.round(r.height * dpr));
+}
+function resize(){ fit(field); fit(heat); drawField(); drawHeat(); }
+window.addEventListener("resize", resize);
+
+function drawField(){
+  const W = field.width, H = field.height;
+  fctx.fillStyle = "#0C1218";
+  fctx.fillRect(0, 0, W, H);
+  if(!S.neurons) return;
+
+  // 잔광 감쇠 후, 지난 렌더 이후 도착한 모든 빈의 스파이크를 주입
+  const act = S.activation, decay = S.glow;
+  for(let i = 0; i < act.length; i++){
+    if(act[i] > 0.004) act[i] *= decay; else act[i] = 0;
+  }
+  for(const list of S.pendingSpikes){
+    for(let k = 0; k < list.length; k++){
+      const n = list[k];
+      if(n >= 0 && n < act.length) act[n] = 1;
+    }
+  }
+  S.pendingSpikes.length = 0;
+
+  const nx = S.neurons.x, ny = S.neurons.y, N = nx.length;
+  const pad = 18 * dpr;
+  const scale = Math.min(W - pad * 2, H - pad * 2);
+  const ox = (W - scale) / 2, oy = (H - scale) / 2;
+  layout = {ox, oy, scale};
+
+  const img = fctx.createImageData(W, H);
+  const px = img.data;
+  for(let i = 0; i < px.length; i += 4){ px[i] = 12; px[i+1] = 18; px[i+2] = 24; px[i+3] = 255; }
+
+  const showHops = S.hopsOn && S.hopSrc >= 0;
+  let active = 0;
+  for(let i = 0; i < N; i++){
+    const a = act[i];
+    const X = (ox + nx[i] * scale) | 0;
+    const Y = (oy + ny[i] * scale) | 0;
+    if(X < 0 || Y < 0 || X >= W || Y >= H) continue;
+
+    let cr, cg, cb;
+    const hop = showHops ? S.hopLayer[i] : 0;
+    if(a > 0.004){
+      active++;
+      [cr, cg, cb] = ramp(0.30 + a * 0.70);
+    }else if(hop === 1){
+      cr = 20; cg = 74; cb = 82;            // 1홉: 차가운 색 (입력이 닿는 쪽)
+    }else if(hop === 2){
+      cr = 15; cg = 46; cb = 52;            // 2홉: 더 어둡게
+    }else{
+      cr = 30; cg = 39; cb = 50;            // 유휴
+    }
+    const o = (Y * W + X) * 4;
+    px[o]   = Math.min(255, px[o]   + cr);
+    px[o+1] = Math.min(255, px[o+1] + cg);
+    px[o+2] = Math.min(255, px[o+2] + cb);
+  }
+  fctx.putImageData(img, 0, 0);
+
+  if(showHops && S.hopSrc < N){
+    const X = ox + nx[S.hopSrc] * scale, Y = oy + ny[S.hopSrc] * scale;
+    fctx.strokeStyle = "#3FBFCF";
+    fctx.lineWidth = 1.5 * dpr;
+    fctx.beginPath();
+    fctx.arc(X, Y, 6 * dpr, 0, Math.PI * 2);
+    fctx.stroke();
+  }
+}
+
+function nearestNeuron(clientX, clientY){
+  if(!S.neurons) return -1;
+  const r = field.getBoundingClientRect();
+  const X = (clientX - r.left) * dpr, Y = (clientY - r.top) * dpr;
+  const nx = S.neurons.x, ny = S.neurons.y;
+  const {ox, oy, scale} = layout;
+  let best = -1, bd = Infinity;
+  for(let i = 0; i < nx.length; i++){
+    const dx = ox + nx[i] * scale - X, dy = oy + ny[i] * scale - Y;
+    const d = dx * dx + dy * dy;
+    if(d < bd){ bd = d; best = i; }
+  }
+  return Math.sqrt(bd) <= 24 * dpr ? best : -1;
+}
+
+// ═══════════════════════════════════════════════════════
+//  좌우 창 (L − R)
+// ═══════════════════════════════════════════════════════
+let lrPairs = [];
+function buildLrRows(){
+  const byBase = new Map();
+  S.regions.forEach((name, i) => {
+    const m = name.match(/^(.*)_(L|R)$/);
+    if(!m) return;
+    if(!byBase.has(m[1])) byBase.set(m[1], {});
+    byBase.get(m[1])[m[2]] = i;
+  });
+  lrPairs = [];
+  const host = el("lrList");
+  host.textContent = "";
+  for(const [base, o] of byBase){
+    if(o.L === undefined || o.R === undefined) continue;
+    const row = document.createElement("div");
+    row.className = "lr-row";
+    row.innerHTML =
+      '<div class="lr-name"><span>' + escapeHtml(base) + '</span><b>—</b></div>' +
+      '<div class="lr-bar"><i></i><span class="mid"></span></div>';
+    host.appendChild(row);
+    lrPairs.push({base, L: o.L, R: o.R, val: row.querySelector("b"), bar: row.querySelector("i")});
+  }
+  if(!lrPairs.length) host.innerHTML = '<p class="note">L/R 짝을 이루는 집합이 없다.</p>';
+}
+
+function drawLr(){
+  const f = S.lastFrame;
+  if(!f || !f.rates || !lrPairs.length) return;
+  let scale = 0;
+  for(const p of lrPairs) scale = Math.max(scale, Math.abs((f.rates[p.L] || 0) - (f.rates[p.R] || 0)));
+  if(scale <= 0) scale = 1;
+  for(const p of lrPairs){
+    const d = (f.rates[p.L] || 0) - (f.rates[p.R] || 0);
+    p.val.textContent = (d > 0 ? "+" : "") + d.toFixed(2);
+    const frac = clamp(Math.abs(d) / scale, 0, 1) * 50;
+    if(d === 0){
+      p.bar.style.left = "49.5%"; p.bar.style.width = "1%";
+      p.bar.style.background = "var(--idle)";
+    }else if(d > 0){
+      p.bar.style.left = "50%"; p.bar.style.width = frac + "%";
+      p.bar.style.background = "var(--warm-hi)";
+    }else{
+      p.bar.style.left = (50 - frac) + "%"; p.bar.style.width = frac + "%";
+      p.bar.style.background = "var(--stimulus)";
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════
+//  렌더 루프 — 프레임이 몰려도 rAF당 한 번만 그린다
+// ═══════════════════════════════════════════════════════
+function tick(ts){
+  requestAnimationFrame(tick);
+  drawField();
+  drawHeat();
+  drawLr();
+  if(ts - S.lastFpsAt > 500){
+    const dtSec = (ts - S.lastFpsAt) / 1000;
+    el("fpsLine").textContent =
+      (S.framesSinceFps / dtSec).toFixed(0) + " msg/s · " +
+      (S.binsSinceFps / dtSec).toFixed(0) + " bin/s";
+    S.lastFpsAt = ts; S.framesSinceFps = 0; S.binsSinceFps = 0;
+  }
+}
+requestAnimationFrame(ts => { S.lastFpsAt = ts; tick(ts); });
+
+// ═══════════════════════════════════════════════════════
+//  파라미터 패널
+//  규칙: 슬라이더를 움직이면 set_params를 보내고, ack가 ok일 때만
+//  S.params에 반영한다. 반영 전까지는 값 옆에 ⟳를 띄운다.
+// ═══════════════════════════════════════════════════════
+const LOG_RANGE = {
+  g_current:     [1e-3, 1e1],
+  g_conductance: [1e-5, 1e-2],
+  a_in:          [1, 1e4],
+  speed:         [0.05, 4],
+};
+const toLog   = (pos, [lo, hi]) => lo * Math.pow(hi / lo, pos / 1000);
+const fromLog = (v, [lo, hi]) => clamp(Math.round(Math.log(v / lo) / Math.log(hi / lo) * 1000), 0, 1000);
+const gRange  = () => LOG_RANGE[(S.params.synapse === "current") ? "g_current" : "g_conductance"];
+const fmtG    = v => (v >= 0.01 ? v.toFixed(4) : v.toExponential(3));
+
+let adaptLocked = false;
+
+function setParams(obj){
+  for(const k of Object.keys(obj)){
+    if(!PARAM_KEYS.includes(k)) throw new Error("계약에 없는 파라미터: " + k);
+    S.dirty.add(k);
+  }
+  syncParamUI();
+  send("set_params", {params: obj});
+}
+
+function lockAdaptation(why){
+  adaptLocked = true;
+  el("adaptB").disabled = true;
+  el("adaptTau").disabled = true;
+  el("adaptNote").textContent = "잠김 — " + why;
+  el("adaptNote").classList.add("caution");
+}
+
+function syncParamUI(){
+  const p = S.params;
+  const mark = (id, key) => el(id).classList.toggle("dirty", S.dirty.has(key));
+
+  if(p.g != null && !S.dirty.has("g")) el("g").value = fromLog(p.g, gRange());
+  el("gVal").textContent = fmtG(toLog(+el("g").value, gRange()));
+  mark("gVal", "g");
+
+  if(p.a_in != null && !S.dirty.has("a_in")) el("ain").value = fromLog(p.a_in, LOG_RANGE.a_in);
+  el("ainVal").textContent = toLog(+el("ain").value, LOG_RANGE.a_in).toFixed(0);
+  mark("ainVal", "a_in");
+
+  if(p.noise_sigma != null && !S.dirty.has("noise_sigma")) el("noise").value = p.noise_sigma;
+  el("noiseVal").textContent = (+el("noise").value).toFixed(1);
+  mark("noiseVal", "noise_sigma");
+
+  if(p.adapt_b != null && !S.dirty.has("adapt_b")) el("adaptB").value = p.adapt_b;
+  el("adaptBVal").textContent = (+el("adaptB").value).toFixed(2);
+  mark("adaptBVal", "adapt_b");
+
+  if(p.adapt_tau_w != null && !S.dirty.has("adapt_tau_w")) el("adaptTau").value = p.adapt_tau_w;
+  el("adaptTauVal").textContent = (+el("adaptTau").value).toFixed(0) + " ms";
+  mark("adaptTauVal", "adapt_tau_w");
+
+  if(p.speed != null && !S.dirty.has("speed")) el("speed").value = fromLog(p.speed, LOG_RANGE.speed);
+  el("speedVal").textContent = toLog(+el("speed").value, LOG_RANGE.speed).toFixed(2) + "×";
+  mark("speedVal", "speed");
+
+  for(const b of el("synapseSeg").children) b.classList.toggle("on", b.dataset.synapse === p.synapse);
+  for(const b of el("modeSeg").children)    b.classList.toggle("on", b.dataset.mode === p.mode);
+  for(const b of el("dtSeg").children)      b.classList.toggle("on", +b.dataset.dt === p.dt_ms);
+
+  el("modeBadge").textContent  = "감각 모드 " + (p.mode ?? "—");
+  el("dtBadge").textContent    = "dt " + (p.dt_ms ?? "—") + " ms";
+  el("speedBadge").textContent = "speed " + (p.speed ?? "—");
+  el("versionBadge").textContent = "params v" + S.paramsVersion + (S.versionWarned ? "*" : "");
+  el("gHint").textContent = p.synapse === "current"
+    ? "기준값: current 0.336 (M3/M4 동작점). 0.55 위는 점화."
+    : "기준값: conductance 3.162e-4. RESPONSIVE 창 [2.6e-4, 3.8e-4].";
+}
+
+el("g").oninput  = () => { el("gVal").textContent = fmtG(toLog(+el("g").value, gRange())); };
+el("g").onchange = () => setParams({g: +toLog(+el("g").value, gRange()).toPrecision(6)});
+el("ain").oninput  = () => { el("ainVal").textContent = toLog(+el("ain").value, LOG_RANGE.a_in).toFixed(0); };
+el("ain").onchange = () => setParams({a_in: +toLog(+el("ain").value, LOG_RANGE.a_in).toFixed(1)});
+el("noise").oninput  = () => { el("noiseVal").textContent = (+el("noise").value).toFixed(1); };
+el("noise").onchange = () => setParams({noise_sigma: +el("noise").value});
+el("adaptB").oninput  = () => { el("adaptBVal").textContent = (+el("adaptB").value).toFixed(2); };
+el("adaptB").onchange = () => setParams({adapt_b: +el("adaptB").value});
+el("adaptTau").oninput  = () => { el("adaptTauVal").textContent = (+el("adaptTau").value).toFixed(0) + " ms"; };
+el("adaptTau").onchange = () => setParams({adapt_tau_w: +el("adaptTau").value});
+el("speed").oninput  = () => { el("speedVal").textContent = toLog(+el("speed").value, LOG_RANGE.speed).toFixed(2) + "×"; };
+el("speed").onchange = () => setParams({speed: +toLog(+el("speed").value, LOG_RANGE.speed).toFixed(3)});
+
+for(const b of el("synapseSeg").children){
+  b.onclick = () => { if(b.dataset.synapse !== S.params.synapse) setParams({synapse: b.dataset.synapse}); };
+}
+for(const b of el("modeSeg").children){
+  b.onclick = () => { if(b.dataset.mode !== S.params.mode) setParams({mode: b.dataset.mode}); };
+}
+for(const b of el("dtSeg").children){
+  b.onclick = () => { if(+b.dataset.dt !== S.params.dt_ms) setParams({dt_ms: +b.dataset.dt}); };
+}
+
+// ═══════════════════════════════════════════════════════
+//  자극 패널
+// ═══════════════════════════════════════════════════════
+let stimKind = "silence";
+
+function syncStimUI(){
+  for(const b of el("stimKind").children) b.classList.toggle("on", b.dataset.kind === stimKind);
+  for(const c of document.querySelectorAll("#stimGroup .ctl[data-for]")){
+    c.style.display = c.dataset.for.split(" ").includes(stimKind) ? "" : "none";
+  }
+  el("ipiVal").textContent     = el("ipi").value + " ms";
+  el("carrierVal").textContent = el("carrier").value + " Hz";
+  el("pulseVal").textContent   = el("pulse").value + " ms";
+  el("ildVal").textContent     = (+el("ild").value).toFixed(1) + " dB";
+  el("durVal").textContent     = +el("dur").value === 0 ? "계속" : el("dur").value + " ms";
+}
+
+function sendStimulus(kind){
+  stimKind = kind;
+  syncStimUI();
+  send("stimulus", {
+    kind,
+    ipi_ms:      +el("ipi").value,
+    carrier_hz:  +el("carrier").value,
+    pulse_ms:    +el("pulse").value,
+    duration_ms: +el("dur").value,
+    ild_db:      +el("ild").value,
+  });
+}
+
+for(const b of el("stimKind").children){
+  b.onclick = () => { stimKind = b.dataset.kind; syncStimUI(); };
+}
+for(const id of ["ipi", "carrier", "pulse", "ild", "dur"]) el(id).oninput = syncStimUI;
+el("stimApply").onclick  = () => sendStimulus(stimKind);
+el("stimSilence").onclick = () => sendStimulus("silence");
+
+// ═══════════════════════════════════════════════════════
+//  오디오 — float32 LE 모노 PCM을 같은 웹소켓의 바이너리 프레임으로
+// ═══════════════════════════════════════════════════════
+async function startAudio(source){       // source: "mic" | File
+  await stopAudio(false);
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  let node, cleanup = () => {};
+
+  if(source === "mic"){
+    const stream = await navigator.mediaDevices.getUserMedia({audio:{
+      echoCancellation:false, noiseSuppression:false, autoGainControl:false,
+    }});
+    node = ctx.createMediaStreamSource(stream);
+    cleanup = () => stream.getTracks().forEach(t => t.stop());
+  }else{
+    const buf = await ctx.decodeAudioData(await source.arrayBuffer());
+    const src = ctx.createBufferSource();
+    src.buffer = buf; src.loop = true; src.start();
+    node = src;
+    cleanup = () => { try{ src.stop(); }catch(e){} };
+  }
+
+  // 20 ms 청크로 잘라 보낸다. AudioWorklet을 먼저 쓰고, 없으면 ScriptProcessor.
+  const chunk = Math.max(128, Math.round(ctx.sampleRate * AUDIO_CHUNK_MS / 1000));
+  send("audio_start", {sample_rate: Math.round(ctx.sampleRate), channels: 1});
+  stimKind = "audio"; syncStimUI();
+
+  let acc = new Float32Array(0);
+  let lastRmsAt = 0;
+  const emit = samples => {
+    const merged = new Float32Array(acc.length + samples.length);
+    merged.set(acc); merged.set(samples, acc.length);
+    acc = merged;
+    while(acc.length >= chunk){
+      const out = acc.slice(0, chunk);
+      acc = acc.slice(chunk);
+      sendBinary(out.buffer);
+      let s = 0;
+      for(let i = 0; i < out.length; i++) s += out[i] * out[i];
+      const rms = Math.sqrt(s / out.length);
+      // 미터는 서버가 준 input_level 전용이다. 이건 보낸 쪽 RMS라 따로 적는다.
+      if(performance.now() - lastRmsAt > 100){
+        lastRmsAt = performance.now();
+        el("audioRms").textContent = rms.toFixed(3);
+      }
+    }
+  };
+
+  let proc = null, worklet = null;
+  try{
+    const code = `class C extends AudioWorkletProcessor{
+      process(inputs){ const ch = inputs[0] && inputs[0][0];
+        if(ch && ch.length) this.port.postMessage(ch.slice(0)); return true; } }
+      registerProcessor('pcm-tap', C);`;
+    const url = URL.createObjectURL(new Blob([code], {type:"application/javascript"}));
+    await ctx.audioWorklet.addModule(url);
+    URL.revokeObjectURL(url);
+    worklet = new AudioWorkletNode(ctx, "pcm-tap");
+    worklet.port.onmessage = e => emit(e.data);
+    node.connect(worklet);
+    worklet.connect(ctx.destination);       // 무음 종단 (출력은 0)
+  }catch(err){
+    proc = ctx.createScriptProcessor(4096, 1, 1);
+    proc.onaudioprocess = e => emit(e.inputBuffer.getChannelData(0).slice(0));
+    node.connect(proc);
+    proc.connect(ctx.destination);
+  }
+
+  S.audio = {ctx, node, proc, worklet, cleanup};
+  el("audioStopBtn").disabled = false;
+  el("audioNote").textContent =
+    "전송 중 · " + Math.round(ctx.sampleRate) + " Hz · " + chunk + " 샘플/청크 · " +
+    (worklet ? "AudioWorklet" : "ScriptProcessor");
+  el("audioNote").classList.remove("caution");
+}
+
+async function stopAudio(notify = true){
+  if(!S.audio) return;
+  const a = S.audio; S.audio = null;
+  try{ a.worklet && a.worklet.disconnect(); }catch(e){}
+  try{ a.proc && a.proc.disconnect(); }catch(e){}
+  try{ a.node.disconnect(); }catch(e){}
+  a.cleanup();
+  try{ await a.ctx.close(); }catch(e){}
+  el("audioStopBtn").disabled = true;
+  el("levelBar").style.width = "0%";
+  el("audioNote").textContent = "보내지 않음. float32 모노 PCM 20 ms 청크를 바이너리 프레임으로 올린다.";
+  el("audioRms").textContent = "0.000";
+  if(notify) send("audio_stop", {});
+}
+
+el("micBtn").onclick = () => startAudio("mic").catch(err => {
+  el("audioNote").textContent = "마이크 실패: " + err.message;
+  el("audioNote").classList.add("caution");
+});
+el("fileBtn").onclick = () => el("audioFile").click();
+el("audioFile").onchange = e => {
+  const f = e.target.files[0];
+  if(f) startAudio(f).catch(err => {
+    el("audioNote").textContent = "파일 디코드 실패: " + err.message;
+    el("audioNote").classList.add("caution");
+  });
+};
+el("audioStopBtn").onclick = () => stopAudio(true);
+
+// ═══════════════════════════════════════════════════════
+//  트랜스포트 · 주입 · 홉 · 스냅샷 · 히트맵 조작
+// ═══════════════════════════════════════════════════════
+el("pauseBtn").onclick = () => send(S.status === "paused" ? "resume" : "pause", {});
+el("stepBtn").onclick  = () => send("step", {n: 50});
+el("resetBtn").onclick = () => send("reset", {seed: 0});
+
+function buildInjectSets(){
+  const sel = el("injSet");
+  sel.textContent = "";
+  const o0 = document.createElement("option");
+  o0.value = ""; o0.textContent = "— 집합 선택 —";
+  sel.appendChild(o0);
+  for(const [name, n] of Object.entries(S.setSizes)){
+    const o = document.createElement("option");
+    o.value = name; o.textContent = name + "  (" + n.toLocaleString() + ")";
+    sel.appendChild(o);
+  }
+  sel.onchange = () => { el("injSetBtn").disabled = !sel.value; };
+  el("injSetBtn").disabled = true;
+}
+
+el("injAmp").oninput = () => { el("injAmpVal").textContent = el("injAmp").value; };
+el("injDur").oninput = () => { el("injDurVal").textContent = el("injDur").value + " ms"; };
+el("injSetBtn").onclick = () => {
+  const name = el("injSet").value;
+  if(!name) return;
+  send("inject", {targets: {set: name}, amp: +el("injAmp").value, duration_ms: +el("injDur").value});
+};
+
+el("hopsToggle").onclick = () => {
+  S.hopsOn = !S.hopsOn;
+  el("hopsToggle").classList.toggle("on", S.hopsOn);
+  el("hopsToggle").textContent = S.hopsOn ? "강조 켬" : "강조 끔";
+};
+el("hopsClear").onclick = () => {
+  S.hopSrc = -1;
+  if(S.hopLayer) S.hopLayer.fill(0);
+  el("hopsInfo").textContent = "필드에서 뉴런을 클릭하면 k=2 하류 층을 받아 강조한다.";
+};
+el("hopsMin").oninput = () => { el("hopsMinVal").textContent = el("hopsMin").value; };
+
+field.addEventListener("click", e => {
+  const i = nearestNeuron(e.clientX, e.clientY);
+  if(i < 0){ el("hopsInfo").textContent = "그 자리에 뉴런이 없다."; return; }
+  if(e.shiftKey){
+    send("inject", {targets: {idx: [i]}, amp: +el("injAmp").value, duration_ms: +el("injDur").value});
+    el("hopsInfo").textContent = "뉴런 " + i + "에 주입.";
+  }else{
+    el("hopsInfo").textContent = "뉴런 " + i + " 하류 조회 중…";
+    send("get_hops", {src: i, k: 2, min_contacts: +el("hopsMin").value});
+  }
+});
+
+el("snapSec").oninput = () => { el("snapSecVal").textContent = (+el("snapSec").value).toFixed(1) + " s"; };
+el("snapBtn").onclick = () => {
+  send("snapshot", {run_id: el("snapId").value || "live", seconds: +el("snapSec").value});
+  el("snapInfo").textContent = "저장 요청 보냄…";
+};
+
+el("frameEvery").oninput  = () => { el("frameEveryVal").textContent = el("frameEvery").value; };
+el("frameEvery").onchange = () => send("set_frame_every", {n: +el("frameEvery").value});
+el("glow").oninput = () => {
+  S.glow = +el("glow").value / 100;
+  el("glowVal").textContent = S.glow.toFixed(2);
+};
+
+for(const b of document.querySelectorAll(".heat-bar button")){
+  b.onclick = () => {
+    S.norm = b.dataset.norm;
+    for(const o of document.querySelectorAll(".heat-bar button")) o.classList.toggle("on", o === b);
+    el("normCap").disabled = S.norm !== "fixed";
+  };
+}
+el("normCap").oninput = () => { S.normCap = Math.max(0.01, +el("normCap").value || 1); };
+
+// 패널 접기 (좁은 화면)
+for(const g of document.querySelectorAll(".fold > h2")){
+  g.onclick = () => g.parentElement.classList.toggle("closed");
+}
+
+window.addEventListener("keydown", e => {
+  if(e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if(e.code === "Space"){ e.preventDefault(); el("pauseBtn").click(); }
+  if(e.code === "KeyS" && !e.metaKey && !e.ctrlKey){ e.preventDefault(); el("stepBtn").click(); }
+});
+
+// ═══════════════════════════════════════════════════════
+//  모의 서버 (?mock=1)
+//
+//  ▲ 여기서 나오는 뉴런 좌표와 발화율은 전부 합성이다. 커넥톰이 아니고
+//    시뮬레이션도 아니다. 서버(M5a)가 없을 때 조종석의 배선·화면·정규화를
+//    확인하기 위한 가짜 데이터이며 과학적 의미가 전혀 없다.
+//    집합 이름과 크기만 docs/m3-report.md §2의 실제 값을 쓴다(빈 껍데기를
+//    고르면 화면 비율이 실제와 달라지므로).
+// ═══════════════════════════════════════════════════════
+const MOCK_SETS = [
+  // [이름, 크기(docs/m3-report.md §2), 합성 배치 cx, cy, rx, ry]
+  ["JO_AB_L",     76,     0.40, 0.11, 0.030, 0.024],
+  ["JO_AB_R",     38,     0.60, 0.11, 0.030, 0.024],
+  ["JO_post_L",   490,    0.40, 0.23, 0.055, 0.042],
+  ["JO_post_R",   121,    0.60, 0.23, 0.055, 0.042],
+  ["JO_post_unk", 23,     0.50, 0.20, 0.022, 0.018],
+  ["pC1_L",       78,     0.44, 0.50, 0.030, 0.026],
+  ["pC1_R",       78,     0.56, 0.50, 0.030, 0.026],
+  ["AMMCtype_L",  74,     0.38, 0.33, 0.032, 0.026],
+  ["AMMCtype_R",  94,     0.62, 0.33, 0.032, 0.026],
+  ["SAD_L",       377,    0.42, 0.31, 0.048, 0.038],
+  ["SAD_R",       420,    0.58, 0.31, 0.048, 0.038],
+  ["SAD_unk",     22,     0.50, 0.29, 0.020, 0.016],
+  ["WED_L",       449,    0.34, 0.42, 0.050, 0.040],
+  ["WED_R",       515,    0.66, 0.42, 0.050, 0.040],
+  ["rest",        162267, 0.50, 0.55, 0.240, 0.360],
+];
+// 전달 사슬 (합성): [영역, 지연 ms, 이득, 적분 시정수 ms]
+const MOCK_CHAIN = [
+  ["JO_AB_L", 0, 1.00, 1.2], ["JO_AB_R", 0, 0.62, 1.2],
+  ["JO_post_L", 2, 0.42, 3], ["JO_post_R", 2, 0.20, 3],
+  ["SAD_L", 5, 0.12, 7], ["SAD_R", 5, 0.08, 7],
+  ["WED_L", 8, 0.09, 11], ["WED_R", 8, 0.06, 11],
+  ["AMMCtype_L", 11, 0.04, 14], ["AMMCtype_R", 11, 0.03, 14],
+  ["pC1_L", 16, 0.02, 34], ["pC1_R", 16, 0.015, 34],
+];
+
+class MockServer{
+  constructor(){
+    this.binaryType = "arraybuffer";
+    this.readyState = 0;
+    this.onopen = this.onmessage = this.onclose = this.onerror = null;
+    this.params = {
+      synapse:"conductance", g:3.162e-4, a_in:320, noise_sigma:0,
+      adapt_b:0, adapt_tau_w:100, dt_ms:1.0, speed:1.0, mode:"rate",
+    };
+    this.version = 1;
+    this.binMs = 1;
+    this.frameEvery = 1;
+    this.status = "running";
+    this.tMs = 0;
+    this.step = 0;
+    this.stim = {kind:"silence", ipi_ms:35, carrier_hz:200, pulse_ms:10, duration_ms:0, ild_db:0};
+    this.stimStart = 0;
+    this.audioLevel = 0;
+    this.state = new Float32Array(MOCK_SETS.length);
+    this.injection = new Map();
+    this.warn = new Set();
+    this.silentFor = 0;
+    this.pendingSteps = 0;
+    this.build();
+    setTimeout(() => {
+      this.readyState = 1;
+      this.onopen && this.onopen();
+      this.emit(this.hello());
+      this.timer = setInterval(() => this.advance(), 25);
+    }, 60);
+  }
+
+  build(){
+    let n = 0;
+    this.offsets = []; this.sizes = [];
+    for(const [, size] of MOCK_SETS){ this.offsets.push(n); this.sizes.push(size); n += size; }
+    this.N = n;                                  // 165,122 = 유지 그래프 크기
+    const x = new Float32Array(n), y = new Float32Array(n), reg = new Uint8Array(n);
+    let i = 0;
+    MOCK_SETS.forEach(([, size, cx, cy, rx, ry], r) => {
+      for(let k = 0; k < size; k++, i++){
+        const a = Math.random() * Math.PI * 2, d = Math.pow(Math.random(), 0.62);
+        x[i] = cx + Math.cos(a) * rx * d;
+        y[i] = cy + Math.sin(a) * ry * d;
+        reg[i] = r;
+      }
+    });
+    this.neurons = {x:Array.from(x), y:Array.from(y), region:Array.from(reg)};
+  }
+
+  hello(){
+    const sets = {}, sizes = {};
+    MOCK_SETS.forEach(([name, size], r) => {
+      sizes[name] = size;
+      if(size <= 2000){                          // 계약: 크기 ≤ 2,000인 집합만 인덱스를 싣는다
+        const off = this.offsets[r];
+        sets[name] = Array.from({length: size}, (_, k) => off + k);
+      }
+    });
+    return {
+      type:"hello", n_neurons:this.N, regions:MOCK_SETS.map(s => s[0]),
+      sets, set_sizes:sizes, params:{...this.params}, params_version:this.version,
+      dt_ms:this.params.dt_ms, bin_ms:this.binMs,
+      engine:{synapse:this.params.synapse, git_commit:"mock0000000"},
+      neurons_url:null, neurons_inline:{neurons:this.neurons, regions:MOCK_SETS.map(s => s[0])},
+    };
+  }
+
+  emit(obj){ this.onmessage && this.onmessage({data: JSON.stringify(obj)}); }
+
+  send(data){
+    if(typeof data !== "string"){                // 바이너리 = PCM 청크
+      const f = new Float32Array(data);
+      let s = 0;
+      for(let i = 0; i < f.length; i++) s += f[i] * f[i];
+      this.audioLevel = Math.sqrt(s / Math.max(1, f.length));
+      return;
+    }
+    let m;
+    try{ m = JSON.parse(data); }catch(e){ return; }
+    this.handle(m);
+  }
+
+  ack(m, ok, msg){ this.emit({type:"ack", req_id:m.req_id, ok, msg:msg || "", params_version:this.version}); }
+
+  handle(m){
+    switch(m.type){
+      case "set_params": {
+        const p = m.params || {};
+        if(("adapt_b" in p && p.adapt_b !== 0) || ("adapt_tau_w" in p && this.params.adapt_b !== 0)){
+          this.ack(m, false, "adaptation은 M2c 전에는 0 고정");   // 계약: 서버가 거절
+          return;
+        }
+        const resets = ("dt_ms" in p && p.dt_ms !== this.params.dt_ms)
+                    || ("synapse" in p && p.synapse !== this.params.synapse);
+        Object.assign(this.params, p);
+        this.version++;
+        if(resets) this.reset(0);
+        this.ack(m, true, resets ? "엔진 재생성 + reset 수행" : "");
+        return;
+      }
+      case "stimulus":
+        this.stim = {...this.stim, ...m}; this.stimStart = this.tMs;
+        this.ack(m, true, ""); return;
+      case "audio_start":
+        this.stim = {...this.stim, kind:"audio"}; this.ack(m, true, "sr=" + m.sample_rate); return;
+      case "audio_stop":
+        this.stim = {...this.stim, kind:"silence"}; this.audioLevel = 0; this.ack(m, true, ""); return;
+      case "inject": {
+        const t = m.targets || {};
+        let idx = [];
+        if(t.idx) idx = t.idx;
+        else if(t.set){
+          const r = MOCK_SETS.findIndex(s => s[0] === t.set);
+          if(r < 0){ this.ack(m, false, "모르는 집합 " + t.set); return; }
+          idx = [r];
+        }
+        this.injection.set(this.tMs + (m.duration_ms || 0), {amp:m.amp || 0, idx, set:t.set});
+        this.ack(m, true, ""); return;
+      }
+      case "pause":  this.status = "paused";  this.ack(m, true, ""); return;
+      case "resume": this.status = "running"; this.ack(m, true, ""); return;
+      case "step":   this.pendingSteps += (m.n || 1); this.ack(m, true, (m.n || 1) + " 스텝"); return;
+      case "reset":  this.reset(m.seed || 0); this.ack(m, true, "seed=" + (m.seed || 0)); return;
+      case "get_hops": {
+        this.ack(m, true, "");
+        const layers = [[], []];
+        const rnd = (a, b) => a + ((Math.random() * (b - a)) | 0);
+        for(let k = 0; k < rnd(8, 60); k++) layers[0].push(rnd(0, this.N));
+        for(let k = 0; k < rnd(40, 600); k++) layers[1].push(rnd(0, this.N));
+        this.emit({type:"hops", req_id:m.req_id, src:m.src, k:m.k, layers});
+        return;
+      }
+      case "snapshot":
+        this.ack(m, true, "");
+        setTimeout(() => this.emit({
+          type:"snapshot_done", req_id:m.req_id, run_id:m.run_id,
+          path:"runs/live/" + m.run_id + "/run.json (모의 — 파일 없음)",
+          n_frames: Math.round((m.seconds || 5) * 1000 / this.binMs),
+        }), 250);
+        return;
+      case "set_frame_every":
+        this.frameEvery = Math.max(1, m.n || 1); this.ack(m, true, ""); return;
+      default:
+        this.emit({type:"error", req_id:m.req_id, msg:"모르는 메시지 " + m.type});
+    }
+  }
+
+  reset(seed){ this.state.fill(0); this.tMs = 0; this.step = 0; this.stimStart = 0; this.seed = seed; }
+
+  envelope(){
+    const s = this.stim;
+    if(s.kind === "silence") return 0;
+    if(s.kind === "audio") return clamp(this.audioLevel * 6, 0, 1);
+    const since = this.tMs - this.stimStart;
+    if(s.duration_ms > 0 && since > s.duration_ms) return 0;
+    if(s.kind === "tone") return 0.55 + 0.45 * Math.sin(2 * Math.PI * s.carrier_hz * this.tMs / 1000);
+    const ph = since % Math.max(1, s.ipi_ms);
+    return ph < s.pulse_ms ? 1 - ph / s.pulse_ms : 0;
+  }
+
+  advance(){
+    let bins = Math.max(0, Math.round(25 * this.params.speed / this.binMs));
+    if(this.status === "paused"){
+      bins = Math.min(this.pendingSteps, 200);
+      this.pendingSteps -= bins;
+      if(bins === 0){ this.emitFrame(0, [], 0); return; }
+    }
+    let group = [], groupSpikes = [], nBins = 0, level = 0;
+    for(let b = 0; b < bins; b++){
+      const rates = this.stepOnce();
+      level = this.lastLevel;
+      group.push(rates); nBins++;
+      groupSpikes.push(this.sampleSpikes(rates));
+      if(nBins >= this.frameEvery){
+        this.emitFrame(level, group, nBins, groupSpikes);
+        group = []; groupSpikes = []; nBins = 0;
+      }
+    }
+    if(nBins) this.emitFrame(level, group, nBins, groupSpikes);
+  }
+
+  stepOnce(){
+    const env = this.envelope();
+    this.lastLevel = Math.abs(env);
+    const a = this.params.a_in / 320;
+    // g는 문서에 기록된 기준값 대비 비율로만 쓴다 (합성 사슬이라 물리적 의미 없음)
+    const gRef = this.params.synapse === "current" ? 0.336 : 3.162e-4;
+    const gain = clamp(this.params.g / gRef, 0, 12);
+    const ignite = this.params.noise_sigma >= 22 || gain > 3.2;
+    const rates = new Array(MOCK_SETS.length).fill(0);
+    for(const [name, lag, k, tau] of MOCK_CHAIN){
+      const r = MOCK_SETS.findIndex(s => s[0] === name);
+      const drive = Math.abs(env) * k * a * (lag === 0 ? 1 : gain);
+      this.state[r] += (drive * 320 - this.state[r]) / tau;
+      rates[r] = Math.max(0, this.state[r]);
+    }
+    for(let r = 0; r < rates.length; r++){
+      if(ignite) rates[r] = Math.max(rates[r], 120 + Math.random() * 60);
+      else if(this.params.noise_sigma > 0) rates[r] += this.params.noise_sigma * 0.004 * Math.random();
+    }
+    for(const [until, inj] of this.injection){
+      if(this.tMs > until){ this.injection.delete(until); continue; }
+      if(inj.set){
+        const r = MOCK_SETS.findIndex(s => s[0] === inj.set);
+        if(r >= 0) rates[r] += inj.amp * 1.5;
+      }
+    }
+    this.tMs += this.binMs;
+    this.step += Math.round(this.binMs / this.params.dt_ms);
+    this.checkWarnings(rates, env);
+    return rates;
+  }
+
+  sampleSpikes(rates){
+    const out = [];
+    let budget = 1500;
+    for(let r = 0; r < rates.length && budget > 0; r++){
+      const expect = rates[r] * this.sizes[r] * this.binMs / 1000;
+      const want = Math.min(budget, Math.round(expect));
+      for(let k = 0; k < want; k++) out.push(this.offsets[r] + ((Math.random() * this.sizes[r]) | 0));
+      budget -= want;
+    }
+    return out;
+  }
+
+  emitFrame(level, group, nBins, groupSpikes){
+    const R = MOCK_SETS.length;
+    const rates = new Array(R).fill(0);
+    for(const g of group) for(let r = 0; r < R; r++) rates[r] += g[r] / Math.max(1, group.length);
+    const idx = [];
+    for(const s of (groupSpikes || [])) for(const i of s) idx.push(i);
+    const total = idx.length;
+    const capped = total > 1500 ? idx.slice(0, 1500) : idx;
+    let act = 0;
+    for(let r = 0; r < R; r++) act += Math.min(1, rates[r] * 0.1) * this.sizes[r];
+    this.emit({
+      type:"frame", t_ms:this.tMs, step:this.step, n_bins:Math.max(1, nBins),
+      rates, spikes:{idx:capped, n_total:total, sample_ratio: total ? capped.length / total : 1},
+      active_frac_100ms: clamp(act / this.N, 0, 1),
+      input_level: clamp(level, 0, 1),
+      status:this.status, speed:this.params.speed, params_version:this.version,
+    });
+  }
+
+  checkWarnings(rates, env){
+    const quiet = env === 0 && this.injection.size === 0 && this.params.noise_sigma === 0;
+    const mean = rates.reduce((s, v, r) => s + v * this.sizes[r], 0) / this.N;
+    const set = (code, on) => {
+      if(on && !this.warn.has(code)){
+        this.warn.add(code);
+        this.emit({type:"warning", code, msg:WARNING_TEXT[code] || code});
+      }else if(!on && this.warn.has(code)){
+        this.warn.delete(code);
+        this.emit({type:"warning", code:code + "_cleared", msg:""});
+      }
+    };
+    set("runaway", mean > 90);
+    set("ignited", quiet && mean > 5);
+    this.silentFor = (env > 0 && mean <= 0) ? this.silentFor + this.binMs : 0;
+    set("all_silent", this.silentFor >= 300);
+  }
+
+  close(){ clearInterval(this.timer); this.readyState = 3; this.onclose && this.onclose(); }
+}
+
+// ═══════════════════════════════════════════════════════
+//  시작
+// ═══════════════════════════════════════════════════════
+syncStimUI();
+syncParamUI();
+resize();
+connect();
+</script>
+</body>
+</html>
