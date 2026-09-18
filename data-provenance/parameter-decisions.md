@@ -212,3 +212,54 @@ path M2d does not touch and which is bit-identical — inflated by the same 1.4-
 the evidence that the slowdown is environmental. The adaptation branch costs +1.5 us/step,
 measured as a matched pair in the same conditions, and that increment is valid. A rerun on an
 idle, unthrottled GPU is the only outstanding item.
+
+## 2026-09-19 — M2e/M2f: the selection rule was the limit, and a robust operating point exists
+
+**M2e (e8df7e5)** opened the truncated b_g grid in both directions. The boundary resolved
+(the "smallest passing b_g" became an interior point, 0.658), but the selected cell failed
+robustness on 2 of 4 noise seeds. The cause was not luck: its margin (0.263 points of active
+fraction) was smaller than the seed-to-seed scatter (0.35 points). The engine session showed
+the rule itself was at fault — active fraction falls smoothly with b_g while the condition is
+a hard threshold, so "smallest passing b_g" structurally selects the least robust passing
+point, and a finer grid makes it worse (M2d 0.872 → M2e 0.263 points).
+
+**M2f (b4bb62b)** replaced the selection rule, pre-registered in `docs/m2f-brief.md` with the
+post hoc nature stated up front and two safeguards: an a priori justification (a margin below
+measurement scatter is a coin flip, not a margin) and out-of-sample validation on seeds never
+used before. New rule: smallest b_g whose minimum normalised margin ≥ 3 × seed scatter.
+
+Result: **b_g = 8.0, g = 5.365e-4, sigma = 29.13. Out-of-sample 5/5 (seeds 6-10); 9 of 9 seeds
+pass overall; active fraction 24.9-25.9 % against the 30 % cap, a worst-case margin of 4.06
+points.** Compare M2e's cell: 0.263 points and 2 of 4 seeds failing. The usable region is not a
+knife edge either — 14 of 25 cells around it pass, spanning the full x1.56 in g that was swept
+and x1.25 in sigma.
+
+**Three caveats, all raised by the engine session and all kept on the record.**
+1. **8.0 passed because its scatter *estimate* was smallest, not because its margin was
+   largest.** The largest margin is at b_g ≈ 1.52 (0.0599 vs 0.0419 normalised).
+2. **The rule's arithmetic is weak.** A 4-sample range underestimates scatter: the 5 held-out
+   seeds scattered 3.6x more than the 4 used to select. Recomputed on 9 seeds the rule would
+   *fail* at 8.0. The rule also compares unlike things — the binding margin is the rate floor
+   while the scatter is measured on active fraction. Like-for-like (binding condition against
+   its own 9-seed scatter) it passes comfortably, 0.0419 ≥ 3 × 0.0073. **So the conclusion
+   rests on the out-of-sample validation, not on the rule's arithmetic.**
+3. **8.0 is the top of the candidate list.** Nothing above it was run; the brief forbade a new
+   grid. Everything below was run and failed, so the rule's answer lies in (5.278, 8.0].
+
+**Structural finding the earlier rounds could not see.** Normalising the margins revealed that
+the binding condition switches: below b_g ≈ 1.5 it is active fraction (too busy), above it the
+rate falls to the 0.1 Hz floor (too quiet). The minimum margin peaks near b_g ≈ 1.52. Too
+little adaptation and too much are both failures.
+
+**v bound holds to b_g = 8.0**: stimulus grids M2d 288 + M2e 264 = 552 runs, zero violations,
+v_min -74.98 mV. (Noise runs may go below the reversal potential — the noise current can be
+negative — and do so by the same amount with adaptation off, so adaptation contributes nothing
+to that excursion.)
+
+**Decision: record b_g = 8.0 as the pre-registered rule's answer, adopt nothing yet.** Which
+operating point the auditory reruns use is settled by experiment, not by more statistics:
+`docs/m2g-brief.md` runs the M3 protocol at both b_g = 8.0 and b_g = 1.51572.
+
+**Bench: still unverified.** The GPU has been software power-capped for three rounds (1,455
+then 480 then 465 MHz of 3,105, ~20-40 W). The engine session refused to produce numbers under
+those conditions each time, which is correct.
