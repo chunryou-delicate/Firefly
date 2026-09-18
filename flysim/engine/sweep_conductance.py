@@ -142,6 +142,18 @@ B_G_GRID_M2E = np.concatenate([B_G_GRID_REFINE, B_G_GRID_EXTEND])
 # substitute cell is looked for (docs/m2e-brief.md §4).
 ROBUSTNESS_SEEDS = (3, 4, 5)
 
+# ---- M2f (pre-defined; docs/m2f-brief.md, written before the run) -------------
+# Only the SELECTION rule changes; the four usable-state conditions are untouched.
+# New rule: DEFAULT_ADAPT_G_B = the smallest candidate b_g whose minimum margin is at
+# least M2F_MARGIN_MULTIPLIER times the seed-to-seed spread. Candidates are exactly the
+# b_g that produced a usable state in M2e - no new grid.
+M2F_MARGIN_MULTIPLIER = 3.0          # fixed before the run (brief: ~99 % under normality)
+M2F_SPREAD_SEEDS = (0, 3, 4, 5)      # spread is measured over these (M2e runs reused)
+M2F_VALIDATION_SEEDS = (6, 7, 8, 9, 10)   # never used before; out-of-sample only
+M2F_G_FACTORS = (0.8, 0.9, 1.0, 1.1, 1.25)
+M2F_SIGMA_FACTORS = (0.8, 0.9, 1.0, 1.1, 1.25)
+
+
 NOISE_SIGMA_GRID = np.geomspace(1.0, 200.0, 12)
 NOISE_ON_MS = 2000
 NOISE_OFF_MS = 400
@@ -747,3 +759,189 @@ def usable_margins(row: dict) -> dict:
         "tail_headroom": IGNITED_ACTIVE_FRAC - row["tail_active_frac"],
         "active_frac_headroom": USABLE_ACTIVE_FRAC_MAX - row["active_frac_last_s"],
     }
+
+
+# The four conditions have four different units (Hz, a dimensionless ratio, and two
+# fractions), so "the minimum of the four margins" is only well defined once they are
+# put on a common scale. Each margin is therefore normalised by the width of its own
+# condition's allowed band, giving a dimensionless "fraction of the band still in hand".
+# Decided here, before running, on general grounds - not by looking at which b_g it picks.
+_BANDS = {
+    "rate_lower": (LOW_RATE_RANGE_HZ[1] - LOW_RATE_RANGE_HZ[0]),
+    "rate_upper": (LOW_RATE_RANGE_HZ[1] - LOW_RATE_RANGE_HZ[0]),
+    "ratio_lower": (STABLE_RATIO_RANGE[1] - STABLE_RATIO_RANGE[0]),
+    "ratio_upper": (STABLE_RATIO_RANGE[1] - STABLE_RATIO_RANGE[0]),
+    "tail_headroom": IGNITED_ACTIVE_FRAC,
+    "active_frac_headroom": USABLE_ACTIVE_FRAC_MAX,
+}
+
+
+def normalised_margins(row: dict) -> dict:
+    """Each condition's margin as a fraction of that condition's allowed band."""
+    return {k: v / _BANDS[k] for k, v in usable_margins(row).items()}
+
+
+def min_margin(row: dict) -> tuple[float, str]:
+    """(smallest normalised margin, which condition is binding)."""
+    m = normalised_margins(row)
+    k = min(m, key=m.get)
+    return m[k], k
+
+
+def _noise_run(engine, g: float, b_g: float, sigma: float, seed: int, n: int) -> dict:
+    """One noise run of the standard protocol at a fixed cell. Returns the judged row."""
+    p = _params(g, adapt_g_b=b_g, noise_sigma=float(sigma))
+    engine.params = p
+    engine.reset(seed)
+    engine.i_ext.zero_()
+    zero = lambda k, buf: None  # noqa: E731
+    t1, i1, vmin1, _ = _run_tracked(engine, NOISE_ON_MS, zero)
+    engine.params = _params(g, adapt_g_b=b_g)
+    t2, i2, vmin2, _ = _run_tracked(engine, NOISE_OFF_MS, zero)
+    first, last = (t1 < 1000), (t1 >= NOISE_ON_MS - 1000)
+    rate_first = int(first.sum()) / n
+    rate_last = int(last.sum()) / n
+    active_last = int(np.unique(i1[last]).size) / n
+    tail_active = int(np.unique(i2[t2 >= NOISE_OFF_MS - NOISE_TAIL_WINDOW_MS]).size) / n
+    ratio = (rate_last / rate_first) if rate_first > 0 else (float("inf") if rate_last else 0.0)
+    usable, cond = _judge_usable(rate_first, rate_last, active_last, ratio, tail_active)
+    return dict(adapt_g_b=float(b_g), g=float(g), sigma=float(sigma), seed=int(seed),
+                rate_first_s_hz=rate_first, rate_last_s_hz=rate_last,
+                active_frac_last_s=active_last, ratio_last_first=ratio,
+                tail_active_frac=tail_active, usable=usable, conditions=cond,
+                v_min=min(vmin1, vmin2), v_lower_bound=p.v_lower_bound,
+                # NOT a bound check: with noise on, i_ext can be negative, so v is allowed
+                # below the reversal potentials and does go there in M2b with no adaptation
+                # at all (-229 mV at sigma 200). The model's bound is tested on the
+                # noise-free stimulus grid (M2d/M2e). This flag only records whether this
+                # particular run happened to stay above it.
+                v_stayed_above_reversal=bool(min(vmin1, vmin2) >= p.v_lower_bound))
+
+
+def run_m2f_selection(candidates, g: float, sigma: float, seeds=M2F_SPREAD_SEEDS,
+                      multiplier: float = M2F_MARGIN_MULTIPLIER, graph=None) -> dict:
+    """M2f selection: smallest candidate b_g with min margin >= multiplier * seed spread.
+
+    The four usable-state conditions are unchanged; only which passing point becomes the
+    default changes. Margins are normalised per condition (see ``normalised_margins``);
+    the spread is the max-min of the ACTIVE FRACTION over ``seeds``, put on the same
+    normalised scale, exactly as docs/m2f-brief.md specifies.
+    """
+    graph = graph if graph is not None else Graph.load()
+    n = graph.n
+    print(f"M2f selection: {len(candidates)} candidate b_g x {len(seeds)} seeds at "
+          f"g={g:.4e}, sigma={sigma:.2f} = {len(candidates) * len(seeds)} runs", flush=True)
+    engine = LIFEngine(graph, _params(g, adapt_g_b=float(candidates[0])), device="cuda")
+    out = []
+    for b_g in candidates:
+        rows = [_noise_run(engine, g, float(b_g), sigma, s, n) for s in seeds]
+        by_seed = {r["seed"]: r for r in rows}
+        acts = [r["active_frac_last_s"] for r in rows]
+        spread_active = max(acts) - min(acts)
+        spread_norm = spread_active / USABLE_ACTIVE_FRAC_MAX
+        primary = by_seed[seeds[0]]
+        mm, binding = min_margin(primary)
+        # descriptive: spread of whichever condition is binding, and the worst margin
+        # over the seeds (the rule uses neither; reported so a mismatch is visible)
+        bind_vals = [normalised_margins(r)[binding] for r in rows]
+        spread_binding_norm = max(bind_vals) - min(bind_vals)
+        worst_mm = min(min_margin(r)[0] for r in rows)
+        passes = bool(mm >= multiplier * spread_norm)
+        rec = dict(adapt_g_b=float(b_g), rows=rows,
+                   spread_active_frac=spread_active, spread_norm=spread_norm,
+                   min_margin=mm, binding_condition=binding,
+                   threshold=multiplier * spread_norm, passes_rule=passes,
+                   all_seeds_usable=all(r["usable"] for r in rows),
+                   n_seeds_usable=sum(r["usable"] for r in rows),
+                   spread_binding_norm=spread_binding_norm, worst_min_margin_over_seeds=worst_mm)
+        out.append(rec)
+        print(f"b_g={b_g:8.5f}  min_margin={mm:.4f} ({binding})  spread={spread_norm:.4f}  "
+              f"need>={multiplier * spread_norm:.4f}  seeds_usable={rec['n_seeds_usable']}/{len(seeds)}  "
+              f"{'PASS' if passes else 'fail'}", flush=True)
+    winners = [c["adapt_g_b"] for c in out if c["passes_rule"]]
+    selected = min(winners) if winners else None
+    return dict(
+        generated=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        gpu=torch.cuda.get_device_name(0), n_neurons=n, g=float(g), sigma=float(sigma),
+        rule=f"smallest candidate b_g with min normalised margin >= {multiplier} x "
+             f"normalised seed spread of the active fraction",
+        multiplier=multiplier, spread_seeds=list(seeds),
+        candidates=[float(b) for b in candidates], per_candidate=out,
+        passing=winners, selected_adapt_g_b=selected, selected_g=(float(g) if selected else None),
+        conditions=dict(rate_hz=LOW_RATE_RANGE_HZ, ratio=STABLE_RATIO_RANGE,
+                        tail_active_below=IGNITED_ACTIVE_FRAC,
+                        active_frac_max=USABLE_ACTIVE_FRAC_MAX),
+        v_min_overall=min(r["v_min"] for c in out for r in c["rows"]),
+        v_note="noise runs: v may legitimately go below the reversal potentials because the "
+               "noise current can be negative (m2b-report.md §1). The model's voltage bound "
+               "is tested on the noise-free stimulus grid, not here.",
+    )
+
+
+def run_m2f_validation(b_g: float, g: float, sigma: float, seeds=M2F_VALIDATION_SEEDS,
+                       graph=None) -> dict:
+    """Out-of-sample check with seeds never used before. All must pass, or robust = False.
+
+    A failure is reported as-is; no substitute cell is looked for (docs/m2f-brief.md §5)."""
+    graph = graph if graph is not None else Graph.load()
+    n = graph.n
+    print(f"M2f out-of-sample validation: b_g={b_g:g}, g={g:.4e}, sigma={sigma:.2f}, "
+          f"seeds {list(seeds)}", flush=True)
+    engine = LIFEngine(graph, _params(g, adapt_g_b=b_g), device="cuda")
+    rows = []
+    for seed in seeds:
+        r = _noise_run(engine, g, b_g, sigma, seed, n)
+        mm, binding = min_margin(r)
+        r["min_margin"], r["binding_condition"] = mm, binding
+        rows.append(r)
+        print(f"seed={seed}  rate {r['rate_first_s_hz']:.3f}->{r['rate_last_s_hz']:.3f}  "
+              f"active={r['active_frac_last_s']:8.3%}  ratio={r['ratio_last_first']:5.2f}  "
+              f"tail={r['tail_active_frac']:7.3%}  v[{r['v_min']:7.1f}]  "
+              f"{'USABLE' if r['usable'] else 'FAIL: ' + ','.join(k for k, v in r['conditions'].items() if not v)}",
+              flush=True)
+    robust = all(r["usable"] for r in rows)
+    return dict(
+        generated=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        gpu=torch.cuda.get_device_name(0), n_neurons=n,
+        cell=dict(adapt_g_b=float(b_g), g=float(g), sigma=float(sigma)),
+        seeds=list(seeds), rows=rows, robust=robust,
+        n_passed=sum(r["usable"] for r in rows),
+        note="out-of-sample: these seeds were not used to choose the rule or the cell; a "
+             "failure is reported as-is and no substitute cell is sought (docs/m2f-brief.md §5)",
+        v_min_overall=min(r["v_min"] for r in rows),
+    )
+
+
+def run_m2f_width(b_g: float, g0: float, sigma0: float, g_factors=M2F_G_FACTORS,
+                  sigma_factors=M2F_SIGMA_FACTORS, seed: int = 0, graph=None) -> dict:
+    """Local (g, sigma) sweep around the selected point: is the background state a region
+    or a knife edge? Descriptive only - it does not change the selection."""
+    graph = graph if graph is not None else Graph.load()
+    n = graph.n
+    print(f"M2f width scan: b_g={b_g:g}, {len(g_factors)}x{len(sigma_factors)} around "
+          f"g={g0:.4e}, sigma={sigma0:.2f}", flush=True)
+    engine = LIFEngine(graph, _params(g0, adapt_g_b=b_g), device="cuda")
+    rows = []
+    for gf in g_factors:
+        for sf in sigma_factors:
+            r = _noise_run(engine, g0 * gf, b_g, sigma0 * sf, seed, n)
+            r["g_factor"], r["sigma_factor"] = float(gf), float(sf)
+            rows.append(r)
+            print(f"g x{gf:<5} sigma x{sf:<5}  active={r['active_frac_last_s']:8.3%}  "
+                  f"rate={r['rate_last_s_hz']:6.3f}  tail={r['tail_active_frac']:7.3%}  "
+                  f"{'USABLE' if r['usable'] else '-'}", flush=True)
+    usable = [r for r in rows if r["usable"]]
+    gs = sorted({r["g"] for r in usable})
+    ss = sorted({r["sigma"] for r in usable})
+    return dict(
+        generated=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        gpu=torch.cuda.get_device_name(0), n_neurons=n, seed=seed,
+        centre=dict(adapt_g_b=float(b_g), g=float(g0), sigma=float(sigma0)),
+        g_factors=list(g_factors), sigma_factors=list(sigma_factors), rows=rows,
+        n_usable=len(usable), n_cells=len(rows),
+        usable_g_range=[min(gs), max(gs)] if gs else None,
+        usable_sigma_range=[min(ss), max(ss)] if ss else None,
+        usable_g_width_factor=(max(gs) / min(gs)) if gs else None,
+        usable_sigma_width_factor=(max(ss) / min(ss)) if ss else None,
+        v_min_overall=min(r["v_min"] for r in rows),
+    )

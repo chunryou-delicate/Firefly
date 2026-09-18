@@ -1,0 +1,138 @@
+{
+ "generated": "2026-09-19T01:40:21+09:00",
+ "gpu": "NVIDIA GeForce RTX 4090 Laptop GPU",
+ "n_neurons": 165122,
+ "cell": {
+  "adapt_g_b": 8.0,
+  "g": 0.000536539159055945,
+  "sigma": 29.12673572985976
+ },
+ "seeds": [
+  6,
+  7,
+  8,
+  9,
+  10
+ ],
+ "rows": [
+  {
+   "adapt_g_b": 8.0,
+   "g": 0.000536539159055945,
+   "sigma": 29.12673572985976,
+   "seed": 6,
+   "rate_first_s_hz": 0.3515582417848621,
+   "rate_last_s_hz": 0.2752086336163564,
+   "active_frac_last_s": 0.2485858940662056,
+   "ratio_last_first": 0.7828251507321274,
+   "tail_active_frac": 1.8168384588364965e-05,
+   "usable": true,
+   "conditions": {
+    "rate_in_band": true,
+    "stable": true,
+    "not_self_sustained": true,
+    "active_frac_ok": true
+   },
+   "v_min": -91.93559265136719,
+   "v_lower_bound": -75.0,
+   "v_stayed_above_reversal": false,
+   "min_margin": 0.03575686400333804,
+   "binding_condition": "rate_lower"
+  },
+  {
+   "adapt_g_b": 8.0,
+   "g": 0.000536539159055945,
+   "sigma": 29.12673572985976,
+   "seed": 7,
+   "rate_first_s_hz": 0.3317486464553482,
+   "rate_last_s_hz": 0.29194777195043664,
+   "active_frac_last_s": 0.2594324196654595,
+   "ratio_last_first": 0.88002701765275,
+   "tail_active_frac": 4.239289737285159e-05,
+   "usable": true,
+   "conditions": {
+    "rate_in_band": true,
+    "stable": true,
+    "not_self_sustained": true,
+    "active_frac_ok": true
+   },
+   "v_min": -91.29428100585938,
+   "v_lower_bound": -75.0,
+   "v_stayed_above_reversal": false,
+   "min_margin": 0.03917301468376257,
+   "binding_condition": "rate_lower"
+  },
+  {
+   "adapt_g_b": 8.0,
+   "g": 0.000536539159055945,
+   "sigma": 29.12673572985976,
+   "seed": 8,
+   "rate_first_s_hz": 0.32821792371700925,
+   "rate_last_s_hz": 0.2895858819539492,
+   "active_frac_last_s": 0.2524012548297622,
+   "ratio_last_first": 0.8822975865377518,
+   "tail_active_frac": 2.4224512784486623e-05,
+   "usable": true,
+   "conditions": {
+    "rate_in_band": true,
+    "stable": true,
+    "not_self_sustained": true,
+    "active_frac_ok": true
+   },
+   "v_min": -91.4800796508789,
+   "v_lower_bound": -75.0,
+   "v_stayed_above_reversal": false,
+   "min_margin": 0.038690996317132485,
+   "binding_condition": "rate_lower"
+  },
+  {
+   "adapt_g_b": 8.0,
+   "g": 0.000536539159055945,
+   "sigma": 29.12673572985976,
+   "seed": 9,
+   "rate_first_s_hz": 0.3379077288308039,
+   "rate_last_s_hz": 0.2857523528058042,
+   "active_frac_last_s": 0.2559501459526895,
+   "ratio_last_first": 0.8456520180658111,
+   "tail_active_frac": 1.2112256392243311e-05,
+   "usable": true,
+   "conditions": {
+    "rate_in_band": true,
+    "stable": true,
+    "not_self_sustained": true,
+    "active_frac_ok": true
+   },
+   "v_min": -91.80361938476562,
+   "v_lower_bound": -75.0,
+   "v_stayed_above_reversal": false,
+   "min_margin": 0.03790864342975595,
+   "binding_condition": "rate_lower"
+  },
+  {
+   "adapt_g_b": 8.0,
+   "g": 0.000536539159055945,
+   "sigma": 29.12673572985976,
+   "seed": 10,
+   "rate_first_s_hz": 0.3355579510907087,
+   "rate_last_s_hz": 0.3107641622557866,
+   "active_frac_last_s": 0.25841499012851105,
+   "ratio_last_first": 0.9261117528154779,
+   "tail_active_frac": 0.0002725257688254745,
+   "usable": true,
+   "conditions": {
+    "rate_in_band": true,
+    "stable": true,
+    "not_self_sustained": true,
+    "active_frac_ok": true
+   },
+   "v_min": -90.66534423828125,
+   "v_lower_bound": -75.0,
+   "v_stayed_above_reversal": false,
+   "min_margin": 0.043013094337915635,
+   "binding_condition": "rate_lower"
+  }
+ ],
+ "robust": true,
+ "n_passed": 5,
+ "note": "out-of-sample: these seeds were not used to choose the rule or the cell; a failure is reported as-is and no substitute cell is sought (docs/m2f-brief.md \u00a75)",
+ "v_min_overall": -91.93559265136719
+}

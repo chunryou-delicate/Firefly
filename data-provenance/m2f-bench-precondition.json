@@ -1,0 +1,17 @@
+{
+ "checked_at": "2026-09-19T01:42:00+09:00",
+ "method": "clocks.sm sampled under a sustained load; an idle GPU downclocks (throttle 0x1 = GpuIdle) so an idle reading cannot answer the question",
+ "clocks_max_sm_mhz": 3105.0,
+ "clock_under_load_median_mhz": 465.0,
+ "clock_ratio": 0.15,
+ "clock_ok": false,
+ "throttle_reasons_seen": [
+  "0x0000000000000004"
+ ],
+ "other_compute_pids": [
+  "111025"
+ ],
+ "precondition_met": false,
+ "power_draw_w": "39.93",
+ "rule": "docs/m2f-brief.md: re-run the bench only with no other compute process and clocks.sm >= 0.9 * clocks.max.sm; otherwise record as unverified"
+}

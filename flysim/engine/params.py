@@ -116,20 +116,22 @@ DEFAULT_ADAPT_B = 56.21452268581154   # data-provenance/m2c-noise-sweep.json (20
 # at which the pre-registered usable state exists. None = the sweep found none; see
 # docs/m2d-report.md. Like DEFAULT_ADAPT_B this is NOT the dataclass default -
 # EngineParams.adapt_g_b defaults to 0.0 so existing call sites are unaffected.
-# M2e (docs/m2e-report.md) re-ran the same rule on a grid opened in both directions and
-# resolved M2d's grid-edge answer: the minimum is now an INTERIOR point, 0.6579.
+# History of how this value was chosen (docs/m2d/m2e/m2f-report.md):
+#   M2d  rule "smallest b_g that passes" -> 1.0, the top of its grid: unresolved.
+#   M2e  grid opened both ways -> 0.6579, interior, but NOT robust (2 of 3 seeds failed).
+#        The rule itself was the problem: with a hard threshold on a smoothly varying
+#        quantity, "smallest that passes" selects the least-robust passing point.
+#   M2f  rule replaced by "smallest b_g whose minimum margin >= 3 x seed spread", then
+#        validated on five seeds never used before -> 8.0, robust 5/5.
+# The four usable-state conditions were never changed across M2d/M2e/M2f.
 #
-# DO NOT ADOPT THIS AS AN OPERATING POINT. The pre-registered robustness check failed:
-# re-running the selected cell under noise seeds 3/4/5 gives active fractions 30.069 %,
-# 29.954 % and 30.101 % against the <= 30 % condition, so 2 of 3 seeds fall outside. The
-# cell clears the condition by only 0.263 points while the seed-to-seed spread is ~0.35,
-# i.e. it sits inside the noise of the criterion. This is a consequence of the rule
-# itself: "smallest b_g that passes" selects the least-robust passing point by
-# construction, and headroom grows monotonically with b_g (0.26 pts here, 4.6 pts at
-# b_g = 8.0). Changing the rule is a planning decision, not this window's.
-DEFAULT_ADAPT_G_B = 0.6579332246575678         # data-provenance/m2e-noise-sweep.json (2026-09-19)
+# Still NOT a dataclass default: EngineParams.adapt_g_b stays 0.0, so no existing call
+# site changes behaviour. Caveats in docs/m2f-report.md §3 and §6 - 8.0 is the largest
+# candidate tested (nothing above it was run), and the rule's own arithmetic is fragile
+# even though its verdict held out of sample.
+DEFAULT_ADAPT_G_B = 8.0                        # data-provenance/m2f-selection.json (2026-09-19)
 DEFAULT_G_WITH_ADAPT = 0.000536539159055945    # the g that goes with it (same rule)
-DEFAULT_ADAPT_G_B_ROBUST = False               # data-provenance/m2e-robustness.json
+DEFAULT_ADAPT_G_B_ROBUST = True                # data-provenance/m2f-validation.json, 5/5 seeds
 
 SYNAPSE_MODELS = ("current", "conductance")
 

@@ -53,46 +53,53 @@ def test_defaults_keep_adaptation_off():
     assert DEFAULT_ADAPT_G_B is None or DEFAULT_ADAPT_G_B > 0
 
 
-def test_defaults_match_the_recorded_sweep_rule():
-    """DEFAULT_ADAPT_G_B = smallest b_g with a usable state; DEFAULT_G_WITH_ADAPT = the
-    geometric mean of the g values usable at that b_g.
+def test_defaults_match_the_recorded_selection_rule():
+    """DEFAULT_ADAPT_G_B is what the CURRENT selection rule picked, bound to the JSON.
 
-    The rule is the one fixed before the M2d sweep, unchanged. It is enforced against the
-    M2e sweep, which re-ran that same rule on a grid opened in both directions and
-    supersedes M2d's grid-edge answer (docs/m2e-report.md)."""
+    The rule changed in M2f (docs/m2f-report.md): "smallest candidate b_g whose minimum
+    normalised margin is at least 3x the seed spread", replacing M2d/M2e's "smallest b_g
+    that passes at all", which structurally selected the least-robust passing point. The
+    four usable-state conditions were never changed."""
     import json
     from pathlib import Path
-    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2e-noise-sweep.json"
+    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2f-selection.json"
     if not path.exists():
-        pytest.skip("sweep result not present")
+        pytest.skip("selection result not present")
     res = json.loads(path.read_text())
-    if not res["usable_cells"]:
-        assert DEFAULT_ADAPT_G_B is None and DEFAULT_G_WITH_ADAPT is None
+    if res["selected_adapt_g_b"] is None:
+        assert DEFAULT_ADAPT_G_B is None
         return
-    assert DEFAULT_ADAPT_G_B == pytest.approx(min(b for b, _ in res["usable_cells"]))
-    gs = [g for b, g in res["usable_cells"] if b == pytest.approx(DEFAULT_ADAPT_G_B)]
-    assert DEFAULT_G_WITH_ADAPT == pytest.approx(np.sqrt(min(gs) * max(gs)))
-    assert res["default_adapt_g_b"] == pytest.approx(DEFAULT_ADAPT_G_B)
-    assert res["protocol"]["usable_state"]["active_frac_max"] == 0.30   # unchanged in M2e
-    # the selected cell is an interior grid point, not an edge (what M2e was for)
-    grid = sorted({b for b, _ in res["usable_cells"]})
-    assert DEFAULT_ADAPT_G_B == pytest.approx(grid[0])
+    assert DEFAULT_ADAPT_G_B == pytest.approx(res["selected_adapt_g_b"])
+    assert DEFAULT_G_WITH_ADAPT == pytest.approx(res["selected_g"])
+    # it is the SMALLEST passing candidate, not merely a passing one
+    assert DEFAULT_ADAPT_G_B == pytest.approx(min(res["passing"]))
+    # the four conditions are the M2d ones, untouched
+    assert res["conditions"]["active_frac_max"] == 0.30
+    assert res["conditions"]["rate_hz"] == [0.1, 5.0]
+    assert res["conditions"]["ratio"] == [0.5, 2.0]
+    assert res["conditions"]["tail_active_below"] == 0.01
+    assert res["multiplier"] == 3.0
 
 
-def test_selected_cell_is_recorded_as_not_robust():
-    """The pre-registered robustness check failed (2 of 3 seeds), and the constant says so,
-    so nothing can quietly adopt it as an operating point (docs/m2e-report.md §5)."""
+def test_robust_flag_is_bound_to_the_out_of_sample_validation():
+    """DEFAULT_ADAPT_G_B_ROBUST reflects the out-of-sample check on seeds never used to
+    choose the rule or the cell, and every one of them must pass (docs/m2f-brief.md §5)."""
     import json
     from pathlib import Path
-    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2e-robustness.json"
+    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2f-validation.json"
     if not path.exists():
-        pytest.skip("robustness result not present")
+        pytest.skip("validation result not present")
     res = json.loads(path.read_text())
     assert DEFAULT_ADAPT_G_B_ROBUST is res["robust"]
     assert res["cell"]["adapt_g_b"] == pytest.approx(DEFAULT_ADAPT_G_B)
     assert res["cell"]["g"] == pytest.approx(DEFAULT_G_WITH_ADAPT)
-    # a failure must not have been repaired by picking a different cell
-    assert res["note"].startswith("descriptive check")
+    # robust means ALL of them passed, not a majority
+    assert res["robust"] is (res["n_passed"] == len(res["seeds"]))
+    # the validation seeds must be disjoint from every seed used to select
+    sel = json.loads((path.parent / "m2f-selection.json").read_text())
+    assert not set(res["seeds"]) & set(sel["spread_seeds"])
+    # a failure must not have been repaired by substituting a different cell
+    assert "no substitute cell is sought" in res["note"]
 
 
 def test_adapt_g_requires_conductance_synapses():

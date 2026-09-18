@@ -146,6 +146,8 @@ def _m2d(a, sc) -> None:
     """M2d / M2e adaptation-conductance sweeps (docs/m2d-brief.md, docs/m2e-brief.md)."""
     from ..graph import Graph
     graph = Graph.load()
+    if a.m2f:
+        return _m2f(a, sc, graph)
     if a.m2e:
         return _m2e(a, sc, graph)
     if a.noise:
@@ -169,6 +171,52 @@ def _m2d(a, sc) -> None:
     print(f"\nRESPONSIVE (all seeds) cells: {len(res['responsive_cells'])}"
           f"\nv bound violations: {res['v_bound_violations'] or 'NONE'}"
           f"\nv_min over all runs: {res['v_min_overall']:.2f} mV\nwritten: {out}")
+
+
+def _m2f(a, sc, graph) -> None:
+    """M2f: replace the selection rule, then validate out of sample (docs/m2f-brief.md)."""
+    prev = json.loads(Path("data-provenance/m2e-noise-sweep.json").read_text())
+    cells = prev["usable_cells"]
+    if not cells:
+        raise SystemExit("no usable cells recorded in m2e-noise-sweep.json")
+    gs = {g for _, g in cells}
+    if len(gs) != 1:
+        raise SystemExit(f"expected one g among the M2e usable cells, got {sorted(gs)}")
+    g = gs.pop()
+    sig = sorted({s for c in prev["per_cell"] for s in c["usable_sigma"]})
+    if len(sig) != 1:
+        raise SystemExit(f"expected one usable sigma, got {sig}")
+    sigma = sig[0]
+    candidates = sorted(b for b, _ in cells)
+
+    if a.width or a.robustness:
+        sel = json.loads(Path("data-provenance/m2f-selection.json").read_text())
+        b_g = sel["selected_adapt_g_b"]
+        if b_g is None:
+            raise SystemExit("the M2f rule selected nothing; report 'none' rather than "
+                             "validating or scanning a cell it did not choose")
+        if a.width:
+            res = sc.run_m2f_width(b_g, g, sigma, graph=graph)
+            out = a.out or Path("data-provenance/m2f-width.json")
+            out.write_text(json.dumps(res, indent=1))
+            print(f"\nusable {res['n_usable']}/{res['n_cells']} cells; "
+                  f"g width x{res['usable_g_width_factor']}, "
+                  f"sigma width x{res['usable_sigma_width_factor']}\nwritten: {out}")
+            return
+        res = sc.run_m2f_validation(b_g, g, sigma, graph=graph)
+        out = a.out or Path("data-provenance/m2f-validation.json")
+        out.write_text(json.dumps(res, indent=1))
+        print(f"\nrobust: {res['robust']} ({res['n_passed']}/{len(res['seeds'])} seeds)"
+              f"\nwritten: {out}")
+        return
+
+    res = sc.run_m2f_selection(candidates, g, sigma, graph=graph)
+    out = a.out or Path("data-provenance/m2f-selection.json")
+    out.write_text(json.dumps(res, indent=1))
+    print(f"\npassing candidates: {res['passing'] or 'NONE'}"
+          f"\nselected DEFAULT_ADAPT_G_B: {res['selected_adapt_g_b']}"
+          f"\nv_min over the noise runs: {res['v_min_overall']:.2f} mV "
+          f"(noise current, not a bound violation - see v_note)\nwritten: {out}")
 
 
 def _m2e(a, sc, graph) -> None:
@@ -252,6 +300,10 @@ def main() -> None:
     ap.add_argument("--g-resweep", action="store_true",
                     help="M2c: g re-sweep at --b (default: the b chosen by the recorded rule)")
     ap.add_argument("--b", type=float, default=None, help="M2c g re-sweep: override adapt_b")
+    ap.add_argument("--m2f", action="store_true",
+                    help="M2f: new selection rule, out-of-sample validation and width scan")
+    ap.add_argument("--width", action="store_true",
+                    help="M2f: local (g, sigma) width scan at the selected b_g")
     ap.add_argument("--m2e", action="store_true",
                     help="M2e: use the refined+extended b_g grid (docs/m2e-brief.md)")
     ap.add_argument("--robustness", action="store_true",
