@@ -263,3 +263,39 @@ operating point the auditory reruns use is settled by experiment, not by more st
 **Bench: still unverified.** The GPU has been software power-capped for three rounds (1,455
 then 480 then 465 MHz of 3,105, ~20-40 W). The engine session refused to produce numbers under
 those conditions each time, which is correct.
+
+## 2026-09-19 — M2g: adaptation does not extend propagation. The answer is no.
+
+M2g (8f98d39) ran the M3 click-train protocol at both candidate operating points
+(A: b_g = 8.0, the rule's pick; B: b_g = 1.51572, the largest-margin point), conductance
+synapses, g = 5.365e-4, sigma = 29.13, a_in unchanged from M3, against a matched
+same-noise no-stimulus control, 3 noise seeds each: 24 runs.
+
+**Neither reaches hop 2.** The stimulus lands hard — JO_AB rises 3.8 to 31.1 Hz over control,
+tens of sigma — and one hop downstream the left side clears 3 sigma in all four configurations.
+Past that nothing: SAD, WED, AMMCtype and pC1 differ from control by -0.120 to +0.111 Hz, several
+negative, none above threshold. Recomputing against the standard error of the mean instead of
+the per-run sd (1.73x more permissive, and the statistic that actually fits a difference of
+means) changes nothing.
+
+**pC1 is 0 in every configuration this project has ever run** — current synapses, conductance
+synapses, and both adaptation operating points.
+
+Per the pre-registered rule, **no operating point is proposed.** Adaptation delivered what it was
+added for — it bounded the voltage (M2d), widened the usable gain band (M2d/M2e) and produced a
+robust low-rate background (M2f) — and it did not carry the click train any further. Hop 2 was
+the wall before adaptation and it is the wall after.
+
+**One limitation, raised by the engine session and kept on the record.** The background raises
+the detection floor to 0.13-0.30 Hz, which is at or above the hop-2 signal that was visible
+without adaptation (SAD 0.053/0.076, WED 0.120/0.167 Hz against an exactly-zero control). So at
+hop 2 this experiment cannot separate "adaptation did not help" from "the same small signal is
+still arriving and is buried". Hop 3 has no such ambiguity: pC1 was 0.000 with a silent control
+too, so there was never a signal to bury. Resolving hop 2 needs statistical power, not a new
+operating point: `docs/m2h-brief.md`.
+
+**The ignition criterion does not survive a noisy background.** Applied as written it flags all
+24 runs *and all 12 no-stimulus controls* — because these operating points target a 25-28 %
+active background by design. A control-relative version showed no stimulus-driven excess in any
+configuration (-0.66 to +0.79 %, all within 3 sigma). The criterion is rewritten as
+control-relative in M2h and should be used that way from now on.
