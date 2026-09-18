@@ -82,6 +82,18 @@ controls; the same experiment under the new rule flags nothing, because nothing 
 
 ## 4. Size, side by side with the no-adaptation values — the honest complication
 
+> **정정 (2026-09-19, M2i 이후 · 총괄 세션이 추가).** 아래 rate 모드 블록의 **"5–7× smaller"와
+> "adaptation attenuates hop-2 propagation"은 철회한다.** 이 절이 스스로 남긴 단서(마지막 문단의
+> `g` 불일치)를 M2i(1760f92)가 실제로 돌려 확인했고, 교란이 여기서 가정한 것과 **반대 방향**으로
+> 작용했다. `g` = 5.36539e-4에서 적응을 끄면 세 σ 전부에서 망이 점화 상태이고(활성 31–47 %,
+> 24–33 Hz, 자극 종료 후 자립), σ = 0에서조차 클릭 트레인 단독으로 폭주에 들어간다(활성 19.9 %,
+> 종료 후 15 %). 같은 자극이 `g` = 3.162e-4에서는 점화 없는 깨끗한 반응이었다. 따라서 이 비교는
+> 적응 런을 **더 낮은 이득의 다른 동작점**과 견준 것이며, 그 이득에서 무적응 런은 "약해진 신호"가
+> 아니라 애초에 신호가 아니다. 두 팔이 함께 지지하는 더 좁고 단단한 진술은 이것이다 —
+> **`g` = 5.36539e-4, σ 23–29에서 쓸 수 있는 저발화 배경은 적응이 있어야만 존재하며**, 그 안에서
+> 홉 2는 phase-lock에서 도달하고 rate에서는 도달하지 않는다. 아래 원문은 그 시점의 기록으로 남긴다.
+> 근거는 `docs/m2i-report.md`.
+
 The brief asks for the signal size next to the no-adaptation value. Doing that changes what "preserves"
 means, in different directions for the two modes.
 

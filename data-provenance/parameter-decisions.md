@@ -342,3 +342,41 @@ every silent control.
 g = 3.162e-4 while M2h runs at 5.365e-4, so the rate-mode comparison is between two operating
 points, not a single variable. `docs/m2i-brief.md` tests whether a like-for-like control even
 exists.
+
+## 2026-09-19 — M2i closes the adaptation line: the background *requires* adaptation
+
+M2i (1760f92) ran the missing arm — adaptation off, everything else including `g` = 5.36539e-4
+held at M2h's values, 160 runs. **No like-for-like control exists.** At all three noise levels
+the no-adaptation network is already ignited with no stimulus at all: 31-47 % active, 24-33 Hz
+network rate, self-sustained after the window. Against the same-noise adapted runs (0.115-0.345 Hz)
+that is a factor of about 100. The low-rate background is not a property of this gain and noise,
+it is a property of adaptation.
+
+**The confound ran the opposite way to the one assumed, so a claim is retracted.** At sigma = 0,
+same gain, no adaptation, the click train *by itself* drives the network into runaway (19.9 %
+active, 15 % still active after the stimulus), and hop-2/hop-3 sets read 8-49 Hz including
+pC1 at 10-12 Hz. The same stimulus at g = 3.162e-4 was a clean non-ignited response. So
+M2h §4's "hop 2 is 5-7x smaller with adaptation, adaptation attenuates propagation" compared the
+adapted runs against a *different, lower-gain operating point*; at this gain the unadapted runs
+are not a weakened signal, they are not a signal. **A correction notice now heads M2h §4; the
+original text is left in place as the record of that moment.**
+
+Note this is the only configuration in the project where pC1 is non-zero, and it is not
+propagation — it is the network in runaway, the same reason M4b logged its pC1 > 0 runs as failures.
+
+**The line's joint statement, which is what survives all of it:**
+a usable low-rate background at g = 5.36539e-4, sigma 23-29 **exists only with adaptation** (M2i);
+inside it the click train reaches hop 2 in phase-lock and not in rate (M2h); and pC1 is never
+reached (M2g, M2h). The hop-2-to-hop-3 wall stood in every configuration this project has run.
+
+**The ignition test needs a third form, and this is the standard from now on.** Absolute-only was
+wrong (M2g flagged 24/24 including every silent control); control-relative-only is also wrong
+(M2i's six noise cells returned False at 24-33 Hz, because the control shares the runaway and the
+saturated network is 31-47 % active, not 90 %). **Report three numbers on every noisy run and
+judge with all of them: the control's absolute state, the stimulus run's absolute state, and the
+control-relative excess. A run is usable only if the control is not itself in runaway and there is
+no stimulus-driven excess.** The engine session predicted this failure in its module docstring
+before running, and reported it rather than working around it.
+
+**Gain and adaptation are strongly coupled**: a 1.7x change in `g` moves unadapted WED by roughly
+300x. Future comparisons between operating points must hold `g` fixed.
