@@ -27,9 +27,17 @@
     /skel/<name>.json + /skel/<name>.bin  선분 배열 (x1 y1 z1 x2 y2 z2 반복, float32)
     run.json                              드래그&드롭. 기존 뷰어 계약 그대로
 
+  실시간 모드 (M6d)
+    ?ws=ws://<host>:8765/ws 를 붙이거나 '실시간' 패널에서 연결하면 docs/m5-protocol.md
+    (v1.2)의 웹소켓에 직접 붙어 살아 있는 엔진의 활동을 그린다. 조종석에 3D를
+    이식하는 대신 이쪽이 웹소켓을 직접 말한다 — 렌더러를 두 벌 만들지 않기 위해서다.
+    **파라미터 슬라이더는 여기 없다.** 세밀한 조종은 2D 조종석(flysim-live.html)의
+    몫이고, 여기서는 자극 프리셋·정지/재개/스텝/리셋·get_hops·snapshot만 보낸다.
+
   ?mock=1 을 붙이면 파일 없이 합성 점구름·골격을 만들어 붙인다. 계약과 **같은
   바이너리 형식**으로 만들어 같은 해석 경로를 타므로 모의 모드가 곧 로더 검증이다.
-  합성 데이터는 커넥톰이 아니며 화면에 빨간 배지로 계속 알린다.
+  모의 모드에는 위 프로토콜을 흉내 내는 모의 서버도 들어 있어 실시간 모드를 서버 없이
+  확인할 수 있다. 합성 데이터는 커넥톰이 아니며 화면에 빨간 배지로 계속 알린다.
 ════════════════════════════════════════════════════════════════════
 -->
 
@@ -113,6 +121,19 @@ header{
 }
 .badge.synthetic{color:var(--alert);border-color:color-mix(in srgb,var(--alert) 45%,transparent)}
 .badge b{color:var(--ink);font-weight:500}
+
+.conn{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;color:var(--ink-dim)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ink-faint);flex:none}
+.dot.live{background:var(--ok)}
+.dot.paused{background:var(--warm-hi)}
+.dot.lagging{background:var(--warm-lo)}
+.dot.down{background:var(--alert)}
+
+/* 선택한 뉴런 정보 */
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 8px;font-family:var(--mono);font-size:11px;margin-top:4px}
+.kv dt{color:var(--ink-faint)}
+.kv dd{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kv dd.big{font-size:13px;color:var(--warm-hi)}
 
 button{
   font-family:inherit;
@@ -306,6 +327,7 @@ body.dragging #drop{display:flex}
     <span class="badge synthetic" id="mockBadge" hidden>합성 데이터 — 커넥톰 아님, 과학적 의미 없음</span>
     <span class="badge" id="sourceBadge">자산 없음</span>
     <span class="spacer"></span>
+    <span class="conn" id="connWrap" hidden><i class="dot down" id="connDot"></i><span id="connText">—</span></span>
     <span class="badge" id="runBadge">런 없음</span>
     <span class="badge" id="modeBadge">감각 모드 —</span>
     <button id="openBtn">런 파일 열기</button>
@@ -346,6 +368,45 @@ body.dragging #drop{display:flex}
           <button id="mockBtn">합성 데이터</button>
         </div>
         <p class="note" id="assetNote">점구름과 골격은 /neurons-3d.* 와 /skel/* 에서 가져온다. 파일이 없으면 안내만 뜬다.</p>
+      </div>
+    </section>
+
+    <section class="group" id="liveGroup">
+      <h2>실시간</h2>
+      <div class="body">
+        <div class="seg">
+          <button id="connectBtn">서버 연결</button>
+          <button id="disconnectBtn" disabled>끊기</button>
+        </div>
+        <p class="note" id="liveNote">연결하면 살아 있는 엔진의 활동을 그대로 그린다. 연결 전에는 run.json 재생 모드다.</p>
+
+        <div class="seg" id="stimSeg" style="margin-top:8px">
+          <button data-stim="silence" disabled>무음</button>
+          <button data-stim="click_train" disabled>클릭 트레인</button>
+          <button data-stim="tone" disabled>순음</button>
+        </div>
+        <div class="seg" style="margin-top:5px">
+          <button id="livePauseBtn" disabled>정지</button>
+          <button id="liveStepBtn" disabled>step 50</button>
+          <button id="liveResetBtn" disabled>reset</button>
+        </div>
+        <div class="seg" style="margin-top:5px">
+          <button id="liveSnapBtn" disabled style="flex:1">스냅샷 저장</button>
+        </div>
+        <p class="note" id="liveInfo">—</p>
+        <p class="note">파라미터 조절은 여기 없다. g·a_in·노이즈 같은 값은 2D 조종석(flysim-live.html)에서 바꾼다.</p>
+      </div>
+    </section>
+
+    <section class="group" id="pickGroup">
+      <h2>선택한 뉴런</h2>
+      <div class="body">
+        <dl class="kv" id="pickInfo"><dt>—</dt><dd>클릭해서 고른다</dd></dl>
+        <div class="seg" style="margin-top:8px">
+          <button id="hopsBtn" disabled>하류 2홉</button>
+          <button id="hopsClearBtn" disabled>강조 해제</button>
+        </div>
+        <p class="note" id="pickNote">필드에서 뉴런을 클릭하면 bodyId와 집합을 띄운다. 드래그는 회전이라 집기가 아니다.</p>
       </div>
     </section>
 
@@ -447,7 +508,9 @@ body.dragging #drop{display:flex}
 // ═══════════════════════════════════════════════════════
 const VOXEL_NM = 8;                       // 1 복셀 = 8 nm. 파일에서 변환하지 않는다
 const UM_PER_VOXEL = VOXEL_NM / 1000;     // 화면에 μm로 적을 때만 쓴다
-const CLOUD_ARRAYS = ["pos", "set", "src"];        // 파일 1의 배열 이름
+const CLOUD_ARRAYS = ["pos", "set", "src"];          // 파일 1에서 반드시 있어야 하는 배열
+// 계약 v1.3에서 추가된 배열. 옛 파일에는 없으므로 있으면 쓰고 없으면 인덱스만 표시한다.
+const CLOUD_ARRAYS_OPTIONAL = ["body"];
 const SRC_NAMES = {0: "somaLocation", 1: "시냅스 중심", 2: "좌표 없음"};
 const SRC_NONE = 2;                       // 이 뉴런의 pos는 NaN이다
 const MAX_SETS = 24;                      // 셰이더 uniform 배열 크기
@@ -478,6 +541,24 @@ const SIDE_COLOR = {L: [0x3F, 0xBF, 0xCF], R: [0xE8, 0xA1, 0x3A], other: [0x55, 
 const WARN_SILENT  = "발화 뉴런 없음 — 입력이 닿지 않았거나 임계값이 너무 높다";
 const WARN_RUNAWAY = "전체의 90% 이상 발화 — 활동 폭주, 억제 부호를 확인할 것";
 
+// ── 실시간 모드: docs/m5-protocol.md v1.2의 부분집합 ──
+// 파라미터 변경(set_params)은 일부러 넣지 않는다. 세밀한 조종은 2D 조종석의 몫이다.
+const LIVE_SERVER_TYPES = ["hello", "frame", "params", "ack", "hops", "snapshot_done", "warning", "error"];
+const LIVE_CLIENT_TYPES = ["stimulus", "pause", "resume", "step", "reset", "get_hops", "snapshot"];
+const RECONNECT_MS = 2000;
+const HOP_K = 2;
+const WARNING_TEXT = {
+  all_silent:        WARN_SILENT,
+  runaway:           WARN_RUNAWAY,
+  ignited:           "점화 — 입력이 없는데 자기유지 활동이 이어진다. 결과로 제출하지 말 것",
+  recorder_overflow: "기록기 오버플로 — 스파이크가 버퍼를 넘쳤다. 이 구간은 불완전하다",
+};
+const STIM_PRESET = {
+  silence:     {kind: "silence",     ipi_ms: 35, carrier_hz: 200, pulse_ms: 10, duration_ms: 0, ild_db: 0},
+  click_train: {kind: "click_train", ipi_ms: 35, carrier_hz: 200, pulse_ms: 10, duration_ms: 0, ild_db: 0},
+  tone:        {kind: "tone",        ipi_ms: 35, carrier_hz: 200, pulse_ms: 10, duration_ms: 0, ild_db: 0},
+};
+
 const SPEEDS = [0.25, 0.5, 1, 2, 4];
 const el = id => document.getElementById(id);
 const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
@@ -504,6 +585,19 @@ const S = {
 
   fpsT: 0, fpsN: 0, perf: null,
   drag: null,
+
+  // 집기 · 강조
+  pick: -1,                  // 고른 뉴런의 그래프 인덱스 (-1 = 없음)
+  hop: null,                 // Uint8Array[drawN]: 0 없음, 1 = 1홉, 2 = 2홉, 3 = 고른 뉴런
+  hopActive: false,
+  skelIndex: new Map(),      // 뉴런 인덱스 -> [{bundle, seg_offset, seg_count}]
+
+  // 실시간 모드
+  sock: null, live: false, liveMock: false, wsUrl: "",
+  reqId: 1, pending: new Map(),
+  liveStatus: "—", liveParams: null, liveHello: null,
+  warnings: new Map(),
+  reconnectTimer: null, wantLive: false,
 };
 
 function log(line){
@@ -580,10 +674,15 @@ precision highp float;
 layout(location=0) in vec3 aPos;
 layout(location=1) in float aAct;      // 0..1 (정규화된 uint8)
 layout(location=2) in float aSet;      // 집합 인덱스 (uint8)
+layout(location=3) in float aHop;      // 0 없음, 1 = 1홉, 2 = 2홉, 3 = 고른 뉴런
 uniform mat4 uMVP;
 uniform float uFocal;                  // 픽셀 단위 초점거리
 uniform float uPointWorld;             // 점 하나의 월드 반지름 (복셀)
 uniform float uDim;                    // 휴지 밝기
+uniform float uHopDim;                 // 강조 중일 때 나머지 점을 낮추는 비율
+uniform vec3 uHop1;
+uniform vec3 uHop2;
+uniform vec3 uPickColor;
 uniform vec3 uSetColor[${MAX_SETS}];
 uniform float uSetVisible[${MAX_SETS}];
 out vec3 vColor;
@@ -603,6 +702,15 @@ void main(){
   vec3 hot = mix(base, vec3(1.0, 0.86, 0.52), 0.62);
   vColor = mix(base, hot, aAct * aAct);
   vAlpha = mix(uDim, 1.0, aAct);
+  int hop = int(aHop + 0.5);
+  if(hop == 0){
+    vAlpha *= uHopDim;                 // 강조가 켜져 있으면 나머지는 물러난다
+  }else{
+    vec3 hc = hop == 1 ? uHop1 : (hop == 2 ? uHop2 : uPickColor);
+    vColor = mix(hc, vColor, 0.18);
+    vAlpha = max(vAlpha, hop == 3 ? 1.0 : (hop == 1 ? 0.92 : 0.6));
+    gl_PointSize = max(gl_PointSize, hop == 3 ? 9.0 : (hop == 1 ? 4.0 : 2.5));
+  }
 }`;
 
 const POINT_FS = `#version 300 es
@@ -651,7 +759,7 @@ function program(gl, vs, fs){
 
 const canvas = el("gl");
 let GL = null, progPoint = null, progLine = null, uP = {}, uL = {};
-let vaoPoint = null, bufPos = null, bufAct = null, bufSet = null;
+let vaoPoint = null, bufPos = null, bufAct = null, bufSet = null, bufHop = null;
 
 function initGL(){
   const gl = canvas.getContext("webgl2", {antialias: true, alpha: false, depth: true,
@@ -664,7 +772,8 @@ function initGL(){
   GL = S.gl = gl;
   progPoint = program(gl, POINT_VS, POINT_FS);
   progLine = program(gl, LINE_VS, LINE_FS);
-  for(const k of ["uMVP", "uFocal", "uPointWorld", "uDim", "uSetColor", "uSetVisible"])
+  for(const k of ["uMVP", "uFocal", "uPointWorld", "uDim", "uSetColor", "uSetVisible",
+                  "uHopDim", "uHop1", "uHop2", "uPickColor"])
     uP[k] = gl.getUniformLocation(progPoint, k);
   for(const k of ["uMVP", "uColor", "uAlpha"])
     uL[k] = gl.getUniformLocation(progLine, k);
@@ -702,6 +811,12 @@ function parseCloud(meta, buf){
   const pos = readArray(buf, a.pos, "pos");
   const setIdx = readArray(buf, a.set, "set");
   const src = readArray(buf, a.src, "src");
+  // 계약 v1.3의 body. 옛 파일에는 없다 — 없으면 인덱스만 보여주고 넘어간다.
+  let body = null;
+  if(a.body){
+    body = readArray(buf, a.body, "body");
+    if(body.length !== n) throw new Error(`body 길이 ${body.length} != n ${n}`);
+  }
   if(pos.length !== 3 * n) throw new Error(`pos 길이 ${pos.length} != 3×${n}`);
   if(setIdx.length !== n || src.length !== n) throw new Error("set/src 길이가 n과 다르다");
 
@@ -716,6 +831,7 @@ function parseCloud(meta, buf){
   }
   const dPos = new Float32Array(3 * drawN);
   const dSet = new Uint8Array(drawN);
+  const drawToNeuron = new Int32Array(drawN);
   let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
   for(let i = 0; i < n; i++){
     const d = neuronToDraw[i];
@@ -727,6 +843,7 @@ function parseCloud(meta, buf){
       if(v > hi[k]) hi[k] = v;
     }
     dSet[d] = setIdx[i];
+    drawToNeuron[d] = i;
   }
   const dropped = n - drawN;
   const counts = {};
@@ -742,8 +859,8 @@ function parseCloud(meta, buf){
     if(Math.max(...slack) > 1.35)
       log("주의: 파일의 bbox가 실제 점 범위보다 " + Math.max(...slack).toFixed(1) + "배 넓다 — 화면은 점 범위로 맞춘다");
   }
-  return {meta, n, drawN, dropped, pos: dPos, setIdx: dSet, neuronToDraw,
-          names, counts, bbox: dataBbox, declaredBbox: declared,
+  return {meta, n, drawN, dropped, pos: dPos, setIdx: dSet, neuronToDraw, drawToNeuron,
+          names, counts, bbox: dataBbox, declaredBbox: declared, body, src,
           srcCounts: meta.src_counts || null};
 }
 
@@ -772,6 +889,7 @@ function uploadCloud(c){
   if(bufPos) gl.deleteBuffer(bufPos);
   if(bufAct) gl.deleteBuffer(bufAct);
   if(bufSet) gl.deleteBuffer(bufSet);
+  if(bufHop) gl.deleteBuffer(bufHop);
   vaoPoint = gl.createVertexArray();
   gl.bindVertexArray(vaoPoint);
 
@@ -794,7 +912,21 @@ function uploadCloud(c){
   gl.enableVertexAttribArray(2);
   gl.vertexAttribPointer(2, 1, gl.UNSIGNED_BYTE, false, 0, 0);
 
+  S.hop = new Uint8Array(c.drawN);
+  bufHop = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufHop);
+  gl.bufferData(gl.ARRAY_BUFFER, S.hop, gl.DYNAMIC_DRAW);   // 강조가 바뀔 때만 올린다
+  gl.enableVertexAttribArray(3);
+  gl.vertexAttribPointer(3, 1, gl.UNSIGNED_BYTE, false, 0, 0);
+
   gl.bindVertexArray(null);
+}
+
+function uploadHop(){
+  if(!bufHop) return;
+  GL.bindBuffer(GL.ARRAY_BUFFER, bufHop);
+  GL.bufferSubData(GL.ARRAY_BUFFER, 0, S.hop);
+  S.hopActive = S.hop.some(v => v !== 0);
 }
 
 function setCloud(c, synthetic){
@@ -834,14 +966,28 @@ function addSkel(bundle, synthetic){
   gl.enableVertexAttribArray(0);
   gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
   gl.bindVertexArray(null);
-  S.skel.push({...bundle, vbo, vao, visible: true, synthetic: !!synthetic});
+  const entry = {...bundle, vbo, vao, visible: true, synthetic: !!synthetic};
+  S.skel.push(entry);
+  // 고른 뉴런의 선분만 따로 그리기 위한 색인 (계약의 seg_offset/seg_count 사용)
+  for(const nu of entry.neurons){
+    if(nu.idx == null || !nu.seg_count) continue;
+    const list = S.skelIndex.get(nu.idx) || [];
+    list.push({bundle: entry, seg_offset: nu.seg_offset | 0, seg_count: nu.seg_count | 0});
+    S.skelIndex.set(nu.idx, list);
+  }
   buildSkelList();
   const total = S.skel.reduce((s, b) => s + b.nSeg, 0);
   el("skelLine").textContent = "골격 " + S.skel.length + "묶음 · " + total.toLocaleString() + " 선분";
 }
 
-async function loadFromServer(){
+async function loadFromServer(assets){
   el("assetNote").textContent = "불러오는 중…";
+  // 프로토콜 v1.2: hello.assets가 있으면 그 목록을 쓰고, 없으면 HTTP로 직접 물어본다.
+  if(assets && assets.neurons_3d === false){
+    el("assetNote").textContent = "서버가 점구름 자산이 없다고 알렸다 (hello.assets). python -m flysim.probe.export3d 로 만들 수 있다.";
+    el("assetNote").classList.add("caution");
+    return;
+  }
   let loaded = 0;
   try{
     const meta = await (await fetchOk(ENDPOINTS.cloudJson)).json();
@@ -856,8 +1002,14 @@ async function loadFromServer(){
     return;
   }
   try{
-    const idx = await (await fetchOk(ENDPOINTS.skelIndex)).json();
-    const list = Array.isArray(idx) ? idx : (idx.sets || []);
+    let list;
+    if(assets && Array.isArray(assets.skeleton_sets)){
+      list = assets.skeleton_sets.map(name => ({name}));       // hello.assets가 알려 준 목록
+      log("hello.assets의 골격 목록 사용: " + assets.skeleton_sets.join(", "));
+    }else{
+      const idx = await (await fetchOk(ENDPOINTS.skelIndex)).json();
+      list = Array.isArray(idx) ? idx : (idx.sets || []);
+    }
     if(!list.length){ el("skelNote").textContent = "서버에 골격 묶음이 없다. 점구름만 표시한다."; }
     const failed = [], noMissing = [];
     for(const entry of list){
@@ -983,19 +1135,26 @@ function makeMockCloud(){
     }
   }
 
-  // 계약 형식의 단일 ArrayBuffer로 직렬화한다
-  const posBytes = pos.byteLength, setBytes = n, srcBytes = n;
-  const buf = new ArrayBuffer(posBytes + setBytes + srcBytes);
+  // bodyId (계약 v1.3). 실제 관측 최대값이 1,571,825,087이라 그 정도 크기를 흉내 낸다.
+  const body = new Uint32Array(n);
+  for(let i = 0; i < n; i++) body[i] = 10000 + i * 7 + ((rnd() * 900) | 0);
+
+  // 계약 형식의 단일 ArrayBuffer로 직렬화한다.
+  // body는 uint32라 4바이트 정렬이 필요하므로 pos 바로 뒤에 둔다.
+  const posBytes = pos.byteLength, bodyBytes = body.byteLength;
+  const buf = new ArrayBuffer(posBytes + bodyBytes + n + n);
   new Float32Array(buf, 0, 3 * n).set(pos);
-  new Uint8Array(buf, posBytes, n).set(setOf);
-  new Uint8Array(buf, posBytes + setBytes, n).set(src);
+  new Uint32Array(buf, posBytes, n).set(body);
+  new Uint8Array(buf, posBytes + bodyBytes, n).set(setOf);
+  new Uint8Array(buf, posBytes + bodyBytes + n, n).set(src);
   const meta = {
     n, voxel_nm: VOXEL_NM, order: "graph neuron index",
     bbox: {min: lo, max: hi}, sets: names, src_counts: MOCK_SRC,
     arrays: {
-      pos: {offset: 0, length: 3 * n, dtype: "float32"},
-      set: {offset: posBytes, length: n, dtype: "uint8"},
-      src: {offset: posBytes + setBytes, length: n, dtype: "uint8"},
+      pos:  {offset: 0, length: 3 * n, dtype: "float32"},
+      body: {offset: posBytes, length: n, dtype: "uint32"},
+      set:  {offset: posBytes + bodyBytes, length: n, dtype: "uint8"},
+      src:  {offset: posBytes + bodyBytes + n, length: n, dtype: "uint8"},
     },
     generated: new Date().toISOString(), graph_cache_md5: "(mock)",
   };
@@ -1125,6 +1284,136 @@ function makeMockRun(names, members){
     frames: {n: FR, rates: rates.map(a => Array.from(a))},
     spikes: {neuron_idx: nIdx, t_bin: tIdx},
   };
+}
+
+// ═══════════════════════════════════════════════════════
+//  모의 실시간 서버 (?mock=1)
+//  docs/m5-protocol.md v1.2 중 이 화면이 쓰는 부분만 흉내 낸다. 발화율·스파이크는
+//  전부 합성이고 엔진이 아니다. 서버 없이 실시간 경로를 확인하기 위한 것이다.
+// ═══════════════════════════════════════════════════════
+class MockLiveServer{
+  constructor(){
+    this.readyState = 0;
+    this.onopen = this.onmessage = this.onclose = this.onerror = null;
+    this.params = {synapse: "conductance", g: 3.162e-4, a_in: 320, noise_sigma: 0,
+                   adapt_b: 0, adapt_tau_w: 100, dt_ms: 1.0, speed: 1.0, mode: "rate"};
+    this.version = 1;
+    this.binMs = 1;
+    this.status = "running";
+    this.tMs = 0;
+    this.stim = {kind: "silence", ipi_ms: 35, pulse_ms: 10};
+    this.stimStart = 0;
+    this.pendingSteps = 0;
+    this.rnd = lcg(90919);
+    this.state = null;
+    setTimeout(() => {
+      this.readyState = 1;
+      this.onopen && this.onopen();
+      this.emit(this.hello());
+      this.timer = setInterval(() => this.tick(), 40);
+    }, 60);
+  }
+  get names(){ return (S.cloud && S.cloud.names) || MOCK_SETS.map(m => m[0]); }
+  members(){
+    if(this._members) return this._members;
+    const c = S.cloud;
+    const m = c.names.map(() => []);
+    for(let d = 0; d < c.drawN; d++) m[c.setIdx[d]].push(c.drawToNeuron[d]);
+    this._members = m;
+    return m;
+  }
+  emit(o){ this.onmessage && this.onmessage({data: JSON.stringify(o)}); }
+  hello(){
+    return {type: "hello", n_neurons: S.cloud ? S.cloud.n : 0, regions: this.names,
+            sets: {}, set_sizes: {}, params: {...this.params}, params_version: this.version,
+            dt_ms: this.params.dt_ms, bin_ms: this.binMs,
+            engine: {synapse: this.params.synapse, git_commit: "mock0000000"},
+            neurons_url: null,
+            assets: {neurons_3d: !!S.cloud, skeleton_sets: S.skel.map(b => b.name)}};
+  }
+  ack(m, ok, msg){ this.emit({type: "ack", req_id: m.req_id, ok, msg: msg || "", params_version: this.version}); }
+  send(data){
+    let m;
+    try{ m = JSON.parse(data); }catch(e){ return; }
+    switch(m.type){
+      case "stimulus": this.stim = {...this.stim, ...m}; this.stimStart = this.tMs; this.ack(m, true, m.kind); return;
+      case "pause":  this.status = "paused";  this.ack(m, true, ""); return;
+      case "resume": this.status = "running"; this.ack(m, true, ""); return;
+      case "step":   this.pendingSteps += (m.n || 1); this.ack(m, true, (m.n || 1) + " 스텝"); return;
+      case "reset":  this.tMs = 0; this.ack(m, true, "seed=" + (m.seed || 0)); return;
+      case "get_hops": {
+        this.ack(m, true, "");
+        const n = S.cloud ? S.cloud.n : 1000;
+        const pick = k => Array.from({length: k}, () => (this.rnd() * n) | 0);
+        this.emit({type: "hops", req_id: m.req_id, src: m.src, k: m.k,
+                   layers: [pick(12 + ((this.rnd() * 40) | 0)), pick(80 + ((this.rnd() * 500) | 0))]});
+        return;
+      }
+      case "snapshot":
+        this.ack(m, true, "");
+        setTimeout(() => this.emit({type: "snapshot_done", req_id: m.req_id, run_id: m.run_id,
+                                    path: "runs/live/" + m.run_id + "/run.json (모의 — 파일 없음)",
+                                    n_frames: Math.round((m.seconds || 5) * 1000 / this.binMs)}), 200);
+        return;
+      default: this.emit({type: "error", req_id: m.req_id, msg: "모의 서버가 모르는 메시지 " + m.type});
+    }
+  }
+  envelope(){
+    if(this.stim.kind === "silence") return 0;
+    if(this.stim.kind === "tone") return 0.6;
+    const ph = (this.tMs - this.stimStart) % Math.max(1, this.stim.ipi_ms);
+    return ph < this.stim.pulse_ms ? 1 - ph / this.stim.pulse_ms : 0;
+  }
+  tick(){
+    if(!S.cloud) return;
+    let bins = 40;
+    if(this.status === "paused"){
+      bins = Math.min(this.pendingSteps, 200);
+      this.pendingSteps -= bins;
+      if(!bins){
+        // 정지 중에도 상태를 알려야 클라이언트가 멈춘 것을 안다
+        this.emit({type: "frame", t_ms: this.tMs, step: this.tMs, n_bins: 1,
+                   rates: new Array(this.names.length).fill(0),
+                   spikes: {idx: [], n_total: 0, sample_ratio: 1},
+                   active_frac_100ms: 0, input_level: 0, status: this.status,
+                   speed: this.params.speed, params_version: this.version});
+        return;
+      }
+    }
+    const names = this.names;
+    if(!this.state || this.state.length !== names.length) this.state = new Float32Array(names.length);
+    const chain = {JO_AB: [0, 90, 1.5], JO_post: [3, 26, 3], SAD: [6, 8, 7],
+                   AMMCtype: [9, 4, 10], WED: [12, 3, 14], pC1: [17, 1.4, 34]};
+    let rates = null, idx = [];
+    for(let b = 0; b < bins; b++){
+      const env = this.envelope();
+      rates = new Array(names.length).fill(0);
+      names.forEach((nm, r) => {
+        const c = chain[nm.replace(/_(L|R|unk)$/, "")];
+        if(!c) return;
+        const scale = nm.endsWith("_R") ? 0.6 : nm.endsWith("_unk") ? 0.3 : 1;
+        this.state[r] += (env * c[1] * scale - this.state[r]) / c[2];
+        rates[r] = Math.max(0, this.state[r]);
+      });
+      this.tMs += this.binMs;
+    }
+    // 묶음 전체의 스파이크 합집합 (계약: frame_every로 묶으면 합집합)
+    const c = S.cloud;
+    const mem = this.members();
+    for(let r = 0; r < names.length && idx.length < 1500; r++){
+      const pool = mem[r];
+      if(!pool.length) continue;
+      const want = Math.round(rates[r] * pool.length * bins / 1000);
+      for(let k = 0; k < want && idx.length < 1500; k++)
+        idx.push(pool[(this.rnd() * pool.length) | 0]);
+    }
+    this.emit({type: "frame", t_ms: this.tMs, step: this.tMs, n_bins: bins, rates,
+               spikes: {idx, n_total: idx.length, sample_ratio: 1},
+               active_frac_100ms: Math.min(1, idx.length / Math.max(1, c.n)),
+               input_level: Math.abs(this.envelope()),
+               status: this.status, speed: this.params.speed, params_version: this.version});
+  }
+  close(){ clearInterval(this.timer); this.readyState = 3; this.onclose && this.onclose(); }
 }
 
 // ═══════════════════════════════════════════════════════
@@ -1301,12 +1590,14 @@ function preset(p){
 canvas.addEventListener("pointerdown", e => {
   canvas.setPointerCapture(e.pointerId);
   canvas.classList.add("dragging");
-  S.drag = {x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 1};
+  S.drag = {x: e.clientX, y: e.clientY, x0: e.clientX, y0: e.clientY,
+            pan: e.shiftKey || e.button === 1, moved: false};
 });
 canvas.addEventListener("pointermove", e => {
   if(!S.drag) return;
   const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y;
   S.drag.x = e.clientX; S.drag.y = e.clientY;
+  if(Math.hypot(e.clientX - S.drag.x0, e.clientY - S.drag.y0) > 4) S.drag.moved = true;
   if(S.drag.pan){
     // 화면 축을 월드로 되돌려 목표점을 옮긴다
     const {view} = viewProj(canvas.width / Math.max(1, canvas.height));
@@ -1320,7 +1611,11 @@ canvas.addEventListener("pointermove", e => {
   }
 });
 const endDrag = () => { S.drag = null; canvas.classList.remove("dragging"); };
-canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointerup", e => {
+  // 움직이지 않았으면 회전이 아니라 집기다
+  if(S.drag && !S.drag.moved && !S.drag.pan) selectNeuron(pickNeuron(e.clientX, e.clientY));
+  endDrag();
+});
 canvas.addEventListener("pointercancel", endDrag);
 canvas.addEventListener("wheel", e => {
   e.preventDefault();
@@ -1432,6 +1727,17 @@ function render(ts){
       gl.bindVertexArray(b.vao);
       gl.drawArrays(gl.LINES, 0, b.nSeg * 2);
     }
+    // 고른 뉴런의 선분만 밝게 덧그린다 (계약의 seg_offset/seg_count 구간)
+    const sel = S.pick >= 0 ? S.skelIndex.get(S.pick) : null;
+    if(sel){
+      gl.uniform1f(uL.uAlpha, Math.min(1, S.skelAlpha + 0.45));
+      gl.uniform3f(uL.uColor, 1.0, 0.95, 0.72);
+      for(const e of sel){
+        if(!e.bundle.visible) continue;
+        gl.bindVertexArray(e.bundle.vao);
+        gl.drawArrays(gl.LINES, e.seg_offset * 2, e.seg_count * 2);
+      }
+    }
   }
 
   // 점: 가산 합성, 깊이 판정은 하되 기록하지 않는다
@@ -1443,6 +1749,10 @@ function render(ts){
   gl.uniform1f(uP.uFocal, focal);
   gl.uniform1f(uP.uPointWorld, (S.pointWorld || 1) * S.pointScale);
   gl.uniform1f(uP.uDim, S.dim);
+  gl.uniform1f(uP.uHopDim, S.hopActive ? 0.34 : 1.0);
+  gl.uniform3f(uP.uHop1, 0.25, 0.85, 0.95);        // 1홉: 차가운 색
+  gl.uniform3f(uP.uHop2, 0.16, 0.45, 0.55);        // 2홉: 더 어둡게
+  gl.uniform3f(uP.uPickColor, 1.0, 0.95, 0.72);    // 고른 뉴런
   gl.uniform3fv(uP.uSetColor, S.setColors);
   gl.uniform1fv(uP.uSetVisible, Float32Array.from(
     Array.from({length: MAX_SETS}, (_, i) => S.setVisible[i] === undefined ? 0 : S.setVisible[i])));
@@ -1471,7 +1781,13 @@ function updateReadouts(){
 
   // 실패 감지 문구는 뷰어의 것을 그대로 쓴다
   const w = el("warnMsg");
-  if(!S.run){ w.textContent = ""; }
+  if(S.live){
+    // 실시간에서는 서버가 보낸 warning을 그대로 띄운다 (같은 문구)
+    const lines = [];
+    for(const [code] of S.warnings) lines.push(WARNING_TEXT[code] || code);
+    w.textContent = lines.join("\n");
+  }
+  else if(!S.run){ w.textContent = ""; }
   else{
     const ratio = active / Math.max(1, S.cloud.n);
     if(active === 0) w.textContent = WARN_SILENT;
@@ -1479,7 +1795,9 @@ function updateReadouts(){
     else w.textContent = "";
   }
 
-  if(S.run){
+  // 실시간에서는 활동의 출처가 서버뿐이다. 적재돼 있는 run.json이 시각·발화율 판독을
+  // 덮어쓰지 않게 막는다 (모의 모드는 합성 런을 미리 올려 두므로 실제로 부딪힌다).
+  if(!S.live && S.run){
     const f = S.frame, run = S.run;
     el("tRead").textContent = (f * run.binMs).toFixed(1);
     let peak = 0, peakName = "—";
@@ -1498,6 +1816,279 @@ function setPlaying(v){
   el("playBtn").textContent = S.playing ? "❚❚" : "▶";
   el("playBtn").setAttribute("aria-label", S.playing ? "일시정지" : "재생");
 }
+
+// ═══════════════════════════════════════════════════════
+//  뉴런 집기
+// ═══════════════════════════════════════════════════════
+const PICK_RADIUS_PX = 14;          // 이 안에 들면 후보, 그중 카메라에 가까운 것을 고른다
+
+function pickNeuron(clientX, clientY){
+  const c = S.cloud;
+  if(!c) return -1;
+  const r = canvas.getBoundingClientRect();
+  const W = canvas.width, H = canvas.height;
+  const px = (clientX - r.left) * (W / r.width), py = (clientY - r.top) * (H / r.height);
+  const {mvp} = viewProj(W / Math.max(1, H));
+  const pos = c.pos;
+  const rad = PICK_RADIUS_PX * (W / r.width), rad2 = rad * rad;
+  let bestNear = -1, bestNearW = Infinity, bestAny = -1, bestAnyD2 = Infinity;
+  for(let d = 0; d < c.drawN; d++){
+    if(!S.setVisible[c.setIdx[d]]) continue;         // 숨긴 집합은 고르지 않는다
+    const x = pos[3*d], y = pos[3*d+1], z = pos[3*d+2];
+    const w = mvp[3]*x + mvp[7]*y + mvp[11]*z + mvp[15];
+    if(w <= 1e-6) continue;
+    const cx = mvp[0]*x + mvp[4]*y + mvp[8]*z + mvp[12];
+    const cy = mvp[1]*x + mvp[5]*y + mvp[9]*z + mvp[13];
+    const sx = (cx / w * 0.5 + 0.5) * W, sy = (1 - (cy / w * 0.5 + 0.5)) * H;
+    const dd = (sx - px) * (sx - px) + (sy - py) * (sy - py);
+    if(dd < rad2 && w < bestNearW){ bestNearW = w; bestNear = d; }
+    if(dd < bestAnyD2){ bestAnyD2 = dd; bestAny = d; }
+  }
+  const draw = bestNear >= 0 ? bestNear : (bestAnyD2 < (2.5 * rad) * (2.5 * rad) ? bestAny : -1);
+  return draw < 0 ? -1 : c.drawToNeuron[draw];
+}
+
+function selectNeuron(idx){
+  const c = S.cloud;
+  if(!c) return;
+  clearHops(false);
+  S.pick = idx;
+  const info = el("pickInfo");
+  if(idx < 0){
+    info.innerHTML = "<dt>—</dt><dd>그 자리에 뉴런이 없다</dd>";
+    el("hopsBtn").disabled = true;
+    el("hopsClearBtn").disabled = true;
+    return;
+  }
+  const d = c.neuronToDraw[idx];
+  if(d >= 0){ S.hop[d] = 3; uploadHop(); }
+  const rows = [];
+  // 계약 v1.3의 body 배열이 있으면 bodyId, 없으면 인덱스만 (옛 파일 호환)
+  if(c.body) rows.push(["bodyId", String(c.body[idx]), "big"]);
+  else rows.push(["bodyId", "파일에 body 배열이 없다 (계약 v1.3 이전)", ""]);
+  rows.push(["인덱스", String(idx), ""]);
+  rows.push(["집합", c.names[c.setIdx[d]] || "?", ""]);
+  rows.push(["좌표 출처", SRC_NAMES[c.src ? c.src[idx] : 1] || "?", ""]);
+  const v = [c.pos[3*d], c.pos[3*d+1], c.pos[3*d+2]];
+  rows.push(["복셀", v.map(q => Math.round(q)).join(", "), ""]);
+  rows.push(["μm", v.map(q => (q * UM_PER_VOXEL).toFixed(1)).join(", "), ""]);
+  const seg = S.skelIndex.get(idx);
+  rows.push(["골격", seg ? seg.map(e => e.bundle.name + " " + e.seg_count.toLocaleString() + "선분").join(", ")
+                         : "적재된 묶음에 없다", ""]);
+  info.innerHTML = rows.map(([k, val, cls]) =>
+    "<dt>" + esc(k) + "</dt><dd class=\"" + cls + "\">" + esc(val) + "</dd>").join("");
+  el("hopsBtn").disabled = !S.live;
+  el("hopsClearBtn").disabled = false;
+  el("pickNote").textContent = S.live
+    ? "하류 2홉을 서버에 물어볼 수 있다."
+    : "하류 조회는 서버가 필요하다 — 실시간 모드로 연결하면 켜진다.";
+  log("뉴런 " + idx + (c.body ? " (bodyId " + c.body[idx] + ")" : "") + " 선택");
+}
+
+function applyHops(msg){
+  const c = S.cloud;
+  if(!c || !S.hop) return;
+  S.hop.fill(0);
+  const layers = msg.layers || [];
+  for(let L = 0; L < layers.length; L++){
+    const lv = Math.min(L + 1, 2);
+    for(const i of layers[L]){
+      const d = (i >= 0 && i < c.n) ? c.neuronToDraw[i] : -1;
+      if(d >= 0 && !S.hop[d]) S.hop[d] = lv;
+    }
+  }
+  if(S.pick >= 0){
+    const d = c.neuronToDraw[S.pick];
+    if(d >= 0) S.hop[d] = 3;
+  }
+  uploadHop();
+  const counts = layers.map(a => a.length);
+  el("pickNote").textContent = "하류 " + (msg.k != null ? msg.k : layers.length) + "홉: " + counts.join(" → ") + " 개";
+  el("hopsClearBtn").disabled = false;
+  log("← hops src=" + msg.src + " [" + counts.join(",") + "]");
+}
+
+function clearHops(keepPick){
+  if(!S.hop) return;
+  S.hop.fill(0);
+  if(keepPick !== false && S.pick >= 0 && S.cloud){
+    const d = S.cloud.neuronToDraw[S.pick];
+    if(d >= 0) S.hop[d] = 3;
+  }
+  uploadHop();
+}
+
+// ═══════════════════════════════════════════════════════
+//  실시간 모드 — docs/m5-protocol.md v1.2
+//  보내는 것은 자극 프리셋 · 트랜스포트 · get_hops · snapshot 뿐이다.
+//  파라미터 변경(set_params)은 2D 조종석의 몫이라 여기서 보내지 않는다.
+// ═══════════════════════════════════════════════════════
+function liveUrl(){
+  const q = new URLSearchParams(location.search);
+  const raw = q.get("ws");
+  // 계약: 값은 언제나 전체 URL(ws:// 또는 wss://)이다. 아니면 무시하고 기본 주소를 쓴다.
+  if(raw && /^wss?:\/\//.test(raw)) return raw;
+  if(raw) log("?ws= 값이 전체 URL이 아니라 무시한다 (" + raw + ") — 기본 주소로 붙는다");
+  const host = q.get("host") || location.hostname || "localhost";
+  return "ws://" + host + ":" + (q.get("wsport") || "8765") + "/ws";
+}
+
+function connectLive(){
+  if(S.sock) return;
+  S.wantLive = true;
+  S.wsUrl = S.liveMock ? "mock://내장 모의 서버" : liveUrl();
+  setLiveStatus(false, "접속 중…");
+  const sock = S.liveMock ? new MockLiveServer() : new WebSocket(S.wsUrl);
+  S.sock = sock;
+  sock.onopen = () => { setLiveStatus(true, "연결됨"); log("실시간 연결: " + S.wsUrl); };
+  sock.onmessage = ev => {
+    if(typeof ev.data !== "string") return;
+    let m;
+    try{ m = JSON.parse(ev.data); }catch(err){ log("JSON 파싱 실패: " + err.message); return; }
+    const h = LIVE_HANDLERS[m.type];
+    if(h) h(m); else log("모르는 메시지 type: " + m.type);
+  };
+  sock.onclose = () => {
+    S.sock = null;
+    setLiveStatus(false, S.wantLive ? "끊김 — " + (RECONNECT_MS / 1000) + "초 후 재시도" : "끊음");
+    if(S.wantLive) S.reconnectTimer = setTimeout(connectLive, RECONNECT_MS);
+  };
+  sock.onerror = () => {};
+}
+
+function disconnectLive(){
+  S.wantLive = false;
+  clearTimeout(S.reconnectTimer);
+  if(S.sock){ try{ S.sock.close(); }catch(e){} S.sock = null; }
+  setLiveStatus(false, "끊음");
+}
+
+function setLiveStatus(on, text){
+  S.live = on;
+  el("connWrap").hidden = !S.wantLive && !on;
+  el("connText").textContent = text;
+  el("connDot").className = "dot " + (!on ? "down"
+    : S.liveStatus === "paused" ? "paused"
+    : S.liveStatus === "lagging" ? "lagging" : "live");
+  for(const b of el("stimSeg").children) b.disabled = !on;
+  for(const id of ["livePauseBtn", "liveStepBtn", "liveResetBtn", "liveSnapBtn"]) el(id).disabled = !on;
+  el("disconnectBtn").disabled = !on && !S.wantLive;
+  el("connectBtn").disabled = on || S.wantLive;
+  el("hopsBtn").disabled = !on || S.pick < 0;
+  // 실시간에서는 파일 재생 트랜스포트를 잠근다 (활동의 출처가 하나여야 한다)
+  el("scrub").disabled = on || !S.run;
+  el("playBtn").disabled = on;
+  if(on) setPlaying(false);
+  el("liveNote").textContent = on
+    ? "살아 있는 엔진의 활동을 그리는 중이다. run.json 재생은 잠겼다."
+    : "연결하면 살아 있는 엔진의 활동을 그대로 그린다. 연결 전에는 run.json 재생 모드다.";
+}
+
+function sendLive(type, fields){
+  if(!LIVE_CLIENT_TYPES.includes(type)) throw new Error("이 화면이 보내지 않는 메시지: " + type);
+  if(!S.sock || !S.live){ log("연결 없음 — " + type + " 보류"); return -1; }
+  const req_id = S.reqId++;
+  S.sock.send(JSON.stringify(Object.assign({type, req_id}, fields || {})));
+  S.pending.set(req_id, type);
+  log("→ " + type);
+  return req_id;
+}
+
+function onLiveHello(msg){
+  S.liveHello = msg;
+  S.liveParams = msg.params || null;
+  S.liveStatus = "running";
+  const p = msg.params || {};
+  el("liveInfo").textContent =
+    "engine " + ((msg.engine && msg.engine.synapse) || "?") + " · dt " + (msg.dt_ms != null ? msg.dt_ms : "?") +
+    " ms · bin " + (msg.bin_ms != null ? msg.bin_ms : "?") + " ms · g " + (p.g != null ? p.g : "?") +
+    " · a_in " + (p.a_in != null ? p.a_in : "?") + " · mode " + (p.mode || "?");
+  el("modeBadge").textContent = "감각 모드 " + (p.mode || "—");
+  el("runBadge").textContent = "실시간";
+  log("hello — 영역 " + (msg.regions || []).length + "개, params v" + (msg.params_version != null ? msg.params_version : "?"));
+  // 프로토콜 v1.2: 서버가 가진 3D 자산을 알려 준다. 있으면 그 목록대로 가져온다.
+  const assets = msg.assets;
+  if(assets && !S.cloud) loadFromServer(assets).catch(() => {});
+  else if(assets) log("assets: 점구름 " + (assets.neurons_3d ? "있음" : "없음") +
+                      " · 골격 " + (assets.skeleton_sets || []).join(", "));
+}
+
+function onLiveFrame(msg){
+  if(!S.cloud || !S.act) return;
+  S.lastLiveFrame = msg;
+  if(msg.status && msg.status !== S.liveStatus){
+    S.liveStatus = msg.status;
+    setLiveStatus(S.live, "연결됨 · " + msg.status);
+    el("livePauseBtn").textContent = msg.status === "paused" ? "재개" : "정지";
+  }
+  const idx = msg.spikes && msg.spikes.idx;
+  if(idx && idx.length){
+    const map = S.cloud.neuronToDraw, act = S.act, n = S.cloud.n;
+    for(let k = 0; k < idx.length; k++){
+      const i = idx[k];
+      const d = (i >= 0 && i < n) ? map[i] : -1;
+      if(d >= 0) act[d] = 255;
+    }
+    S.anyActive = true;
+  }
+  el("tRead").textContent = (msg.t_ms || 0).toFixed(1);
+  if(Array.isArray(msg.rates) && S.liveHello){
+    const regions = S.liveHello.regions || [];
+    let peak = 0, peakName = "—";
+    for(const row of setRows){
+      const r = regions.indexOf(row.name);
+      const v = r >= 0 ? (msg.rates[r] || 0) : 0;
+      row.bar.style.width = clamp(v / 200, 0, 1) * 100 + "%";   // 서버는 정규화 안 한 Hz를 준다
+      if(v > peak){ peak = v; peakName = row.name; }
+    }
+    el("peakRead").textContent = peakName;
+  }
+}
+
+function onLiveParams(msg){
+  S.liveParams = msg.params || S.liveParams;
+  const p = S.liveParams || {};
+  el("modeBadge").textContent = "감각 모드 " + (p.mode || "—");
+  el("liveInfo").textContent =
+    "params v" + msg.params_version + " · g " + (p.g != null ? p.g : "?") +
+    " · a_in " + (p.a_in != null ? p.a_in : "?") + " · noise " + (p.noise_sigma != null ? p.noise_sigma : "?") +
+    " · mode " + (p.mode || "?");
+  log("← params v" + msg.params_version + " (2D 조종석에서 바뀐 값)");
+}
+
+function onLiveAck(msg){
+  const t = S.pending.get(msg.req_id);
+  S.pending.delete(msg.req_id);
+  log("← ack " + (t || "?") + " " + (msg.ok ? "ok" : "거절") + (msg.msg ? " — " + msg.msg : ""));
+}
+
+function onLiveSnapshot(msg){
+  el("liveInfo").textContent = "스냅샷 저장: " + (msg.path || "?") + " (" + (msg.n_frames != null ? msg.n_frames : "?") + " 프레임)";
+  log("← snapshot_done " + msg.run_id);
+}
+
+function onLiveWarning(msg){
+  const code = String(msg.code || "");
+  if(code.endsWith("_cleared")) S.warnings.delete(code.slice(0, -"_cleared".length));
+  else S.warnings.set(code, msg.msg || "");
+  log("← warning " + code);
+}
+
+function onLiveError(msg){
+  if(msg.req_id != null) S.pending.delete(msg.req_id);
+  log("← error " + (msg.msg || ""));
+}
+
+const LIVE_HANDLERS = {
+  hello: onLiveHello,
+  frame: onLiveFrame,
+  params: onLiveParams,
+  ack: onLiveAck,
+  hops: applyHops,
+  snapshot_done: onLiveSnapshot,
+  warning: onLiveWarning,
+  error: onLiveError,
+};
 
 // ═══════════════════════════════════════════════════════
 //  조작
@@ -1588,9 +2179,44 @@ el("restOffBtn").onclick = () => {
 };
 
 el("loadBtn").onclick = () => loadFromServer();
+
+// ── 실시간 모드 조작 ─────────────────────────────────
+el("connectBtn").onclick = () => connectLive();
+el("disconnectBtn").onclick = () => disconnectLive();
+for(const b of el("stimSeg").children){
+  b.onclick = () => {
+    const preset = STIM_PRESET[b.dataset.stim];
+    sendLive("stimulus", preset);
+    for(const o of el("stimSeg").children) o.classList.toggle("on", o === b);
+  };
+}
+el("livePauseBtn").onclick = () => sendLive(S.liveStatus === "paused" ? "resume" : "pause", {});
+el("liveStepBtn").onclick  = () => sendLive("step", {n: 50});
+el("liveResetBtn").onclick = () => sendLive("reset", {seed: 0});
+let snapSeq = 1;
+el("liveSnapBtn").onclick = () => {
+  const id = "live3d-" + String(snapSeq++).padStart(3, "0");
+  sendLive("snapshot", {run_id: id, seconds: 5});
+  el("liveInfo").textContent = "스냅샷 요청: " + id + " (탐색 기록이고 결과 제출용이 아니다)";
+};
+
+// ── 집기 · 하류 강조 ─────────────────────────────────
+el("hopsBtn").onclick = () => {
+  if(S.pick < 0) return;
+  el("pickNote").textContent = "뉴런 " + S.pick + " 하류 조회 중…";
+  sendLive("get_hops", {src: S.pick, k: HOP_K, min_contacts: 5});
+};
+el("hopsClearBtn").onclick = () => {
+  clearHops(true);
+  el("pickNote").textContent = S.live
+    ? "하류 2홉을 서버에 물어볼 수 있다."
+    : "하류 조회는 서버가 필요하다 — 실시간 모드로 연결하면 켜진다.";
+};
 el("mockBtn").onclick = () => {
+  disconnectLive();
   S.skel.forEach(b => { GL.deleteBuffer(b.vbo); GL.deleteVertexArray(b.vao); });
   S.skel = [];
+  S.skelIndex.clear();
   S.run = null;
   el("scrub").disabled = true;
   loadMock();
@@ -1654,10 +2280,17 @@ function boot(){
 
   const q = new URLSearchParams(location.search);
   S.mock = q.get("mock") === "1";
+  S.liveMock = S.mock;                 // 모의 모드에서는 모의 실시간 서버에 붙는다
   requestAnimationFrame(render);
+  setLiveStatus(false, "연결 안 됨");
 
   if(S.mock){
     loadMock();
+    // 조종석이 거는 링크와 같은 형태(?mock=1&ws=1)면 모의 서버에 바로 붙는다
+    if(q.get("ws") !== null) connectLive();
+  }else if(q.get("ws") !== null){
+    // 조종석이 /flysim-3d.html?ws=ws://<host>:8765/ws 로 링크한다. 자산은 hello.assets로 받는다.
+    connectLive();
   }else{
     document.body.classList.add("blocked");
     el("blockerTitle").textContent = "자산을 불러오지 않았다";

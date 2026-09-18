@@ -283,3 +283,192 @@ def test_missing_skeleton_files_are_a_notice_not_an_error(script):
     assert "skelNote" in script
     body = re.search(r"async function loadFromServer\((.*?)\n\}", script, re.S).group(1)
     assert "catch" in body, "a missing bundle must not abort loading"
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  M6d — 실시간 모드, 뉴런 집기, 하류·골격 강조
+# ═══════════════════════════════════════════════════════════════════
+PROTOCOL = ROOT / "docs" / "m5-protocol.md"
+
+
+def _protocol_types(section: str) -> set[str]:
+    """Message type names from one table of docs/m5-protocol.md."""
+    text = PROTOCOL.read_text(encoding="utf-8")
+    start = text.index(section)
+    rest = text[start + len(section):]
+    end = rest.find("\n## ")
+    body = rest[:end if end > 0 else len(rest)]
+    out: set[str] = set()
+    for line in body.splitlines():
+        if not line.startswith("|") or line.startswith("|---"):
+            continue
+        out.update(n for n in re.findall(r"`([a-z_]+)`", line.split("|")[1]) if n != "type")
+    return out
+
+
+# ---------------------------------------------------- contract v1.3: body
+def test_contract_v13_body_array_is_optional(script, contract_cloud):
+    """v1.3 added `body`; files written before it have no such array and must still load."""
+    text = CONTRACT.read_text(encoding="utf-8")
+    assert "**계약 버전 v1.3**" in text, "this viewer implements 3D contract v1.3"
+    row = [l for l in text.splitlines() if l.startswith("| `body`")]
+    assert row, "the contract must describe the body array"
+    assert "uint32" in row[0]
+    required = set(re.findall(r'"(\w+)"', re.search(
+        r"const CLOUD_ARRAYS = \[(.*?)\];", script, re.S).group(1)))
+    optional = set(re.findall(r'"(\w+)"', re.search(
+        r"const CLOUD_ARRAYS_OPTIONAL = \[(.*?)\];", script, re.S).group(1)))
+    assert "body" in optional and "body" not in required, \
+        "body must be optional, or old point clouds stop loading"
+    assert required == set(contract_cloud["arrays"]) - {"body"}
+
+
+def test_body_array_read_and_absence_tolerated(script):
+    parse = re.search(r"function parseCloud\((.*?)\n\}", script, re.S).group(1)
+    assert "if(a.body)" in parse, "body is read only when the file has it"
+    assert 'readArray(buf, a.body, "body")' in parse
+    sel = re.search(r"function selectNeuron\((.*?)\n\}", script, re.S).group(1)
+    assert "if(c.body)" in sel, "the panel must fall back when body is absent"
+    assert "계약 v1.3 이전" in sel, "say why the bodyId is missing instead of showing nothing"
+
+
+def test_uint32_is_a_known_dtype(script):
+    assert "uint32" in re.search(r"const DTYPES = \{(.*?)\};", script, re.S).group(1)
+
+
+# ------------------------------------------------- protocol v1.2: live mode
+def test_live_message_types_are_a_subset_of_the_protocol(script):
+    server = _protocol_types("## 서버 → 클라이언트")
+    client = _protocol_types("## 클라이언트 → 서버")
+    assert server and client, "could not read the protocol tables"
+    declared_s = set(re.findall(r'"(\w+)"', re.search(
+        r"const LIVE_SERVER_TYPES = \[(.*?)\];", script, re.S).group(1)))
+    declared_c = set(re.findall(r'"(\w+)"', re.search(
+        r"const LIVE_CLIENT_TYPES = \[(.*?)\];", script, re.S).group(1)))
+    assert declared_s <= server, f"invented server types: {declared_s - server}"
+    assert declared_c <= client, f"invented client types: {declared_c - client}"
+    # this screen consumes every server message the protocol defines
+    assert declared_s == server, f"unhandled server messages: {server - declared_s}"
+
+
+def test_no_parameter_control_from_the_3d_screen(script):
+    """The brief is explicit: fine control stays in the 2D cockpit, or both screens
+    grow the same feature and every fix has to happen twice."""
+    declared_c = set(re.findall(r'"(\w+)"', re.search(
+        r"const LIVE_CLIENT_TYPES = \[(.*?)\];", script, re.S).group(1)))
+    assert "set_params" not in declared_c
+    assert 'sendLive("set_params"' not in script
+    assert "sendLive" in script and "LIVE_CLIENT_TYPES.includes(type)" in script
+
+
+@pytest.mark.parametrize("msg_type", ["stimulus", "pause", "resume", "step", "reset",
+                                      "get_hops", "snapshot"])
+def test_each_live_client_message_is_sent(script, msg_type):
+    assert re.search(rf'sendLive\(\s*"{msg_type}"', script) or \
+           re.search(rf'\?\s*"resume"\s*:\s*"{msg_type}"', script) or \
+           re.search(rf'sendLive\(S\.liveStatus === "paused" \? "{msg_type}"', script), \
+        f"no sendLive() call for {msg_type!r}"
+
+
+@pytest.mark.parametrize("msg_type", ["hello", "frame", "params", "ack", "hops",
+                                      "snapshot_done", "warning", "error"])
+def test_each_live_server_message_has_a_handler(script, msg_type):
+    table = re.search(r"const LIVE_HANDLERS = \{(.*?)\};", script, re.S).group(1)
+    m = re.search(rf"\b{msg_type}:\s*(\w+),", table)
+    assert m, f"no handler for {msg_type!r}"
+    assert re.search(rf"function {m.group(1)}\(", script), f"{m.group(1)} is not defined"
+
+
+def test_ws_query_must_be_a_full_url(script):
+    """Link convention (docs/m5-protocol.md): ?ws= is always a full ws:// URL."""
+    text = PROTOCOL.read_text(encoding="utf-8")
+    assert "화면 간 링크 규약" in text, "the link convention must be in the protocol doc"
+    fn = re.search(r"function liveUrl\((.*?)\n\}", script, re.S).group(1)
+    assert 'q.get("ws")' in fn
+    assert "wss?:" in fn, "the value must be checked for a ws:// or wss:// prefix"
+    assert "무시" in fn, "a value that is not a full URL is ignored, not patched up"
+
+
+def test_hello_assets_is_used(script):
+    hello = re.search(r"function onLiveHello\((.*?)\n\}", script, re.S).group(1)
+    assert "msg.assets" in hello
+    loader = re.search(r"async function loadFromServer\((.*?)\n\}", script, re.S).group(1)
+    assert "assets.skeleton_sets" in loader, "the advertised bundle list must be used"
+    assert "assets.neurons_3d" in loader
+
+
+def test_live_reconnects_like_the_cockpit(script):
+    assert "const RECONNECT_MS = 2000;" in script
+    assert "setTimeout(connectLive, RECONNECT_MS)" in script
+
+
+def test_live_and_file_playback_do_not_both_drive_activity(script):
+    """Only one source of activity at a time, or the readouts fight each other."""
+    upd = re.search(r"function updateReadouts\((.*?)\n\}", script, re.S).group(1)
+    assert "if(!S.live && S.run)" in upd
+    st = re.search(r"function setLiveStatus\((.*?)\n\}", script, re.S).group(1)
+    assert 'el("playBtn").disabled = on' in st and "setPlaying(false)" in st
+
+
+def test_file_playback_still_works(script, html):
+    """Regression: the run.json path from M6c is untouched."""
+    assert "function loadRun" in script and "function readRunFile" in script
+    assert 'id="scrub"' in html and 'id="playBtn"' in html
+    assert "function advancePlayback" in script
+
+
+# ------------------------------------------------------------- picking
+def test_picking_exists_and_reports_identity(script, html):
+    assert "function pickNeuron" in script and "function selectNeuron" in script
+    assert 'id="pickInfo"' in html
+    sel = re.search(r"function selectNeuron\((.*?)\n\}", script, re.S).group(1)
+    for field in ("bodyId", "인덱스", "집합", "좌표 출처", "복셀", "μm"):
+        assert field in sel, f"the panel should show {field}"
+    assert "SRC_NAMES" in sel, "coordinate source comes from the contract's src codes"
+
+
+def test_drag_does_not_select(script):
+    """Rotating the view must not count as a click."""
+    assert "moved: false" in script
+    assert "S.drag.moved = true" in script
+    assert "!S.drag.moved" in script
+
+
+def test_picking_skips_hidden_sets(script):
+    fn = re.search(r"function pickNeuron\((.*?)\n\}", script, re.S).group(1)
+    assert "S.setVisible[c.setIdx[d]]" in fn
+    assert "drawToNeuron" in fn, "picking returns a graph neuron index, not a draw index"
+
+
+# ------------------------------------------------- downstream / skeleton highlight
+def test_hops_needs_a_server(script, html):
+    assert 'id="hopsBtn"' in html and 'id="hopsClearBtn"' in html
+    assert "서버가 필요하다" in script, "say why the button is off in file mode"
+    st = re.search(r"function setLiveStatus\((.*?)\n\}", script, re.S).group(1)
+    assert 'el("hopsBtn").disabled = !on' in st
+
+
+def test_hop_highlight_has_its_own_attribute_and_clear(script):
+    assert "layout(location=3) in float aHop;" in script, "highlight is a vertex attribute, not a rebuild"
+    assert "function applyHops" in script and "function clearHops" in script
+    assert "uHopDim" in script, "unhighlighted points must recede so the highlight reads"
+    assert "function uploadHop" in script and "bufferSubData(GL.ARRAY_BUFFER, 0, S.hop)" in script
+
+
+def test_skeleton_highlight_uses_contract_ranges(script):
+    assert "S.skelIndex" in script
+    add = re.search(r"function addSkel\((.*?)\n\}", script, re.S).group(1)
+    assert "seg_offset" in add and "seg_count" in add
+    render = re.search(r"function render\(ts\)\{(.*?)\n\}", script, re.S).group(1)
+    assert "e.seg_offset * 2" in render and "e.seg_count * 2" in render, \
+        "draw just that neuron's segment range"
+
+
+# ------------------------------------------------------------- mock live server
+def test_mock_live_server_speaks_the_same_protocol(script):
+    assert "class MockLiveServer" in script
+    assert "S.liveMock" in script
+    mock = re.search(r"class MockLiveServer\{(.*?)\n\}\n", script, re.S).group(1)
+    for t in ("hello", "frame", "ack", "hops", "snapshot_done"):
+        assert f'"{t}"' in mock, f"the mock server must be able to send {t}"
+    assert "assets:" in mock, "the mock advertises assets like the real server"
