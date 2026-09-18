@@ -17,6 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LIVE = ROOT / "flysim-live.html"
 VIEWER = ROOT / "flysim-viewer.html"
 PROTOCOL = ROOT / "docs" / "m5-protocol.md"
+COCKPIT = ROOT / "flysim-live.html"
 
 ALLOWED_LINK_HOSTS = ("https://fonts.googleapis.com", "https://fonts.gstatic.com")
 
@@ -240,9 +241,21 @@ def test_lagging_status_is_accepted(script, html):
     assert "dot.lagging" in html, "the connection dot needs a lagging state"
 
 
-def test_contract_version_is_the_one_implemented():
+def test_contract_version_is_declared_and_known():
+    """The cockpit declares which contract version it implements, and that version
+    must be a real entry in the contract's history. The contract may run ahead of the
+    cockpit (it does: contract v1.2 adds hello.assets, which the cockpit ignores);
+    what must never happen is the cockpit claiming a version the contract never had."""
     text = PROTOCOL.read_text(encoding="utf-8")
-    assert "**계약 버전 v1.1**" in text, "this cockpit implements contract v1.1"
+    source = COCKPIT.read_text(encoding="utf-8")
+    declared = re.search(r"docs/m5-protocol\.md에 있다\(v(\d+\.\d+) 기준\)", source)
+    assert declared, "cockpit must declare the contract version it implements"
+    assert f"- **v{declared.group(1)}**" in text or f"- v{declared.group(1)}" in text, (
+        f"cockpit claims contract v{declared.group(1)}, which is not in the contract history")
+    contract = re.search(r"\*\*계약 버전 v(\d+\.\d+)\*\*", text)
+    assert contract, "contract must state its own version"
+    assert tuple(map(int, contract.group(1).split("."))) >= tuple(
+        map(int, declared.group(1).split("."))), "contract must not be older than the cockpit"
 
 
 def test_reconnect_interval(script):
