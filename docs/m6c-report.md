@@ -1,6 +1,7 @@
 # M6c report — flysim-3d, the 3D neuron viewer
 
-Built 2026-09-18 against `docs/m6-3d-contract.md` (commit `62fdbf0`), spec `docs/m6c-brief.md`.
+Built 2026-09-18 against `docs/m6-3d-contract.md` — **contract v1.2** (`07015b9`), spec `docs/m6c-brief.md`.
+Verified against the real produced assets on 2026-09-18 (see §4 and §5).
 Deliverables: `flysim-3d.html` (single file, no build, no dependencies) and `tests/test_3d_html.py` (27 tests).
 `flysim-viewer.html` and `flysim-live.html` are untouched; this is a third surface, not a replacement.
 
@@ -33,7 +34,8 @@ instead (cool = left, warm = right, grey for `_unk` and `rest`), which is the co
   test asserts the parser never touches the μm constant.
 - **Arrays.** `arrays.<name>.offset` is treated as a byte offset and `length` as an element count — the only
   reading under which the contract's own example numbers line up (`0 + 495366×4 = 1981464`), and a test asserts
-  that arithmetic against the contract file. The reader checks dtype, 4-byte alignment for `pos`, and that each
+  that arithmetic against the contract file. Contract v1.2 states this explicitly after the question was raised
+  from here; no producer or consumer code changed, since v1.0's numbers already meant this. The reader checks dtype, 4-byte alignment for `pos`, and that each
   span fits inside the file before creating a view.
 - **Missing coordinates.** `src = 2` means NaN. Those neurons are dropped at load rather than collapsed onto the
   origin, and a neuron-index → draw-index map is kept so `run.json` spike indices still land on the right point.
@@ -65,24 +67,49 @@ in the viewer's own `run.json` shape.
 
 ## 4. Performance
 
-Measured on the real graph's worth of geometry: **164,789 points** (165,122 minus the 333 with no coordinate) and
-**280,400 skeleton segments** across four bundles, with playback and auto-rotation both running, at 1326×730 CSS
-pixels. Frame intervals were timed over 240 consecutive `requestAnimationFrame` callbacks.
+### 4.1 Real assets (the numbers that count)
 
-| renderer | vsync | median frame | p95 | median fps |
+Measured against the files the other two windows produced: **164,969 points** (165,122 minus the 153 with no
+coordinate) and **1,017,601 skeleton segments** across four bundles (24.4 MB), served by
+`python -m flysim.live.server` — so the LIF engine was resident on the same GPU throughout. Chrome headless on the
+RTX 4090 Laptop through ANGLE/OpenGL with vsync off, 1326×730 CSS pixels, frame intervals over 240–300 consecutive
+`requestAnimationFrame` callbacks.
+
+| what is running | median | p95 | worst | median fps |
 |---|---|---|---|---|
-| RTX 4090 Laptop (ANGLE/OpenGL) | off | **1.10 ms** | 2.10 ms | **909** |
-| RTX 4090 Laptop (ANGLE/OpenGL) | on | 16.70 ms | 16.70 ms | 59.9 (display-locked) |
-| SwiftShader (software fallback) | off | 164.9 ms | 186.3 ms | 6.1 |
+| static view, all four bundles | 0.60 ms | 1.00 ms | 92.3 ms¹ | 1,667 |
+| playing `m3-click-rate` (6,781 spikes) | 1.10 ms | 2.60 ms | 4.6 ms | 909 |
+| the same plus auto-rotation | 1.10 ms | 3.40 ms | 5.7 ms | 909 |
+| playing `m4b-phase-ipi25` (1,188,920 spikes, 13,355 neurons lit at peak) | 1.60 ms | 1.90 ms | 4.2 ms | 625 |
+| the same plus auto-rotation | 1.60 ms | 2.00 ms | 7.1 ms | 625 |
+| WED bundle hidden (410,051 segments) | 0.70 ms | 1.00 ms | 1.8 ms | 1,429 |
+| all skeletons hidden | 0.60 ms | 1.00 ms | 7.9 ms | 1,667 |
 
-The brief's target was 60 fps at 200,000 segments; on the GPU the viewer is roughly fifteen times that headroom at
-280,400 segments, and the vsync-on row shows it holds the display rate with no dropped frames. Turning the
-skeletons off changes the median by about 0.1–0.2 ms, so at this scale the cost is dominated by neither layer — one
-draw call each, with no per-frame geometry upload. The software fallback is included because it is what a machine
-without WebGL2 hardware acceleration gets; at 6 fps it is usable for inspection but not for playback.
+¹ a single first frame after the timing loop starts; every other frame in that run was under 1.1 ms.
 
-Per-frame CPU work is the afterglow decay over the activation bytes plus one 165 KB `bufferSubData`; the decay
-loop is skipped entirely when nothing is active.
+The brief's target was 60 fps at 200,000 segments. At **five times that segment count**, with the heaviest
+recorded run playing and the volume rotating, the worst frame measured was 7.1 ms — still twice the 60 fps budget,
+and the median is an order of magnitude inside it. **No set toggle is needed to stay above 60 fps.** The toggles
+remain useful for looking at one pathway stage, not for performance.
+
+Hiding all skeletons changes the median by 0.5–1.0 ms, so at this scale neither layer dominates: one draw call per
+bundle plus one for the points, with no per-frame geometry upload. Per-frame CPU work is the afterglow decay over
+the activation bytes and one 165 KB `bufferSubData`, skipped entirely when nothing is active — which is why the
+1.19 M-spike run costs only 0.5 ms more per frame than the 6.8 k-spike one.
+
+### 4.2 Synthetic geometry and the software fallback
+
+For comparison, the same measurement on `?mock=1` (164,789 points, 280,400 synthetic segments, playback and
+rotation running):
+
+| renderer | vsync | median frame | median fps |
+|---|---|---|---|
+| RTX 4090 Laptop (ANGLE/OpenGL) | off | 1.10 ms | 909 |
+| RTX 4090 Laptop (ANGLE/OpenGL) | on | 16.70 ms | 59.9 (display-locked, no dropped frames) |
+| SwiftShader (software fallback) | off | 164.9 ms | 6.1 |
+
+The software fallback is what a machine without hardware-accelerated WebGL2 gets; at 6 fps it is usable for
+inspection but not for playback. The vsync-on row shows the viewer holds the display rate exactly.
 
 ## 5. Verification
 
@@ -106,6 +133,20 @@ browser automation was added to the suite):
 | no assets at all | the view is blocked with "자산을 불러오지 않았다" and instructions to press load or add `?mock=1` |
 | no WebGL2 (forced with `--use-gl=egl`) | the WebGL2 message appears instead of a blank canvas |
 | presets, colour modes, set toggles | all switch as expected; frame timing unaffected |
+
+### 5.1 Against the real assets (2026-09-18)
+
+Loaded from the live server at `http://127.0.0.1:8080/flysim-3d.html`, which serves the viewer and the assets from
+`data/cache/` together.
+
+| check | result |
+|---|---|
+| endpoints | `/flysim-3d.html`, `/neurons-3d.json`, `/neurons-3d.bin`, `/skel/index.json`, `/skel/WED.{json,bin}` all 200; `/skel/NOPE.json` 404; `/../etc/passwd` 404 |
+| point cloud | 165,122 neurons parsed, **164,969 drawn, 153 dropped** — exactly `src_counts.none`; soma 140,024 / centroid 24,945 / none 153 read back unchanged; 15 sets in contract order; bounding box 730 × 514 × 995 μm |
+| skeleton bundles | AMMCtype 143,738 · JO_AB 10,838 · WED 607,550 · pC1 255,475 = **1,017,601 segments**; per-neuron `seg_count` sums to `n_segments` in every bundle; `missing` and `not_in_graph` empty; WED's tolerance of 64 voxels (contract v1.1) read from the file |
+| real run playback | `runs/m3-click-rate/run.json` (6,781 spikes) and `runs/m4b-ipi/phase-ipi25/run.json` (1,188,920 spikes) both play; **`outOfRange` = 0 in both** — every spike index in a real run maps onto a drawn neuron, which is the point of keeping the index map |
+| appearance | the fly CNS is legible without touching a slider: optic lobes as point clouds either side, central brain, ventral nerve cord below, pC1 skeletons arching over the top. The default Y-flip puts the brain up, which the data confirms was the right default |
+| errors | none in any of the above |
 
 ## 6. Deviations from the brief and the contract
 
@@ -132,13 +173,13 @@ browser automation was added to the suite):
 
 ## 7. Not implemented
 
-- **`hello.assets` (protocol v1.2) is not consulted.** This viewer has no websocket; it asks the HTTP endpoints
-  directly and treats a 404 as "not built yet". If the planning session wants the cockpit's asset advertisement
-  honoured here, that is a separate change.
+- **`hello.assets` (protocol v1.2) is not consulted, by decision.** This viewer has no websocket; asking the HTTP
+  endpoints directly and treating a 404 as "not built yet" is the right shape for a standalone page. The planning
+  session confirmed this and moved the asset advertisement to the backlog, where it becomes meaningful if the 3D
+  view is ever embedded in the cockpit.
 - **No neuron picking.** Clicking does not identify a neuron or show its bodyId; `seg_offset`/`seg_count` are
   parsed and validated but not yet used to highlight a single neuron's skeleton.
 - **No depth sorting for the skeleton lines.** They are alpha-blended in bundle order. Points are additive and
   therefore order-independent, so only overlapping translucent lines can look slightly wrong.
-- **Not verified against the real produced files.** The other two windows are still generating
-  `data/cache/neurons-3d.*` and `data/cache/skel-*`. The HTTP path was verified against files written to the
-  contract by hand; a pass against the real ones is still needed.
+- ~~Not verified against the real produced files.~~ Done on 2026-09-18 (§5.1): the real point cloud and all four
+  rebuilt skeleton bundles load and play through the live server with nothing adjusted.
