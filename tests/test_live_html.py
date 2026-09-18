@@ -281,3 +281,46 @@ def test_panel_warning_class_does_not_collide_with_field_overlay(html):
     Using `class="note warn"` would rip the note out of the panel flow."""
     assert 'class="note warn"' not in html
     assert ".note.caution{" in html
+
+
+# ------------------------------------------------- M6e: hello.assets and the 3D link
+def test_cockpit_declares_contract_v1_2(html):
+    """The cockpit now implements hello.assets, so its declared version is v1.2."""
+    assert "docs/m5-protocol.md에 있다(v1.2 기준)" in html
+
+
+def test_assets_badge_and_3d_button_exist(tags, html):
+    ids = {a.get("id") for _, a in tags}
+    assert "assetsBadge" in ids and "open3dBtn" in ids
+    btn = next(a for t, a in tags if a.get("id") == "open3dBtn")
+    assert "disabled" in btn, "the 3D button starts disabled until hello says the asset exists"
+
+
+def test_hello_assets_drives_the_badge_and_button(script):
+    assert re.search(r"function onHello\(msg\)\{(?:.*?\n)*?.*applyAssets\(msg\.assets\)", script), \
+        "onHello must pass hello.assets to applyAssets"
+    body = re.search(r"function applyAssets\(assets\)\{(.*?)\n\}", script, re.S)
+    assert body, "applyAssets not found"
+    body = body.group(1)
+    assert "neurons_3d" in body and "skeleton_sets" in body
+    assert 'el("assetsBadge")' in body and 'el("open3dBtn")' in body
+    assert "btn.disabled" in body, "the button must follow the reported assets"
+    assert "S.mock" in body, "the mock server has no files to serve"
+
+
+def test_3d_button_opens_the_page_with_the_ws_query(script):
+    url = re.search(r"function open3dUrl\(\)\{(.*?)\n\}", script, re.S)
+    assert url, "open3dUrl not found"
+    url = url.group(1)
+    assert "/flysim-3d.html" in url
+    assert '"?ws=" +' in url, "the 3D window receives the socket address as ?ws= (docs/m6e-brief.md)"
+    assert re.search(r'el\("open3dBtn"\)\.onclick\s*=.*window\.open\(open3dUrl\(\)', script), \
+        "the button must open the 3D page in another tab"
+    assert '"_blank"' in script
+
+
+def test_cockpit_has_no_3d_renderer(html, script):
+    """The cockpit links to the 3D view; it does not draw one (docs/m6e-brief.md)."""
+    for banned in ("webgl2", "webgl", "createShader", "drawArrays", "three.min.js", "THREE."):
+        assert banned not in script, f"the cockpit must not render 3D itself ({banned})"
+    assert html.count("<canvas") >= 1        # the 2D field/heat canvases stay

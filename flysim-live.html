@@ -14,8 +14,12 @@
     · 재생기 : 끝난 런의 run.json을 열어 되감기·재생한다. 결과 제출용.
     · 조종석 : 살아 있는 엔진에 웹소켓으로 붙어 자극과 파라미터를 만진다. 탐색용.
 
-  프로토콜 계약은 docs/m5-protocol.md에 있다(v1.1 기준). 이 파일은 계약을 구현만
+  프로토콜 계약은 docs/m5-protocol.md에 있다(v1.2 기준). 이 파일은 계약을 구현만
   하고 바꾸지 않는다. 계약에 없는 메시지는 보내지 않는다.
+
+  v1.2에서 hello.assets를 읽는다. 서버가 가진 3D 자산(점구름·골격 묶음) 유무를 상단에
+  표시하고, 3D 화면(flysim-3d.html)을 새 탭으로 여는 버튼을 단다. 조종석은 3D를 직접
+  그리지 않는다 — 렌더러는 그쪽 파일에 있고 여기서는 링크만 건다.
 
   파라미터 값은 hello와 params 브로드캐스트에서만 갱신한다. frame.params_version이
   앞서면 params가 곧 온다는 뜻이므로 그때까지 값을 추측하지 않는다(낙관적 갱신 금지).
@@ -414,6 +418,8 @@ footer span b{color:var(--ink-dim);font-weight:400}
     <span class="badge" id="dtBadge">dt —</span>
     <span class="badge" id="speedBadge">speed —</span>
     <span class="badge" id="versionBadge">params v—</span>
+    <span class="badge" id="assetsBadge" title="서버가 가진 3D 자산 (hello.assets)">3D —</span>
+    <button id="open3dBtn" title="서버에 3D 점구름이 있어야 열린다" disabled>3D ↗</button>
     <button id="pauseBtn" title="정지/재개">❚❚</button>
     <button id="stepBtn" title="한 번에 n스텝 진행">▸ step</button>
     <button id="resetBtn" title="상태 초기화 (파라미터 유지)">reset</button>
@@ -838,10 +844,41 @@ function onHello(msg){
   initHistory();
   buildLrRows();
   buildInjectSets();
+  applyAssets(msg.assets);
   applyParams(msg.params, msg.params_version);
   log("hello — 영역 " + S.regions.length + "개, 집합 " + Object.keys(S.setSizes).length + "개");
 
   loadNeurons(msg);
+}
+
+// 계약 v1.2: hello.assets는 서버가 실제로 가진 3D 자산을 알려 준다. 조종석은 그것을
+// 표시하고 3D 화면으로 넘어가는 링크만 건다 — 여기에 렌더러를 넣지 않는다.
+function open3dUrl(){
+  // 3D 화면은 웹소켓 주소를 ?ws=<host>:<port> 로 받는다 (docs/m6e-brief.md).
+  const m = /^wss?:\/\/([^/]+)/.exec(S.url || "");
+  return "/flysim-3d.html" + (m ? "?ws=" + encodeURIComponent(m[1]) : "");
+}
+
+function applyAssets(assets){
+  S.assets = assets || null;
+  const badge = el("assetsBadge"), btn = el("open3dBtn");
+  const sets = assets && Array.isArray(assets.skeleton_sets) ? assets.skeleton_sets : [];
+  const has = !!(assets && assets.neurons_3d);
+  if(!assets){
+    badge.textContent = "3D 자산 미보고";
+    badge.title = "서버가 hello.assets를 보내지 않았다 (계약 v1.2 이전 서버)";
+  } else if(has){
+    badge.innerHTML = "3D 점구름 · 골격 <b>" + sets.length + "</b>";
+    badge.title = sets.length ? "골격 묶음: " + sets.join(", ") : "골격 묶음은 아직 없다";
+  } else {
+    badge.textContent = "3D 자산 없음";
+    badge.title = "서버에 neurons-3d 파일이 없다 — python -m flysim.probe.export3d 로 만든다";
+  }
+  btn.disabled = !has || S.mock;
+  btn.title = btn.disabled
+    ? (S.mock ? "모의 모드에서는 3D 화면을 열 수 없다" : "서버에 3D 점구름이 없다")
+    : "3D 뉴런 화면을 새 탭에서 연다 — " + open3dUrl();
+  if(assets) log("hello.assets — 점구름 " + (has ? "있음" : "없음") + ", 골격 묶음 " + sets.length + "개");
 }
 
 function onFrame(msg){
@@ -1588,6 +1625,7 @@ el("audioStopBtn").onclick = () => stopAudio(true);
 el("pauseBtn").onclick = () => send(S.status === "paused" ? "resume" : "pause", {});
 el("stepBtn").onclick  = () => send("step", {n: 50});
 el("resetBtn").onclick = () => send("reset", {seed: 0});
+el("open3dBtn").onclick = () => window.open(open3dUrl(), "_blank", "noopener");
 
 function buildInjectSets(){
   const sel = el("injSet");

@@ -12,6 +12,11 @@ the SWC skeletons — nothing is recentred or converted here (contract). Per neu
                                        would pile those neurons onto the origin, and the
                                        viewer is expected to drop them.
 
+Contract v1.3 adds a fourth array, ``body`` (uint32): the bodyId per neuron, so a click in the
+3D view can name the neuron instead of showing a bare index. It is appended after the other
+three, whose offsets and meaning are unchanged, and a bodyId too large for uint32 raises
+rather than being truncated (the largest observed is 1,571,825,087).
+
 The array order is the retained graph's neuron index order, which is the same index
 ``run.json`` uses, so the viewer can look a spike's neuron index straight up in ``pos``.
 
@@ -40,6 +45,7 @@ VOXEL_NM = 8                      # contract: 1 voxel = 8 nm, files carry raw vo
 SRC_SOMA, SRC_CENTROID, SRC_NONE = 0, 1, 2
 SRC_NAMES = {SRC_SOMA: "soma", SRC_CENTROID: "centroid", SRC_NONE: "none"}
 SKEL_GLOB = "skel-*.json"
+UINT32_MAX = (1 << 32) - 1        # the `body` array's range (contract v1.3)
 
 
 # ---------------------------------------------------------------------------------------
@@ -75,17 +81,38 @@ def _md5(path: Path, chunk: int = 1 << 22) -> str | None:
     return h.hexdigest()
 
 
+def body_ids_uint32(body_ids) -> np.ndarray:
+    """bodyIds as uint32 for the ``body`` array — refusing, never truncating, out-of-range ids."""
+    b = np.asarray(body_ids)
+    if b.ndim != 1:
+        raise ValueError("body_ids must be one-dimensional")
+    wide = b.astype(np.int64, copy=False)
+    if not np.array_equal(wide, b):
+        raise ValueError("body_ids are not integers")
+    bad = (wide < 0) | (wide > UINT32_MAX)
+    if bad.any():
+        raise ValueError(
+            f"{int(bad.sum())} bodyId(s) do not fit in uint32 (max {UINT32_MAX:,}), "
+            f"largest {int(wide.max()):,}: the contract's `body` array cannot carry them. "
+            "Report this rather than truncating — the array's dtype has to change.")
+    return wide.astype(np.uint32)
+
+
 def build_doc(pos: np.ndarray, set_idx: np.ndarray, src: np.ndarray, set_names: list[str],
-              graph_cache: Path = CACHE_NPZ) -> tuple[dict, bytes]:
+              body_ids, graph_cache: Path = CACHE_NPZ) -> tuple[dict, bytes]:
     """The ``.json`` metadata and the ``.bin`` payload, laid out in the contract's order."""
     n = len(src)
     if pos.shape != (n, 3) or len(set_idx) != n:
         raise ValueError(f"array shapes disagree: pos {pos.shape}, set {set_idx.shape}, n {n}")
     if len(set_names) > 256:
         raise ValueError("the set array is uint8: at most 256 probe sets")
+    body = body_ids_uint32(body_ids)
+    if len(body) != n:
+        raise ValueError(f"body array has {len(body)} entries, expected {n}")
     pos_b = np.ascontiguousarray(pos, dtype=np.float32).tobytes()
     set_b = np.ascontiguousarray(set_idx, dtype=np.uint8).tobytes()
     src_b = np.ascontiguousarray(src, dtype=np.uint8).tobytes()
+    body_b = body.tobytes()
     finite = np.isfinite(pos).all(axis=1)
     if not finite.any():
         raise ValueError("no neuron has a finite position")
@@ -100,11 +127,13 @@ def build_doc(pos: np.ndarray, set_idx: np.ndarray, src: np.ndarray, set_names: 
             "pos": {"offset": 0, "length": 3 * n, "dtype": "float32"},
             "set": {"offset": len(pos_b), "length": n, "dtype": "uint8"},
             "src": {"offset": len(pos_b) + len(set_b), "length": n, "dtype": "uint8"},
+            # contract v1.3, appended so the three arrays above keep their offsets
+            "body": {"offset": len(pos_b) + len(set_b) + len(src_b), "length": n, "dtype": "uint32"},
         },
         "generated": time.strftime("%Y-%m-%dT%H:%M:%S%z"),
         "graph_cache_md5": _md5(graph_cache),
     }
-    return doc, pos_b + set_b + src_b
+    return doc, pos_b + set_b + src_b + body_b
 
 
 def write(out_bin: Path = OUT_BIN, out_json: Path = OUT_JSON, *, graph=None, roi=None,
@@ -121,7 +150,7 @@ def write(out_bin: Path = OUT_BIN, out_json: Path = OUT_JSON, *, graph=None, roi
     set_idx = np.asarray(sets.region_of, dtype=np.uint8)
     if not np.array_equal(set_idx.astype(np.int64), np.asarray(sets.region_of, dtype=np.int64)):
         raise ValueError("probe set indices do not fit in uint8")
-    doc, payload = build_doc(pos, set_idx, src, list(sets.names))
+    doc, payload = build_doc(pos, set_idx, src, list(sets.names), graph.body_ids)
     out_bin.parent.mkdir(parents=True, exist_ok=True)
     out_bin.write_bytes(payload)
     out_json.write_text(json.dumps(doc, separators=(",", ":")) + "\n")
@@ -141,6 +170,7 @@ def read_arrays(bin_path: Path = OUT_BIN, json_path: Path = OUT_JSON) -> dict:
             raise ValueError(f"array {name} runs past the end of {bin_path}")
         arr = np.frombuffer(raw, dtype=dtype, count=a["length"], offset=a["offset"])
         out[name] = arr.reshape(-1, 3) if name == "pos" else arr
+    # an older file has no `body`; consumers must cope (contract v1.3)
     return out
 
 
@@ -200,7 +230,8 @@ def main(argv: list[str]) -> int:
           f"{out_bin.name} ({doc['_bytes'] / 1e6:.2f} MB) + {out_json.name}")
     print(f"[3d] src_counts: {doc['src_counts']}  (NaN positions: {doc['src_counts']['none']:,})")
     print(f"[3d] bbox voxels: min {doc['bbox']['min']} max {doc['bbox']['max']}")
-    print(f"[3d] sets: {len(doc['sets'])}  graph_cache_md5: {doc['graph_cache_md5']}")
+    print(f"[3d] sets: {len(doc['sets'])}  arrays: {list(doc['arrays'])}  "
+          f"graph_cache_md5: {doc['graph_cache_md5']}")
     return 0
 
 
