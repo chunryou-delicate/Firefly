@@ -1,0 +1,1673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>flysim-3d — 뉴런 형상 뷰</title>
+
+<!--
+════════════════════════════════════════════════════════════════════
+  flysim-3d — 3D 뉴런 형상 뷰 (M6c)
+
+  세 번째 화면이다. 앞의 둘과 역할이 다르고 서로를 대체하지 않는다.
+    · flysim-viewer.html : 끝난 런의 run.json을 2D로 되감아 본다. 결과 제출용.
+    · flysim-live.html   : 살아 있는 엔진에 붙어 조종한다. 탐색용.
+    · flysim-3d.html     : 뉴런을 실제 3차원 위치와 골격 형상으로 본다.
+
+  데이터 계약은 docs/m6-3d-contract.md다. 이 파일은 계약을 읽기만 하고
+  바꾸지 않는다. 좌표는 MaleCNS 원본 복셀(1 복셀 = 8 nm)이며 파일에서
+  단위 변환이나 재중심화를 하지 않는다. 화면에 μm로 적을 때만 ×0.008 한다.
+
+  외부 스크립트가 없다. 3D는 WebGL2를 직접 쓴다(three.js 등 라이브러리 없음).
+  폰트 링크만 예외다.
+
+  읽는 것
+    /neurons-3d.json + /neurons-3d.bin   점구름 (pos float32 3n, set uint8 n, src uint8 n)
+    /skel/index.json                      골격 묶음 목록
+    /skel/<name>.json + /skel/<name>.bin  선분 배열 (x1 y1 z1 x2 y2 z2 반복, float32)
+    run.json                              드래그&드롭. 기존 뷰어 계약 그대로
+
+  ?mock=1 을 붙이면 파일 없이 합성 점구름·골격을 만들어 붙인다. 계약과 **같은
+  바이너리 형식**으로 만들어 같은 해석 경로를 타므로 모의 모드가 곧 로더 검증이다.
+  합성 데이터는 커넥톰이 아니며 화면에 빨간 배지로 계속 알린다.
+════════════════════════════════════════════════════════════════════
+-->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* 색·폰트·리듬은 flysim-viewer.html에서 이어받는다.
+   차가운 색 = 집어넣은 것, 따뜻한 색 = 나온 것. */
+:root{
+  --ground:#10161D;
+  --panel:#161E27;
+  --panel-2:#1B242F;
+  --rule:#243040;
+  --rule-soft:#1C2632;
+  --ink:#C9D3DD;
+  --ink-dim:#6D7C8C;
+  --ink-faint:#4A5766;
+
+  --stimulus:#3FBFCF;
+  --idle:#3A4756;
+  --warm-lo:#B0762E;
+  --warm-hi:#E8A13A;
+  --hot:#E5484D;
+  --alert:#E5484D;
+  --ok:#4FA97B;
+
+  --sans:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--ground);
+  color:var(--ink);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.45;
+  overflow:hidden;
+  -webkit-font-smoothing:antialiased;
+}
+
+#app{
+  height:100%;
+  overflow:hidden;
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 274px;
+  grid-template-rows:auto minmax(0,1fr) auto auto;
+  grid-template-areas:
+    "head head"
+    "view side"
+    "transport side"
+    "foot foot";
+}
+
+/* ── 상단 바 ──────────────────────────────────────────── */
+header{
+  grid-area:head;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:9px 16px;
+  border-bottom:1px solid var(--rule);
+  background:var(--panel);
+  flex-wrap:wrap;
+}
+.mark{font-weight:600;letter-spacing:-0.01em;white-space:nowrap}
+.mark small{color:var(--ink-faint);font-weight:400;font-size:11px;margin-left:5px}
+.spacer{flex:1}
+
+.badge{
+  font-size:11px;
+  font-family:var(--mono);
+  padding:3px 8px;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  color:var(--ink-dim);
+  white-space:nowrap;
+}
+.badge.synthetic{color:var(--alert);border-color:color-mix(in srgb,var(--alert) 45%,transparent)}
+.badge b{color:var(--ink);font-weight:500}
+
+button{
+  font-family:inherit;
+  font-size:13px;
+  color:var(--ink);
+  background:transparent;
+  border:1px solid var(--rule);
+  border-radius:2px;
+  padding:5px 11px;
+  cursor:pointer;
+}
+button:hover:not(:disabled){border-color:var(--ink-faint);background:var(--panel-2)}
+button:focus-visible{outline:2px solid var(--stimulus);outline-offset:1px}
+button:disabled{opacity:.4;cursor:not-allowed}
+button.on{border-color:var(--stimulus);color:var(--stimulus)}
+
+/* ── 3D 창 ────────────────────────────────────────────── */
+#viewPane{
+  grid-area:view;
+  position:relative;
+  background:#080C11;
+  min-width:0;
+  min-height:0;
+}
+#gl{display:block;width:100%;height:100%;cursor:grab;touch-action:none}
+#gl.dragging{cursor:grabbing}
+.pane-label{
+  position:absolute;top:7px;left:12px;
+  font-size:11px;color:var(--ink-faint);
+  pointer-events:none;z-index:2;
+}
+.view-readout{
+  position:absolute;right:14px;top:10px;
+  text-align:right;font-family:var(--mono);font-size:11px;
+  color:var(--ink-faint);line-height:1.7;pointer-events:none;z-index:2;
+}
+.view-readout b{
+  display:block;font-size:22px;font-weight:500;
+  color:var(--warm-hi);font-variant-numeric:tabular-nums;
+}
+.hint{
+  position:absolute;left:12px;top:26px;
+  font-size:11px;color:var(--ink-faint);
+  font-family:var(--mono);pointer-events:none;z-index:2;
+}
+.warn{
+  position:absolute;left:12px;bottom:10px;right:12px;
+  font-size:12px;color:var(--alert);
+  font-family:var(--mono);line-height:1.6;
+  pointer-events:none;z-index:2;white-space:pre-line;
+}
+#axes{
+  position:absolute;left:12px;bottom:56px;
+  width:78px;height:78px;pointer-events:none;z-index:2;
+}
+#blocker{
+  position:absolute;inset:0;
+  display:none;align-items:center;justify-content:center;
+  flex-direction:column;gap:10px;padding:24px;text-align:center;
+  background:color-mix(in srgb,var(--ground) 84%,transparent);
+  color:var(--alert);font-family:var(--mono);font-size:14px;z-index:6;
+}
+#blocker small{color:var(--ink-dim);font-size:11px;max-width:46ch;line-height:1.7}
+body.blocked #blocker{display:flex}
+
+/* ── 트랜스포트 ───────────────────────────────────────── */
+.transport{
+  grid-area:transport;
+  display:flex;align-items:center;gap:12px;
+  padding:9px 16px;
+  background:var(--panel);
+  border-top:1px solid var(--rule);
+}
+.transport input[type=range]{flex:1;accent-color:var(--stimulus);height:3px;cursor:pointer}
+.readout{
+  font-family:var(--mono);font-size:12px;color:var(--ink-dim);
+  font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.readout span{color:var(--ink)}
+.play{width:34px;padding:5px 0;text-align:center}
+
+/* ── 사이드 패널 ──────────────────────────────────────── */
+aside{
+  grid-area:side;
+  background:var(--panel);
+  border-left:1px solid var(--rule);
+  min-height:0;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:12px 14px 20px;
+}
+.group{margin-bottom:18px}
+.group > h2{
+  font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-faint);font-weight:500;
+  margin-bottom:8px;padding-bottom:5px;
+  border-bottom:1px solid var(--rule-soft);
+  cursor:pointer;user-select:none;
+}
+.group > h2::after{content:" −";color:var(--ink-faint)}
+.group.closed > h2::after{content:" +"}
+.group.closed > .body{display:none}
+.note{font-size:11px;color:var(--ink-faint);line-height:1.5;margin-top:7px}
+.note.caution{color:var(--warm-hi)}
+
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{flex:1 1 auto;padding:5px 6px;font-size:12px;min-width:52px}
+
+.ctl{margin:10px 0}
+.ctl-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:8px;font-size:12px;margin-bottom:3px;
+}
+.ctl-head label{color:var(--ink-dim)}
+.ctl-head .val{
+  font-family:var(--mono);font-size:12px;color:var(--ink);
+  font-variant-numeric:tabular-nums;
+}
+input[type=range]{width:100%;accent-color:var(--stimulus);height:3px;cursor:pointer;display:block}
+
+/* 집합 목록 */
+.row-item{
+  display:flex;align-items:center;gap:7px;
+  padding:3px 0;font-family:var(--mono);font-size:11px;
+  cursor:pointer;user-select:none;
+}
+.row-item .swatch{
+  width:10px;height:10px;border-radius:2px;flex:none;
+  border:1px solid rgba(255,255,255,.14);
+}
+.row-item .name{flex:1;color:var(--ink-dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row-item.off .name,.row-item.off .num{color:var(--ink-faint);text-decoration:line-through}
+.row-item.off .swatch{opacity:.25}
+.row-item .num{color:var(--ink-faint);font-variant-numeric:tabular-nums}
+.row-item .bar{
+  height:3px;background:var(--idle);border-radius:2px;
+  width:34px;flex:none;overflow:hidden;
+}
+.row-item .bar i{display:block;height:100%;width:0%;background:var(--warm-hi)}
+
+/* 하단 상태줄 */
+footer{
+  grid-area:foot;
+  display:flex;gap:18px;align-items:center;
+  padding:6px 16px;
+  font-family:var(--mono);font-size:11px;color:var(--ink-faint);
+  background:var(--ground);border-top:1px solid var(--rule-soft);
+  flex-wrap:wrap;
+}
+#logLine{color:var(--ink-dim);flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* 드롭 상태 */
+#drop{
+  position:fixed;inset:0;display:none;
+  align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--ground) 88%,transparent);
+  border:2px dashed var(--stimulus);
+  z-index:20;font-size:15px;color:var(--stimulus);
+}
+body.dragging #drop{display:flex}
+
+@media (max-width:900px){
+  body{overflow-y:auto}
+  #app{
+    height:auto;min-height:100%;
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto auto auto auto;
+    grid-template-areas:"head" "view" "transport" "side" "foot";
+  }
+  #viewPane{height:58vh;min-height:300px}
+  aside{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+}
+@media (max-width:420px){
+  header{gap:8px;padding:8px 10px}
+  aside{padding:10px 10px 16px}
+  footer{gap:10px;padding:6px 10px}
+  .transport{gap:8px;padding:8px 10px;flex-wrap:wrap}
+  .seg button{min-width:0}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none!important}
+}
+</style>
+</head>
+<body>
+
+<div id="app">
+
+  <header>
+    <span class="mark">flysim-3d<small>뉴런 형상</small></span>
+    <span class="badge synthetic" id="mockBadge" hidden>합성 데이터 — 커넥톰 아님, 과학적 의미 없음</span>
+    <span class="badge" id="sourceBadge">자산 없음</span>
+    <span class="spacer"></span>
+    <span class="badge" id="runBadge">런 없음</span>
+    <span class="badge" id="modeBadge">감각 모드 —</span>
+    <button id="openBtn">런 파일 열기</button>
+    <input type="file" id="fileInput" accept="application/json" hidden>
+  </header>
+
+  <section id="viewPane">
+    <span class="pane-label">뉴런 형상 · MaleCNS 복셀 (8 nm)</span>
+    <span class="hint" id="hint">드래그 회전 · 휠 줌 · Shift+드래그 이동 · run.json 끌어다 놓기</span>
+    <canvas id="gl"></canvas>
+    <canvas id="axes" width="156" height="156"></canvas>
+    <div class="view-readout">
+      <b id="activeCount">0</b>
+      발화 중
+    </div>
+    <div class="warn" id="warnMsg"></div>
+    <div id="blocker">
+      <span id="blockerTitle">WebGL2를 쓸 수 없다</span>
+      <small id="blockerDetail">이 화면은 외부 라이브러리 없이 WebGL2를 직접 쓴다. 브라우저가 WebGL2를 지원하지 않거나 하드웨어 가속이 꺼져 있으면 그릴 수 없다. 2D 결과는 flysim-viewer.html로 볼 수 있다.</small>
+    </div>
+  </section>
+
+  <div class="transport">
+    <button class="play" id="playBtn" aria-label="재생">▶</button>
+    <input type="range" id="scrub" min="0" max="100" value="0" step="1" aria-label="시간 위치" disabled>
+    <span class="readout">t <span id="tRead">0.0</span> ms</span>
+    <span class="readout" id="peakReadWrap">최대 <span id="peakRead">—</span></span>
+    <button id="speedBtn">1.0×</button>
+  </div>
+
+  <aside>
+
+    <section class="group" id="dataGroup">
+      <h2>자산</h2>
+      <div class="body">
+        <div class="seg">
+          <button id="loadBtn">서버에서 불러오기</button>
+          <button id="mockBtn">합성 데이터</button>
+        </div>
+        <p class="note" id="assetNote">점구름과 골격은 /neurons-3d.* 와 /skel/* 에서 가져온다. 파일이 없으면 안내만 뜬다.</p>
+      </div>
+    </section>
+
+    <section class="group" id="camGroup">
+      <h2>시점</h2>
+      <div class="body">
+        <div class="seg" id="presetSeg">
+          <button data-preset="front">정면</button>
+          <button data-preset="side">측면</button>
+          <button data-preset="top">윗면</button>
+        </div>
+        <p class="note">축 기준: 정면 −Z · 측면 +X · 윗면 −Y. 좌하단 삼각축이 현재 방향이다.</p>
+        <div class="seg" style="margin-top:6px">
+          <button id="spinBtn">자동 회전</button>
+          <button id="flipYBtn" class="on">Y 뒤집기</button>
+          <button id="fitBtn">전체 맞춤</button>
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="fov">시야각</label><span class="val" id="fovVal">45°</span></div>
+          <input type="range" id="fov" min="20" max="80" step="1" value="45">
+        </div>
+      </div>
+    </section>
+
+    <section class="group" id="lookGroup">
+      <h2>표시</h2>
+      <div class="body">
+        <div class="ctl">
+          <div class="ctl-head"><label for="ptSize">점 크기</label><span class="val" id="ptSizeVal">1.0×</span></div>
+          <input type="range" id="ptSize" min="20" max="400" step="5" value="100">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="dim">휴지 밝기</label><span class="val" id="dimVal">0.18</span></div>
+          <input type="range" id="dim" min="0" max="100" step="1" value="18">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="glow">잔광</label><span class="val" id="glowVal">0.80</span></div>
+          <input type="range" id="glow" min="0" max="97" step="1" value="80">
+        </div>
+        <div class="ctl">
+          <div class="ctl-head"><label for="skelAlpha">골격 진하기</label><span class="val" id="skelAlphaVal">0.55</span></div>
+          <input type="range" id="skelAlpha" min="0" max="100" step="1" value="55">
+        </div>
+        <div class="seg" style="margin-top:6px">
+          <button data-color="set" class="on">집합 색</button>
+          <button data-color="side">좌우 색</button>
+        </div>
+        <p class="note" id="colorNote">집합 색은 경로 순서대로 차가운 색(JO, 입력)에서 따뜻한 색(pC1, 출력)으로 간다.</p>
+      </div>
+    </section>
+
+    <section class="group" id="setGroup">
+      <h2>집합 <span id="setCount" style="color:var(--ink-faint)"></span></h2>
+      <div class="body">
+        <div id="setList"></div>
+        <div class="seg" style="margin-top:8px">
+          <button id="allOnBtn">전체 켬</button>
+          <button id="restOffBtn">rest 끔</button>
+        </div>
+        <p class="note">클릭하면 그 집합의 점을 숨긴다. 오른쪽 막대는 현재 프레임의 발화율(run.json 기준, 0~1).</p>
+      </div>
+    </section>
+
+    <section class="group" id="skelGroup">
+      <h2>골격</h2>
+      <div class="body">
+        <div id="skelList"><p class="note">아직 불러오지 않았다.</p></div>
+        <p class="note" id="skelNote"></p>
+      </div>
+    </section>
+
+    <section class="group closed" id="perfGroup">
+      <h2>성능</h2>
+      <div class="body">
+        <p class="note" id="perfNote">—</p>
+        <button id="perfBtn" style="width:100%;margin-top:6px">120프레임 측정</button>
+      </div>
+    </section>
+
+  </aside>
+
+  <footer>
+    <span id="cloudLine">점구름 —</span>
+    <span id="skelLine">골격 —</span>
+    <span id="bboxLine">—</span>
+    <span id="fpsLine">— fps</span>
+    <span id="logLine">?mock=1 으로 열면 합성 데이터로 바로 돈다</span>
+  </footer>
+
+</div>
+
+<div id="drop">run.json 놓기</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════
+//  계약 (docs/m6-3d-contract.md) — 읽기만 하고 바꾸지 않는다
+// ═══════════════════════════════════════════════════════
+const VOXEL_NM = 8;                       // 1 복셀 = 8 nm. 파일에서 변환하지 않는다
+const UM_PER_VOXEL = VOXEL_NM / 1000;     // 화면에 μm로 적을 때만 쓴다
+const CLOUD_ARRAYS = ["pos", "set", "src"];        // 파일 1의 배열 이름
+const SRC_NAMES = {0: "somaLocation", 1: "시냅스 중심", 2: "좌표 없음"};
+const SRC_NONE = 2;                       // 이 뉴런의 pos는 NaN이다
+const MAX_SETS = 24;                      // 셰이더 uniform 배열 크기
+const ENDPOINTS = {
+  cloudJson: "neurons-3d.json",
+  cloudBin:  "neurons-3d.bin",
+  skelIndex: "skel/index.json",
+  skelJson:  name => "skel/" + name + ".json",
+  skelBin:   name => "skel/" + name + ".bin",
+};
+const DTYPES = {float32: Float32Array, float64: Float64Array, uint8: Uint8Array,
+                int8: Int8Array, uint16: Uint16Array, int16: Int16Array,
+                uint32: Uint32Array, int32: Int32Array};
+
+// 경로 단계 색. 차가운 색 = 입력(JO), 따뜻한 색 = 출력(pC1).
+const STAGE_COLOR = {
+  JO_AB:    [0x3F, 0xBF, 0xCF],
+  JO_post:  [0x4F, 0xAD, 0xC6],
+  SAD:      [0x7F, 0xA3, 0x9E],
+  AMMCtype: [0xC7, 0x9A, 0x45],
+  WED:      [0xDB, 0x84, 0x33],
+  pC1:      [0xE5, 0x48, 0x4D],
+  rest:     [0x2E, 0x3A, 0x48],
+};
+const SIDE_COLOR = {L: [0x3F, 0xBF, 0xCF], R: [0xE8, 0xA1, 0x3A], other: [0x55, 0x60, 0x6E]};
+
+// 실패 감지 문구는 flysim-viewer.html의 것을 그대로 쓴다.
+const WARN_SILENT  = "발화 뉴런 없음 — 입력이 닿지 않았거나 임계값이 너무 높다";
+const WARN_RUNAWAY = "전체의 90% 이상 발화 — 활동 폭주, 억제 부호를 확인할 것";
+
+const SPEEDS = [0.25, 0.5, 1, 2, 4];
+const el = id => document.getElementById(id);
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+
+// ═══════════════════════════════════════════════════════
+//  상태
+// ═══════════════════════════════════════════════════════
+const S = {
+  gl: null, mock: false, synthetic: false,
+
+  cloud: null,          // {meta, n, drawN, pos, setIdx, neuronToDraw, bbox}
+  skel: [],             // [{name, meta, segs, vbo, count, visible}]
+  setNames: [], setVisible: [], setColors: null,
+  colorMode: "set",
+
+  act: null,            // Uint8Array[drawN] 잔광
+  anyActive: false,
+  run: null, frame: 0, playing: false, speedIdx: 2,
+
+  cam: {az: 0, el: 0.28, dist: 1, target: [0, 0, 0], fov: 45, flipY: true},
+  spin: false, reduceMotion: false,
+  pointScale: 1, dim: 0.18, glow: 0.80, skelAlpha: 0.55,
+  baseRadius: 1,
+
+  fpsT: 0, fpsN: 0, perf: null,
+  drag: null,
+};
+
+function log(line){
+  el("logLine").textContent =
+    new Date().toLocaleTimeString("ko-KR", {hour12: false}) + "  " + line;
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+// ═══════════════════════════════════════════════════════
+//  4×4 행렬 (라이브러리 없이)
+// ═══════════════════════════════════════════════════════
+function mat4Perspective(fovyDeg, aspect, near, far){
+  const f = 1 / Math.tan(fovyDeg * Math.PI / 360);
+  const nf = 1 / (near - far);
+  return new Float32Array([
+    f / aspect, 0, 0, 0,
+    0, f, 0, 0,
+    0, 0, (far + near) * nf, -1,
+    0, 0, 2 * far * near * nf, 0,
+  ]);
+}
+function mat4LookAt(eye, center, up){
+  let zx = eye[0] - center[0], zy = eye[1] - center[1], zz = eye[2] - center[2];
+  let n = Math.hypot(zx, zy, zz) || 1; zx /= n; zy /= n; zz /= n;
+  let xx = up[1] * zz - up[2] * zy, xy = up[2] * zx - up[0] * zz, xz = up[0] * zy - up[1] * zx;
+  n = Math.hypot(xx, xy, xz) || 1; xx /= n; xy /= n; xz /= n;
+  const yx = zy * xz - zz * xy, yy = zz * xx - zx * xz, yz = zx * xy - zy * xx;
+  return new Float32Array([
+    xx, yx, zx, 0,
+    xy, yy, zy, 0,
+    xz, yz, zz, 0,
+    -(xx * eye[0] + xy * eye[1] + xz * eye[2]),
+    -(yx * eye[0] + yy * eye[1] + yz * eye[2]),
+    -(zx * eye[0] + zy * eye[1] + zz * eye[2]), 1,
+  ]);
+}
+function mat4Mul(a, b){                     // a * b
+  const o = new Float32Array(16);
+  for(let c = 0; c < 4; c++){
+    for(let r = 0; r < 4; r++){
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] +
+                     a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+  }
+  return o;
+}
+
+function camUp(){
+  const s = S.cam.flipY ? -1 : 1;
+  // 시선이 세로축과 거의 겹치면 다른 축을 위로 삼는다 (lookAt 특이점 회피)
+  if(Math.abs(Math.sin(S.cam.el)) > 0.995) return [0, 0, -s];
+  return [0, s, 0];
+}
+function camEye(){
+  const {az, el: e, dist, target} = S.cam;
+  const ce = Math.cos(e);
+  return [target[0] + dist * ce * Math.sin(az),
+          target[1] + dist * Math.sin(e),
+          target[2] + dist * ce * Math.cos(az)];
+}
+function viewProj(aspect){
+  const near = Math.max(S.cam.dist * 1e-3, S.baseRadius * 0.05);
+  const far = S.cam.dist * 8 + S.baseRadius * 40;
+  const P = mat4Perspective(S.cam.fov, aspect, near, far);
+  const V = mat4LookAt(camEye(), S.cam.target, camUp());
+  return {mvp: mat4Mul(P, V), view: V};
+}
+
+// ═══════════════════════════════════════════════════════
+//  WebGL2
+// ═══════════════════════════════════════════════════════
+const POINT_VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPos;
+layout(location=1) in float aAct;      // 0..1 (정규화된 uint8)
+layout(location=2) in float aSet;      // 집합 인덱스 (uint8)
+uniform mat4 uMVP;
+uniform float uFocal;                  // 픽셀 단위 초점거리
+uniform float uPointWorld;             // 점 하나의 월드 반지름 (복셀)
+uniform float uDim;                    // 휴지 밝기
+uniform vec3 uSetColor[${MAX_SETS}];
+uniform float uSetVisible[${MAX_SETS}];
+out vec3 vColor;
+out float vAlpha;
+void main(){
+  int si = int(aSet + 0.5);
+  if(uSetVisible[si] < 0.5){            // 꺼진 집합은 클립 밖으로 보낸다
+    gl_Position = vec4(2.0, 2.0, 2.0, 1.0);
+    gl_PointSize = 0.0;
+    vColor = vec3(0.0); vAlpha = 0.0;
+    return;
+  }
+  gl_Position = uMVP * vec4(aPos, 1.0);
+  float w = max(gl_Position.w, 1e-4);
+  gl_PointSize = clamp(uPointWorld * uFocal / w * (1.0 + aAct * 1.5), 1.0, 16.0);
+  vec3 base = uSetColor[si];
+  vec3 hot = mix(base, vec3(1.0, 0.86, 0.52), 0.62);
+  vColor = mix(base, hot, aAct * aAct);
+  vAlpha = mix(uDim, 1.0, aAct);
+}`;
+
+const POINT_FS = `#version 300 es
+precision highp float;
+in vec3 vColor;
+in float vAlpha;
+out vec4 frag;
+void main(){
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r2 = dot(d, d);
+  if(r2 > 0.25) discard;
+  float fall = 1.0 - smoothstep(0.02, 0.25, r2);
+  frag = vec4(vColor * vAlpha * fall, 1.0);   // 가산 합성 (뷰어와 같은 성질)
+}`;
+
+const LINE_VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPos;
+uniform mat4 uMVP;
+void main(){ gl_Position = uMVP * vec4(aPos, 1.0); }`;
+
+const LINE_FS = `#version 300 es
+precision highp float;
+uniform vec3 uColor;
+uniform float uAlpha;
+out vec4 frag;
+void main(){ frag = vec4(uColor * uAlpha, uAlpha); }`;
+
+function compile(gl, type, src){
+  const sh = gl.createShader(type);
+  gl.shaderSource(sh, src);
+  gl.compileShader(sh);
+  if(!gl.getShaderParameter(sh, gl.COMPILE_STATUS))
+    throw new Error("shader: " + gl.getShaderInfoLog(sh));
+  return sh;
+}
+function program(gl, vs, fs){
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl, gl.VERTEX_SHADER, vs));
+  gl.attachShader(p, compile(gl, gl.FRAGMENT_SHADER, fs));
+  gl.linkProgram(p);
+  if(!gl.getProgramParameter(p, gl.LINK_STATUS))
+    throw new Error("link: " + gl.getProgramInfoLog(p));
+  return p;
+}
+
+const canvas = el("gl");
+let GL = null, progPoint = null, progLine = null, uP = {}, uL = {};
+let vaoPoint = null, bufPos = null, bufAct = null, bufSet = null;
+
+function initGL(){
+  const gl = canvas.getContext("webgl2", {antialias: true, alpha: false, depth: true,
+                                          preserveDrawingBuffer: false, powerPreference: "high-performance"});
+  if(!gl){
+    document.body.classList.add("blocked");
+    log("WebGL2 컨텍스트를 만들 수 없다");
+    return false;
+  }
+  GL = S.gl = gl;
+  progPoint = program(gl, POINT_VS, POINT_FS);
+  progLine = program(gl, LINE_VS, LINE_FS);
+  for(const k of ["uMVP", "uFocal", "uPointWorld", "uDim", "uSetColor", "uSetVisible"])
+    uP[k] = gl.getUniformLocation(progPoint, k);
+  for(const k of ["uMVP", "uColor", "uAlpha"])
+    uL[k] = gl.getUniformLocation(progLine, k);
+  gl.clearColor(0.031, 0.047, 0.067, 1);
+  const dbg = gl.getExtension("WEBGL_debug_renderer_info");
+  const renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+  el("perfNote").textContent = "렌더러: " + renderer;
+  S.renderer = String(renderer);
+  return true;
+}
+
+// ═══════════════════════════════════════════════════════
+//  계약 파일 해석
+// ═══════════════════════════════════════════════════════
+function readArray(buf, spec, name){
+  if(!spec) throw new Error(`arrays.${name} 항목이 없다`);
+  const Ctor = DTYPES[spec.dtype];
+  if(!Ctor) throw new Error(`arrays.${name}: 모르는 dtype ${spec.dtype}`);
+  const off = spec.offset | 0, len = spec.length | 0;      // offset은 바이트, length는 원소 수
+  if(off % Ctor.BYTES_PER_ELEMENT)
+    throw new Error(`arrays.${name}: offset ${off}이 ${Ctor.BYTES_PER_ELEMENT}바이트 정렬이 아니다`);
+  if(off + len * Ctor.BYTES_PER_ELEMENT > buf.byteLength)
+    throw new Error(`arrays.${name}: 파일 끝을 넘어선다 (${off}+${len}×${Ctor.BYTES_PER_ELEMENT} > ${buf.byteLength})`);
+  return new Ctor(buf, off, len);
+}
+
+// 파일 1 — 뉴런 점구름
+function parseCloud(meta, buf){
+  const n = meta.n | 0;
+  if(!n) throw new Error("neurons-3d.json에 n이 없다");
+  if(meta.voxel_nm && meta.voxel_nm !== VOXEL_NM)
+    log(`주의: 파일의 voxel_nm=${meta.voxel_nm}, 이 화면은 ${VOXEL_NM}로 표시한다`);
+  const a = meta.arrays || {};
+  for(const k of CLOUD_ARRAYS) if(!a[k]) throw new Error(`arrays.${k}가 없다`);
+  const pos = readArray(buf, a.pos, "pos");
+  const setIdx = readArray(buf, a.set, "set");
+  const src = readArray(buf, a.src, "src");
+  if(pos.length !== 3 * n) throw new Error(`pos 길이 ${pos.length} != 3×${n}`);
+  if(setIdx.length !== n || src.length !== n) throw new Error("set/src 길이가 n과 다르다");
+
+  // src = 2 (좌표 없음)는 NaN이다. 0으로 채워 원점에 뭉치게 두지 않고 여기서 걸러낸다.
+  const neuronToDraw = new Int32Array(n).fill(-1);
+  let drawN = 0;
+  for(let i = 0; i < n; i++){
+    if(src[i] === SRC_NONE) continue;
+    const x = pos[3*i], y = pos[3*i+1], z = pos[3*i+2];
+    if(!Number.isFinite(x) || !Number.isFinite(y) || !Number.isFinite(z)) continue;
+    neuronToDraw[i] = drawN++;
+  }
+  const dPos = new Float32Array(3 * drawN);
+  const dSet = new Uint8Array(drawN);
+  let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for(let i = 0; i < n; i++){
+    const d = neuronToDraw[i];
+    if(d < 0) continue;
+    for(let k = 0; k < 3; k++){
+      const v = pos[3*i+k];
+      dPos[3*d+k] = v;
+      if(v < lo[k]) lo[k] = v;
+      if(v > hi[k]) hi[k] = v;
+    }
+    dSet[d] = setIdx[i];
+  }
+  const dropped = n - drawN;
+  const counts = {};
+  const names = meta.sets || [];
+  if(names.length > MAX_SETS) throw new Error(`집합이 ${names.length}개다 — 이 화면은 ${MAX_SETS}개까지 그린다`);
+  for(let d = 0; d < drawN; d++) counts[dSet[d]] = (counts[dSet[d]] || 0) + 1;
+  const dataBbox = {min: lo, max: hi};
+  const declared = (meta.bbox && meta.bbox.min && meta.bbox.max) ? meta.bbox : null;
+  if(declared){
+    // 선언된 bbox가 실제 점 범위보다 크게 벗어나면 알린다. 화면 맞춤은 실제 범위로 한다.
+    const slack = [0, 1, 2].map(k =>
+      ((declared.max[k] - declared.min[k]) || 1) / ((hi[k] - lo[k]) || 1));
+    if(Math.max(...slack) > 1.35)
+      log("주의: 파일의 bbox가 실제 점 범위보다 " + Math.max(...slack).toFixed(1) + "배 넓다 — 화면은 점 범위로 맞춘다");
+  }
+  return {meta, n, drawN, dropped, pos: dPos, setIdx: dSet, neuronToDraw,
+          names, counts, bbox: dataBbox, declaredBbox: declared,
+          srcCounts: meta.src_counts || null};
+}
+
+// 파일 2 — 골격 묶음 (선분 배열: x1 y1 z1 x2 y2 z2 …)
+function parseSkel(name, meta, buf){
+  const nSeg = meta.n_segments | 0;
+  const segs = new Float32Array(buf);
+  if(segs.length < nSeg * 6)
+    throw new Error(`${name}: 선분 ${nSeg}개에 float ${nSeg*6}개가 필요한데 ${segs.length}개뿐이다`);
+  const neurons = meta.neurons || [];
+  let covered = 0;
+  for(const nu of neurons){
+    if((nu.seg_offset | 0) + (nu.seg_count | 0) > nSeg)
+      throw new Error(`${name}: 뉴런 ${nu.body_id}의 구간이 n_segments를 넘는다`);
+    covered += nu.seg_count | 0;
+  }
+  return {name, meta, segs: segs.subarray(0, nSeg * 6), nSeg, neurons,
+          missing: meta.missing || [], covered};
+}
+
+// ═══════════════════════════════════════════════════════
+//  자산 적재
+// ═══════════════════════════════════════════════════════
+function uploadCloud(c){
+  const gl = GL;
+  if(bufPos) gl.deleteBuffer(bufPos);
+  if(bufAct) gl.deleteBuffer(bufAct);
+  if(bufSet) gl.deleteBuffer(bufSet);
+  vaoPoint = gl.createVertexArray();
+  gl.bindVertexArray(vaoPoint);
+
+  bufPos = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufPos);
+  gl.bufferData(gl.ARRAY_BUFFER, c.pos, gl.STATIC_DRAW);     // 한 번만 올린다
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+
+  S.act = new Uint8Array(c.drawN);
+  bufAct = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufAct);
+  gl.bufferData(gl.ARRAY_BUFFER, S.act, gl.DYNAMIC_DRAW);    // 매 프레임 이것만 갱신
+  gl.enableVertexAttribArray(1);
+  gl.vertexAttribPointer(1, 1, gl.UNSIGNED_BYTE, true, 0, 0);
+
+  bufSet = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, bufSet);
+  gl.bufferData(gl.ARRAY_BUFFER, c.setIdx, gl.STATIC_DRAW);
+  gl.enableVertexAttribArray(2);
+  gl.vertexAttribPointer(2, 1, gl.UNSIGNED_BYTE, false, 0, 0);
+
+  gl.bindVertexArray(null);
+}
+
+function setCloud(c, synthetic){
+  S.cloud = c;
+  S.synthetic = !!synthetic;
+  S.setNames = c.names.slice();
+  S.setVisible = c.names.map(() => 1);
+  uploadCloud(c);
+  rebuildColors();
+  buildSetList();
+  fitView();
+  document.body.classList.remove("blocked");
+  el("mockBadge").hidden = !synthetic;
+  el("sourceBadge").textContent = synthetic ? "합성 자산" : "실측 자산";
+  el("sourceBadge").classList.toggle("synthetic", !!synthetic);
+  const src = c.srcCounts ? Object.entries(c.srcCounts).map(([k, v]) => `${k} ${v.toLocaleString()}`).join(" · ") : "";
+  el("cloudLine").textContent =
+    "점구름 " + c.drawN.toLocaleString() + " / " + c.n.toLocaleString() +
+    (c.dropped ? " (좌표 없음 " + c.dropped.toLocaleString() + " 제외)" : "");
+  const b = c.bbox;
+  el("bboxLine").textContent =
+    "bbox " + [0,1,2].map(k => ((b.max[k] - b.min[k]) * UM_PER_VOXEL).toFixed(0)).join("×") + " μm";
+  el("assetNote").textContent = synthetic
+    ? "합성 점구름이다. 좌표·집합 소속은 만들어낸 값이고 커넥톰이 아니다." + (src ? " (" + src + ")" : "")
+    : "점구름 로드 완료." + (src ? " 좌표 출처: " + src : "");
+  log("점구름 " + c.drawN.toLocaleString() + "점 적재");
+}
+
+function addSkel(bundle, synthetic){
+  const gl = GL;
+  const vbo = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.bufferData(gl.ARRAY_BUFFER, bundle.segs, gl.STATIC_DRAW);   // 집합당 버퍼 하나
+  const vao = gl.createVertexArray();
+  gl.bindVertexArray(vao);
+  gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+  gl.enableVertexAttribArray(0);
+  gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+  gl.bindVertexArray(null);
+  S.skel.push({...bundle, vbo, vao, visible: true, synthetic: !!synthetic});
+  buildSkelList();
+  const total = S.skel.reduce((s, b) => s + b.nSeg, 0);
+  el("skelLine").textContent = "골격 " + S.skel.length + "묶음 · " + total.toLocaleString() + " 선분";
+}
+
+async function loadFromServer(){
+  el("assetNote").textContent = "불러오는 중…";
+  let loaded = 0;
+  try{
+    const meta = await (await fetchOk(ENDPOINTS.cloudJson)).json();
+    const buf = await (await fetchOk(ENDPOINTS.cloudBin)).arrayBuffer();
+    setCloud(parseCloud(meta, buf), false);
+    loaded++;
+  }catch(err){
+    el("assetNote").textContent = "점구름을 못 읽었다: " + err.message +
+      " — 아직 만들어지지 않았다면 ?mock=1 로 합성 데이터를 볼 수 있다.";
+    el("assetNote").classList.add("caution");
+    log("점구름 로드 실패: " + err.message);
+    return;
+  }
+  try{
+    const idx = await (await fetchOk(ENDPOINTS.skelIndex)).json();
+    const list = Array.isArray(idx) ? idx : (idx.sets || []);
+    if(!list.length){ el("skelNote").textContent = "서버에 골격 묶음이 없다. 점구름만 표시한다."; }
+    const failed = [], noMissing = [];
+    for(const entry of list){
+      const name = entry.name || entry;
+      try{
+        const m = await (await fetchOk(ENDPOINTS.skelJson(name))).json();
+        const b = await (await fetchOk(ENDPOINTS.skelBin(name))).arrayBuffer();
+        const bundle = parseSkel(name, m, b);
+        addSkel(bundle, false);
+        if(bundle.missing.length) noMissing.push(name + " " + bundle.missing.length + "개");
+        loaded++;
+      }catch(err){
+        failed.push(name + " (" + err.message + ")");
+        log("골격 " + name + " 실패: " + err.message);
+      }
+    }
+    // 못 가져온 묶음은 오류가 아니라 안내다 (아직 만들어지지 않았을 수 있다)
+    const bits = [];
+    if(failed.length) bits.push("불러오지 못한 묶음: " + failed.join(", "));
+    if(noMissing.length) bits.push("골격 파일이 없던 뉴런: " + noMissing.join(", "));
+    if(bits.length){
+      el("skelNote").textContent = bits.join(" · ");
+      el("skelNote").classList.add("caution");
+    }
+  }catch(err){
+    el("skelNote").textContent = "골격 목록을 못 읽었다 (" + err.message + "). 점구름만 표시한다.";
+  }
+  log(loaded + "개 자산 적재");
+}
+
+async function fetchOk(url){
+  const r = await fetch(url, {cache: "no-store"});
+  if(!r.ok) throw new Error("HTTP " + r.status + " " + url);
+  return r;
+}
+
+// ═══════════════════════════════════════════════════════
+//  모의 자산 (?mock=1)
+//
+//  ▲ 여기서 만들어지는 좌표·골격·발화율은 전부 합성이다. 커넥톰이 아니고
+//    시뮬레이션도 아니다. 계약과 **같은 바이너리 형식**으로 만들어 실제 파일과
+//    같은 해석 경로를 타게 한다(그래서 모의 모드가 곧 로더 검증이다).
+//    집합 이름·크기와 좌표 범위만 문서에 기록된 실제 값을 쓴다
+//    (docs/m3-report.md §2, docs/m6-3d-contract.md).
+// ═══════════════════════════════════════════════════════
+const MOCK_SETS = [
+  ["JO_AB_L", 76], ["JO_AB_R", 38],
+  ["JO_post_L", 490], ["JO_post_R", 121], ["JO_post_unk", 23],
+  ["pC1_L", 78], ["pC1_R", 78],
+  ["AMMCtype_L", 74], ["AMMCtype_R", 94],
+  ["SAD_L", 377], ["SAD_R", 420], ["SAD_unk", 22],
+  ["WED_L", 449], ["WED_R", 515],
+  ["rest", 162267],
+];
+// 계약에 적힌 실제 좌표 범위 (복셀)
+const MOCK_BBOX = {min: [4673, 6069, 10778], max: [92111, 68657, 133549]};
+const MOCK_SRC = {soma: 140024, centroid: 24765, none: 333};   // 합 165,122
+
+function lcg(seed){ let s = seed >>> 0; return () => (s = (s * 1664525 + 1013904223) >>> 0) / 4294967296; }
+
+// 집합별 합성 배치: [cx, cy, cz, rx, ry, rz] (복셀). 좌우는 x로 갈라 둔다.
+function mockCenters(){
+  const B = MOCK_BBOX, sp = (t, k) => B.min[k] + t * (B.max[k] - B.min[k]);
+  const put = (base, side, ty, tz, r) => {
+    const tx = side === "L" ? 0.36 : side === "R" ? 0.64 : 0.50;
+    return [sp(tx, 0), sp(ty, 1), sp(tz, 2), r * 0.07 * (B.max[0]-B.min[0]),
+            r * 0.09 * (B.max[1]-B.min[1]), r * 0.020 * (B.max[2]-B.min[2])];
+  };
+  const out = {};
+  const stage = {JO_AB: [0.24, 0.055], JO_post: [0.34, 0.085], SAD: [0.44, 0.115],
+                 AMMCtype: [0.40, 0.135], WED: [0.56, 0.155], pC1: [0.62, 0.190]};
+  for(const [name] of MOCK_SETS){
+    if(name === "rest"){ out[name] = [sp(0.5,0), sp(0.5,1), sp(0.42,2), (B.max[0]-B.min[0])*0.22,
+                                      (B.max[1]-B.min[1])*0.24, (B.max[2]-B.min[2])*0.36]; continue; }
+    const m = name.match(/^(.*)_(L|R|unk)$/);
+    const [ty, tz] = stage[m[1]];
+    out[name] = put(m[1], m[2], ty, tz, name.startsWith("rest") ? 3 : 1);
+  }
+  return out;
+}
+
+function makeMockCloud(){
+  const names = MOCK_SETS.map(s => s[0]);
+  const n = MOCK_SETS.reduce((a, s) => a + s[1], 0);
+  const rnd = lcg(20260918);
+  const centers = mockCenters();
+
+  // 집합 배정을 섞어 둔다 — 실제 데이터에서 집합은 인덱스 순으로 뭉쳐 있지 않다
+  const setOf = new Uint8Array(n);
+  let p = 0;
+  MOCK_SETS.forEach(([, size], r) => { for(let k = 0; k < size; k++) setOf[p++] = r; });
+  for(let i = n - 1; i > 0; i--){ const j = (rnd() * (i + 1)) | 0; const t = setOf[i]; setOf[i] = setOf[j]; setOf[j] = t; }
+
+  const members = names.map(() => []);
+  const pos = new Float32Array(3 * n), src = new Uint8Array(n);
+  const noneAt = new Set();
+  while(noneAt.size < MOCK_SRC.none) noneAt.add((rnd() * n) | 0);
+  let somaLeft = MOCK_SRC.soma;
+  for(let i = 0; i < n; i++){
+    const r = setOf[i];
+    members[r].push(i);
+    if(noneAt.has(i)){
+      src[i] = SRC_NONE;
+      pos[3*i] = pos[3*i+1] = pos[3*i+2] = NaN;      // 계약: 좌표 없음은 NaN
+      continue;
+    }
+    src[i] = somaLeft-- > 0 ? 0 : 1;
+    const c = centers[names[r]];
+    for(let k = 0; k < 3; k++){
+      // 중심이 조밀하도록 세 난수의 평균을 쓴다
+      const g = (rnd() + rnd() + rnd()) / 1.5 - 1;
+      pos[3*i+k] = c[k] + g * c[3+k];
+    }
+  }
+
+  let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  for(let i = 0; i < n; i++){
+    if(src[i] === SRC_NONE) continue;
+    for(let k = 0; k < 3; k++){
+      const v = pos[3*i+k];
+      if(v < lo[k]) lo[k] = v;
+      if(v > hi[k]) hi[k] = v;
+    }
+  }
+
+  // 계약 형식의 단일 ArrayBuffer로 직렬화한다
+  const posBytes = pos.byteLength, setBytes = n, srcBytes = n;
+  const buf = new ArrayBuffer(posBytes + setBytes + srcBytes);
+  new Float32Array(buf, 0, 3 * n).set(pos);
+  new Uint8Array(buf, posBytes, n).set(setOf);
+  new Uint8Array(buf, posBytes + setBytes, n).set(src);
+  const meta = {
+    n, voxel_nm: VOXEL_NM, order: "graph neuron index",
+    bbox: {min: lo, max: hi}, sets: names, src_counts: MOCK_SRC,
+    arrays: {
+      pos: {offset: 0, length: 3 * n, dtype: "float32"},
+      set: {offset: posBytes, length: n, dtype: "uint8"},
+      src: {offset: posBytes + setBytes, length: n, dtype: "uint8"},
+    },
+    generated: new Date().toISOString(), graph_cache_md5: "(mock)",
+  };
+  return {meta, buf, members, names, centers};
+}
+
+// 합성 골격: 소마에서 뻗는 가지 나무. 계약의 선분 배열 형식 그대로.
+function makeMockSkel(name, bodies, centers, segPerNeuron, seed){
+  const rnd = lcg(seed);
+  const segs = [], neurons = [];
+  const c = centers[name + "_L"] || centers[name + "_R"] || centers.rest;
+  let lo = [Infinity, Infinity, Infinity], hi = [-Infinity, -Infinity, -Infinity];
+  const note = (v) => { for(let k = 0; k < 3; k++){ if(v[k] < lo[k]) lo[k] = v[k]; if(v[k] > hi[k]) hi[k] = v[k]; } };
+  for(const body of bodies){
+    const off = segs.length / 6;
+    const side = body.side === "R" ? 1 : -1;
+    const soma = [c[0] + side * c[3] * 0.9 * (rnd() - 0.2), c[1] + (rnd() - 0.5) * c[4], c[2] + (rnd() - 0.5) * c[5]];
+    note(soma);
+    let tips = [{p: soma.slice(), d: [(rnd()-0.5), (rnd()-0.5), (rnd()-0.5)]}];
+    const step = Math.max(180, c[3] * 0.10);
+    let made = 0;
+    while(made < segPerNeuron && tips.length){
+      const next = [];
+      for(const t of tips){
+        if(made >= segPerNeuron) break;
+        const d = t.d.map(v => v + (rnd() - 0.5) * 0.7);
+        const len = Math.hypot(...d) || 1;
+        const q = [t.p[0] + d[0]/len*step, t.p[1] + d[1]/len*step, t.p[2] + d[2]/len*step];
+        segs.push(t.p[0], t.p[1], t.p[2], q[0], q[1], q[2]);
+        note(q); made++;
+        const branch = rnd() < 0.18 && next.length < 14;
+        next.push({p: q, d});
+        if(branch) next.push({p: q, d: d.map(v => v + (rnd() - 0.5) * 1.6)});
+      }
+      tips = next;
+      if(tips.length > 18) tips.length = 18;
+    }
+    neurons.push({body_id: body.body_id, idx: body.idx, seg_offset: off, seg_count: made,
+                  soma, n_nodes_raw: made + 1 + ((rnd() * 900) | 0)});
+  }
+  const bin = new Float32Array(segs).buffer;
+  const meta = {
+    set: name, voxel_nm: VOXEL_NM, n_neurons: neurons.length, n_segments: segs.length / 6,
+    bbox: {min: lo, max: hi},
+    decimation: {method: "rdp-per-branch", tolerance_voxels: 40, max_segments_per_neuron: 200},
+    neurons, missing: [],
+    source: {url_prefix: "(mock — 내려받지 않았다)", md5_manifest: "(mock)"},
+    generated: new Date().toISOString(),
+  };
+  return {meta, bin};
+}
+
+function loadMock(){
+  const t0 = performance.now();
+  const {meta, buf, members, names, centers} = makeMockCloud();
+  setCloud(parseCloud(meta, buf), true);
+
+  // 골격은 계약대로 좌우를 합쳐 한 묶음으로 낸다 (JO_AB_L + JO_AB_R → JO_AB)
+  const segPer = clamp(parseInt(new URLSearchParams(location.search).get("segs") || "200", 10) || 200, 4, 400);
+  const bundles = ["JO_AB", "pC1", "AMMCtype", "WED"];
+  let seed = 7;
+  for(const base of bundles){
+    const bodies = [];
+    for(const side of ["L", "R", "unk"]){
+      const r = names.indexOf(base + "_" + side);
+      if(r < 0) continue;
+      for(const idx of members[r]) bodies.push({body_id: 10000 + idx, idx, side});
+    }
+    const {meta: m, bin} = makeMockSkel(base, bodies, centers, segPer, seed += 101);
+    addSkel(parseSkel(base, m, bin), true);
+  }
+  const total = S.skel.reduce((s, b) => s + b.nSeg, 0);
+  el("skelNote").textContent =
+    "합성 골격 " + total.toLocaleString() + " 선분. 실제 형상이 아니라 가지 나무를 흉내 낸 것이다.";
+  el("skelNote").classList.add("caution");
+  loadRun(makeMockRun(names, members), true);
+  log("합성 자산 생성 " + Math.round(performance.now() - t0) + " ms · 선분 " + total.toLocaleString());
+}
+
+// 합성 런: 자극 → JO → 하류로 지연·감쇠하며 퍼지는 사슬. run.json 계약 형식.
+function makeMockRun(names, members){
+  const FR = 900, BIN = 1;
+  const rnd = lcg(4242);
+  const env = new Float32Array(FR);
+  for(let t = 0; t < FR; t++){
+    if(t < 150 || t > 700){ env[t] = 0; continue; }
+    const ph = (t - 150) % 35;
+    env[t] = ph < 3 ? 1 - ph / 3 : 0;
+  }
+  const chain = {JO_AB: [0, 1.00, 1.5], JO_post: [3, 0.62, 3], SAD: [6, 0.30, 7],
+                 AMMCtype: [9, 0.18, 10], WED: [12, 0.12, 14], pC1: [17, 0.07, 34]};
+  const rates = names.map(() => new Float32Array(FR));
+  names.forEach((nm, r) => {
+    const base = nm.replace(/_(L|R|unk)$/, "");
+    const c = chain[base];
+    if(!c){
+      let v = 0.05;                      // 사슬 밖 집합의 배경 활동 (합성)
+      for(let t = 0; t < FR; t++){
+        v = clamp(v + (rnd() - 0.5) * 0.012, 0.012, 0.10);
+        rates[r][t] = v;
+      }
+      return;
+    }
+    const [lag, gain, tau] = c;
+    const sideScale = nm.endsWith("_R") ? 0.66 : nm.endsWith("_unk") ? 0.3 : 1;
+    let v = 0;
+    for(let t = 0; t < FR; t++){
+      v += (env[Math.max(0, t - lag)] * gain * sideScale - v) / tau;
+      rates[r][t] = v;
+    }
+  });
+  const nIdx = [], tIdx = [];
+  for(let t = 0; t < FR; t++){
+    let budget = 1400;
+    for(let r = 0; r < names.length && budget > 0; r++){
+      const pool = members[r];
+      const want = Math.min(budget, Math.round(rates[r][t] * pool.length * (names[r] === "rest" ? 0.010 : 0.55)));
+      for(let k = 0; k < want; k++){ nIdx.push(pool[(rnd() * pool.length) | 0]); tIdx.push(t); }
+      budget -= want;
+    }
+  }
+  return {
+    meta: {run_id: "mock-3d-demo", dataset: "(합성 — 실제 커넥톰 아님)", dt_ms: 1.0, bin_ms: BIN,
+           n_neurons: members.reduce((a, m) => a + m.length, 0), sensory_mode: "rate"},
+    regions: names,
+    input: {label: "합성 클릭 트레인 · IPI 35 ms", envelope: Array.from(env)},
+    frames: {n: FR, rates: rates.map(a => Array.from(a))},
+    spikes: {neuron_idx: nIdx, t_bin: tIdx},
+  };
+}
+
+// ═══════════════════════════════════════════════════════
+//  run.json (기존 뷰어 계약 그대로. 3D 좌표는 파일 1에서 온다)
+// ═══════════════════════════════════════════════════════
+function loadRun(raw, synthetic){
+  if(!S.cloud) throw new Error("점구름을 먼저 불러와야 활동을 그릴 수 있다");
+  const fr = raw.frames || {};
+  const regions = raw.regions || [];
+  if(!fr.n || !Array.isArray(fr.rates)) throw new Error("frames.n 또는 frames.rates가 없다");
+  if(fr.rates.length !== regions.length)
+    throw new Error(`frames.rates ${fr.rates.length}행 != regions ${regions.length}개`);
+
+  const buckets = Array.from({length: fr.n}, () => []);
+  const sn = raw.spikes?.neuron_idx || [], st = raw.spikes?.t_bin || [];
+  let outOfRange = 0;
+  for(let k = 0; k < sn.length; k++){
+    const t = st[k], i = sn[k];
+    if(t < 0 || t >= fr.n) continue;
+    const d = (i >= 0 && i < S.cloud.n) ? S.cloud.neuronToDraw[i] : -1;
+    if(d < 0){ outOfRange++; continue; }        // 좌표 없는 뉴런이거나 범위 밖
+    buckets[t].push(d);
+  }
+  S.run = {
+    meta: raw.meta || {}, regions,
+    rates: fr.rates.map(a => Float32Array.from(a)),
+    n: fr.n, buckets, outOfRange, synthetic: !!synthetic,
+    binMs: (raw.meta && raw.meta.bin_ms) || 1,
+  };
+  S.frame = 0;
+  S.act.fill(0);
+  S.anyActive = false;
+
+  const sameSets = regions.length === S.setNames.length && regions.every((r, i) => r === S.setNames[i]);
+  el("runBadge").textContent = "런 " + (raw.meta?.run_id || "—");
+  el("modeBadge").textContent = raw.meta?.sensory_mode
+    ? "감각 모드 " + raw.meta.sensory_mode : "감각 모드 미기록";
+  el("scrub").disabled = false;
+  el("scrub").max = fr.n - 1;
+  el("scrub").value = 0;
+  let noteBits = [];
+  if(!sameSets) noteBits.push("run.json의 regions가 점구름의 sets와 다르다 — 발화율 막대는 이름으로 맞춘다");
+  if(outOfRange) noteBits.push(outOfRange.toLocaleString() + "개 스파이크가 좌표 없는 뉴런이라 그릴 수 없다");
+  if(noteBits.length) log(noteBits.join(" · "));
+  buildSetList();
+  setPlaying(false);
+  return S.run;
+}
+
+function readRunFile(f){
+  const r = new FileReader();
+  r.onload = () => {
+    try{
+      loadRun(JSON.parse(r.result), false);
+      log("런 적재: " + f.name);
+    }catch(err){
+      el("warnMsg").textContent = "런 파일을 읽지 못했다: " + err.message;
+      log("런 로드 실패: " + err.message);
+    }
+  };
+  r.readAsText(f);
+}
+
+// ═══════════════════════════════════════════════════════
+//  색 · 목록
+// ═══════════════════════════════════════════════════════
+const baseOf = name => name.replace(/_(L|R|unk)$/, "");
+const sideOf = name => (name.match(/_(L|R|unk)$/) || [, "other"])[1];
+
+function colorFor(name){
+  if(S.colorMode === "side"){
+    const s = sideOf(name);
+    return SIDE_COLOR[s === "L" ? "L" : s === "R" ? "R" : "other"];
+  }
+  return STAGE_COLOR[baseOf(name)] || STAGE_COLOR.rest;
+}
+const cssColor = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+
+function rebuildColors(){
+  const arr = new Float32Array(MAX_SETS * 3);
+  S.setNames.forEach((name, i) => {
+    const c = colorFor(name);
+    arr[i*3] = c[0] / 255; arr[i*3+1] = c[1] / 255; arr[i*3+2] = c[2] / 255;
+  });
+  S.setColors = arr;
+}
+
+let setRows = [];
+function buildSetList(){
+  const host = el("setList");
+  host.textContent = "";
+  setRows = [];
+  el("setCount").textContent = S.setNames.length ? "(" + S.setNames.length + ")" : "";
+  S.setNames.forEach((name, i) => {
+    const row = document.createElement("div");
+    row.className = "row-item" + (S.setVisible[i] ? "" : " off");
+    row.innerHTML =
+      '<span class="swatch"></span><span class="name"></span>' +
+      '<span class="bar"><i></i></span><span class="num"></span>';
+    row.querySelector(".swatch").style.background = cssColor(colorFor(name));
+    row.querySelector(".name").textContent = name;
+    row.querySelector(".num").textContent = (S.cloud.counts[i] || 0).toLocaleString();
+    row.title = name + " — 클릭하면 숨긴다";
+    row.onclick = () => {
+      S.setVisible[i] = S.setVisible[i] ? 0 : 1;
+      row.classList.toggle("off", !S.setVisible[i]);
+    };
+    host.appendChild(row);
+    setRows.push({name, i, bar: row.querySelector(".bar i"), swatch: row.querySelector(".swatch")});
+  });
+}
+
+function buildSkelList(){
+  const host = el("skelList");
+  host.textContent = "";
+  if(!S.skel.length){
+    host.innerHTML = '<p class="note">골격 묶음이 없다. 파일이 아직 없으면 정상이고, 점구름만 보인다.</p>';
+    return;
+  }
+  S.skel.forEach((b, i) => {
+    const row = document.createElement("div");
+    row.className = "row-item" + (b.visible ? "" : " off");
+    row.innerHTML = '<span class="swatch"></span><span class="name"></span><span class="num"></span>';
+    row.querySelector(".swatch").style.background = cssColor(STAGE_COLOR[b.name] || STAGE_COLOR.rest);
+    row.querySelector(".name").textContent = b.name + (b.missing.length ? "  (없음 " + b.missing.length + ")" : "");
+    row.querySelector(".num").textContent = b.nSeg.toLocaleString();
+    row.title = b.name + " — 뉴런 " + b.meta.n_neurons + "개 · 선분 " + b.nSeg.toLocaleString() +
+                (b.meta.decimation ? " · 허용오차 " + b.meta.decimation.tolerance_voxels + " 복셀" : "");
+    row.onclick = () => { b.visible = !b.visible; row.classList.toggle("off", !b.visible); };
+    host.appendChild(row);
+  });
+}
+
+// ═══════════════════════════════════════════════════════
+//  카메라
+// ═══════════════════════════════════════════════════════
+function fitView(){
+  if(!S.cloud) return;
+  resize();
+  const b = S.cloud.bbox;
+  S.cam.target = [0, 1, 2].map(k => (b.min[k] + b.max[k]) / 2);
+  S.baseRadius = Math.hypot(...[0, 1, 2].map(k => (b.max[k] - b.min[k]) / 2)) || 1;
+  S.pointWorld = S.baseRadius / 1100;
+
+  // 카메라 기저를 만들고, 각 꼭짓점이 절두체 안에 들어오는 최소 거리를 구한다.
+  // |p·right| <= (d − p·dir)·tanH,  |p·up| <= (d − p·dir)·tanV  →  d >= |h|/tanH + p·dir
+  const aspect = canvas.width / Math.max(1, canvas.height);
+  const tanV = Math.tan(S.cam.fov * Math.PI / 360), tanH = tanV * aspect;
+  const ce = Math.cos(S.cam.el);
+  const dir = [ce * Math.sin(S.cam.az), Math.sin(S.cam.el), ce * Math.cos(S.cam.az)];
+  const up0 = camUp();
+  const cross = (a, x) => [a[1]*x[2]-a[2]*x[1], a[2]*x[0]-a[0]*x[2], a[0]*x[1]-a[1]*x[0]];
+  const norm = v => { const n = Math.hypot(...v) || 1; return v.map(c => c / n); };
+  const right = norm(cross(up0, dir));
+  const up = cross(dir, right);
+  let d = 0;
+  for(let i = 0; i < 8; i++){
+    const p = [0, 1, 2].map(k => (i >> k & 1 ? b.max[k] : b.min[k]) - S.cam.target[k]);
+    const pd = p[0]*dir[0] + p[1]*dir[1] + p[2]*dir[2];
+    const h = Math.abs(p[0]*right[0] + p[1]*right[1] + p[2]*right[2]);
+    const v = Math.abs(p[0]*up[0] + p[1]*up[1] + p[2]*up[2]);
+    d = Math.max(d, h / tanH + pd, v / tanV + pd);
+  }
+  S.cam.dist = Math.max(d * 1.06, S.baseRadius * 0.05);
+}
+function preset(p){
+  if(p === "front"){ S.cam.az = 0; S.cam.el = 0; }                    // −Z 방향으로 본다
+  else if(p === "side"){ S.cam.az = -Math.PI / 2; S.cam.el = 0; }     // +X 방향으로 본다
+  else if(p === "top"){ S.cam.az = 0; S.cam.el = Math.PI / 2 * 0.999; } // −Y 방향으로 본다
+  for(const b of el("presetSeg").children) b.classList.toggle("on", b.dataset.preset === p);
+  fitView();                      // 프리셋은 그 방향에 맞춰 화면을 다시 채운다
+}
+
+canvas.addEventListener("pointerdown", e => {
+  canvas.setPointerCapture(e.pointerId);
+  canvas.classList.add("dragging");
+  S.drag = {x: e.clientX, y: e.clientY, pan: e.shiftKey || e.button === 1};
+});
+canvas.addEventListener("pointermove", e => {
+  if(!S.drag) return;
+  const dx = e.clientX - S.drag.x, dy = e.clientY - S.drag.y;
+  S.drag.x = e.clientX; S.drag.y = e.clientY;
+  if(S.drag.pan){
+    // 화면 축을 월드로 되돌려 목표점을 옮긴다
+    const {view} = viewProj(canvas.width / Math.max(1, canvas.height));
+    const right = [view[0], view[4], view[8]], up = [view[1], view[5], view[9]];
+    const k = S.cam.dist * 0.0016;
+    for(let i = 0; i < 3; i++) S.cam.target[i] += (-dx * right[i] + dy * up[i]) * k;
+  }else{
+    S.cam.az -= dx * 0.006;
+    S.cam.el = clamp(S.cam.el + dy * 0.006, -Math.PI / 2 * 0.999, Math.PI / 2 * 0.999);
+    for(const b of el("presetSeg").children) b.classList.remove("on");
+  }
+});
+const endDrag = () => { S.drag = null; canvas.classList.remove("dragging"); };
+canvas.addEventListener("pointerup", endDrag);
+canvas.addEventListener("pointercancel", endDrag);
+canvas.addEventListener("wheel", e => {
+  e.preventDefault();
+  S.cam.dist = clamp(S.cam.dist * Math.exp(e.deltaY * 0.0012), S.baseRadius * 0.02, S.baseRadius * 60);
+}, {passive: false});
+
+// ═══════════════════════════════════════════════════════
+//  그리기
+// ═══════════════════════════════════════════════════════
+const axCtx = el("axes").getContext("2d");
+function drawAxes(view){
+  const c = el("axes"), W = c.width, H = c.height, cx = W / 2, cy = H / 2, L = W * 0.34;
+  axCtx.clearRect(0, 0, W, H);
+  const axis = [[[1,0,0], "X", "#E5484D"], [[0,1,0], "Y", "#4FA97B"], [[0,0,1], "Z", "#3FBFCF"]];
+  const proj = v => [ (view[0]*v[0] + view[4]*v[1] + view[8]*v[2]),
+                     -(view[1]*v[0] + view[5]*v[1] + view[9]*v[2]),
+                      (view[2]*v[0] + view[6]*v[1] + view[10]*v[2]) ];
+  const items = axis.map(([v, lab, col]) => ({p: proj(v), lab, col})).sort((a, b) => a.p[2] - b.p[2]);
+  axCtx.lineWidth = 2;
+  axCtx.font = "600 13px \"IBM Plex Mono\", monospace";
+  axCtx.textAlign = "center"; axCtx.textBaseline = "middle";
+  for(const it of items){
+    const x = cx + it.p[0] * L, y = cy + it.p[1] * L;
+    axCtx.globalAlpha = it.p[2] > 0 ? 0.42 : 1;
+    axCtx.strokeStyle = it.col;
+    axCtx.beginPath(); axCtx.moveTo(cx, cy); axCtx.lineTo(x, y); axCtx.stroke();
+    axCtx.fillStyle = it.col;
+    axCtx.fillText(it.lab, cx + it.p[0] * (L + 11), cy + it.p[1] * (L + 11));
+  }
+  axCtx.globalAlpha = 1;
+}
+
+function resize(){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = canvas.getBoundingClientRect();
+  const w = Math.max(1, Math.round(r.width * dpr)), h = Math.max(1, Math.round(r.height * dpr));
+  if(canvas.width !== w || canvas.height !== h){ canvas.width = w; canvas.height = h; }
+}
+window.addEventListener("resize", resize);
+
+function advancePlayback(dtMs){
+  const run = S.run;
+  if(!run) return;
+  if(S.playing){
+    const adv = dtMs * SPEEDS[S.speedIdx] / run.binMs;
+    S._acc = (S._acc || 0) + adv;
+    if(S._acc >= 1){
+      const steps = Math.floor(S._acc);
+      S._acc -= steps;
+      for(let k = 0; k < steps; k++){
+        S.frame++;
+        if(S.frame >= run.n){ S.frame = 0; S.act.fill(0); }
+        injectFrame(S.frame);
+      }
+      el("scrub").value = S.frame;
+    }
+  }
+}
+function injectFrame(f){
+  const b = S.run.buckets[f];
+  for(let k = 0; k < b.length; k++) S.act[b[k]] = 255;
+  if(b.length) S.anyActive = true;
+}
+
+function render(ts){
+  requestAnimationFrame(render);
+  if(!GL || !S.cloud) return;
+  resize();
+  const gl = GL, W = canvas.width, H = canvas.height;
+  const dt = S._last ? Math.min(100, ts - S._last) : 16;
+  S._last = ts;
+
+  if(S.spin && !S.reduceMotion) S.cam.az += dt * 0.00022;
+  advancePlayback(dt);
+
+  // 잔광 감쇠 — 활동이 있을 때만 훑는다
+  if(S.anyActive){
+    const act = S.act, g = S.glow;
+    let any = 0;
+    for(let i = 0; i < act.length; i++){
+      const v = act[i];
+      if(v){ const nv = (v * g) | 0; act[i] = nv > 1 ? nv : 0; any |= act[i]; }
+    }
+    S.anyActive = !!any || S.playing;
+    gl.bindBuffer(gl.ARRAY_BUFFER, bufAct);
+    gl.bufferSubData(gl.ARRAY_BUFFER, 0, act);        // 위치는 그대로, 색만 갱신
+  }
+
+  const aspect = W / Math.max(1, H);
+  const {mvp, view} = viewProj(aspect);
+  const focal = (H * 0.5) / Math.tan(S.cam.fov * Math.PI / 360);
+
+  gl.viewport(0, 0, W, H);
+  gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+  gl.enable(gl.DEPTH_TEST);
+
+  // 골격: 일반 알파 혼합, 깊이 기록
+  if(S.skelAlpha > 0.004){
+    gl.depthMask(true);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.useProgram(progLine);
+    gl.uniformMatrix4fv(uL.uMVP, false, mvp);
+    gl.uniform1f(uL.uAlpha, S.skelAlpha);
+    for(const b of S.skel){
+      if(!b.visible || !b.nSeg) continue;
+      const c = STAGE_COLOR[b.name] || STAGE_COLOR.rest;
+      gl.uniform3f(uL.uColor, c[0] / 255, c[1] / 255, c[2] / 255);
+      gl.bindVertexArray(b.vao);
+      gl.drawArrays(gl.LINES, 0, b.nSeg * 2);
+    }
+  }
+
+  // 점: 가산 합성, 깊이 판정은 하되 기록하지 않는다
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE);
+  gl.depthMask(false);
+  gl.useProgram(progPoint);
+  gl.uniformMatrix4fv(uP.uMVP, false, mvp);
+  gl.uniform1f(uP.uFocal, focal);
+  gl.uniform1f(uP.uPointWorld, (S.pointWorld || 1) * S.pointScale);
+  gl.uniform1f(uP.uDim, S.dim);
+  gl.uniform3fv(uP.uSetColor, S.setColors);
+  gl.uniform1fv(uP.uSetVisible, Float32Array.from(
+    Array.from({length: MAX_SETS}, (_, i) => S.setVisible[i] === undefined ? 0 : S.setVisible[i])));
+  gl.bindVertexArray(vaoPoint);
+  gl.drawArrays(gl.POINTS, 0, S.cloud.drawN);
+  gl.bindVertexArray(null);
+  gl.depthMask(true);
+
+  drawAxes(view);
+  updateReadouts();
+
+  S.fpsN++;
+  if(ts - S.fpsT > 500){
+    const fps = S.fpsN / ((ts - S.fpsT) / 1000);
+    el("fpsLine").textContent = fps.toFixed(0) + " fps";
+    S.fpsT = ts; S.fpsN = 0;
+    if(S.perf) S.perf.samples.push(fps);
+  }
+}
+
+function updateReadouts(){
+  const act = S.act;
+  let active = 0;
+  for(let i = 0; i < act.length; i++) if(act[i] > 2) active++;
+  el("activeCount").textContent = active.toLocaleString();
+
+  // 실패 감지 문구는 뷰어의 것을 그대로 쓴다
+  const w = el("warnMsg");
+  if(!S.run){ w.textContent = ""; }
+  else{
+    const ratio = active / Math.max(1, S.cloud.n);
+    if(active === 0) w.textContent = WARN_SILENT;
+    else if(ratio > 0.90) w.textContent = WARN_RUNAWAY;
+    else w.textContent = "";
+  }
+
+  if(S.run){
+    const f = S.frame, run = S.run;
+    el("tRead").textContent = (f * run.binMs).toFixed(1);
+    let peak = 0, peakName = "—";
+    for(const row of setRows){
+      const r = run.regions.indexOf(row.name);
+      const v = r >= 0 ? (run.rates[r][f] || 0) : 0;
+      row.bar.style.width = clamp(v, 0, 1) * 100 + "%";
+      if(v > peak){ peak = v; peakName = row.name; }
+    }
+    el("peakRead").textContent = peakName;
+  }
+}
+
+function setPlaying(v){
+  S.playing = v && !!S.run;
+  el("playBtn").textContent = S.playing ? "❚❚" : "▶";
+  el("playBtn").setAttribute("aria-label", S.playing ? "일시정지" : "재생");
+}
+
+// ═══════════════════════════════════════════════════════
+//  조작
+// ═══════════════════════════════════════════════════════
+el("playBtn").onclick = () => setPlaying(!S.playing);
+el("scrub").oninput = e => {
+  if(!S.run) return;
+  S.frame = +e.target.value;
+  S.act.fill(0);
+  injectFrame(S.frame);
+  S.anyActive = true;
+};
+el("speedBtn").onclick = () => {
+  S.speedIdx = (S.speedIdx + 1) % SPEEDS.length;
+  el("speedBtn").textContent = SPEEDS[S.speedIdx].toFixed(2).replace(/0$/, "") + "×";
+};
+
+el("openBtn").onclick = () => el("fileInput").click();
+el("fileInput").onchange = e => { const f = e.target.files[0]; if(f) readRunFile(f); };
+
+let dragDepth = 0;
+window.addEventListener("dragenter", e => { e.preventDefault(); dragDepth++; document.body.classList.add("dragging"); });
+window.addEventListener("dragleave", e => { e.preventDefault(); if(--dragDepth <= 0) document.body.classList.remove("dragging"); });
+window.addEventListener("dragover", e => e.preventDefault());
+window.addEventListener("drop", e => {
+  e.preventDefault();
+  dragDepth = 0; document.body.classList.remove("dragging");
+  const f = e.dataTransfer.files[0];
+  if(f) readRunFile(f);
+});
+
+for(const b of el("presetSeg").children) b.onclick = () => preset(b.dataset.preset);
+el("spinBtn").onclick = () => {
+  S.spin = !S.spin;
+  el("spinBtn").classList.toggle("on", S.spin);
+};
+el("flipYBtn").onclick = () => {
+  S.cam.flipY = !S.cam.flipY;
+  el("flipYBtn").classList.toggle("on", S.cam.flipY);
+};
+el("fitBtn").onclick = () => fitView();
+el("fov").oninput = () => {
+  const before = S.cam.fov;
+  S.cam.fov = +el("fov").value;
+  el("fovVal").textContent = S.cam.fov + "°";
+  // 시야각을 바꿔도 피사체 크기가 유지되도록 거리를 함께 조정한다
+  S.cam.dist *= Math.tan(S.cam.fov * Math.PI / 360) > 0
+    ? Math.tan(before * Math.PI / 360) / Math.tan(S.cam.fov * Math.PI / 360) : 1;
+};
+
+el("ptSize").oninput = () => {
+  S.pointScale = +el("ptSize").value / 100;
+  el("ptSizeVal").textContent = S.pointScale.toFixed(1) + "×";
+};
+el("dim").oninput = () => {
+  S.dim = +el("dim").value / 100;
+  el("dimVal").textContent = S.dim.toFixed(2);
+};
+el("glow").oninput = () => {
+  S.glow = +el("glow").value / 100;
+  el("glowVal").textContent = S.glow.toFixed(2);
+};
+el("skelAlpha").oninput = () => {
+  S.skelAlpha = +el("skelAlpha").value / 100;
+  el("skelAlphaVal").textContent = S.skelAlpha.toFixed(2);
+};
+
+for(const b of document.querySelectorAll("#lookGroup .seg button[data-color]")){
+  b.onclick = () => {
+    S.colorMode = b.dataset.color;
+    for(const o of document.querySelectorAll("#lookGroup .seg button[data-color]")) o.classList.toggle("on", o === b);
+    el("colorNote").textContent = S.colorMode === "set"
+      ? "집합 색은 경로 순서대로 차가운 색(JO, 입력)에서 따뜻한 색(pC1, 출력)으로 간다."
+      : "좌우 색: 차가운 색 = 왼쪽, 따뜻한 색 = 오른쪽, 회색 = 좌우 미상(_unk, rest).";
+    rebuildColors();
+    if(S.cloud) buildSetList();
+  };
+}
+
+el("allOnBtn").onclick = () => {
+  S.setVisible = S.setNames.map(() => 1);
+  buildSetList();
+};
+el("restOffBtn").onclick = () => {
+  const r = S.setNames.indexOf("rest");
+  if(r >= 0) S.setVisible[r] = 0;
+  buildSetList();
+};
+
+el("loadBtn").onclick = () => loadFromServer();
+el("mockBtn").onclick = () => {
+  S.skel.forEach(b => { GL.deleteBuffer(b.vbo); GL.deleteVertexArray(b.vao); });
+  S.skel = [];
+  S.run = null;
+  el("scrub").disabled = true;
+  loadMock();
+};
+
+// 성능 측정: 120프레임의 프레임 간격을 그대로 잰다 (렌더 루프와 같은 rAF에 얹는다)
+el("perfBtn").onclick = () => {
+  const times = [];
+  let prev = null, left = 120;
+  el("perfNote").textContent = "측정 중…";
+  const tick = ts => {
+    if(prev !== null) times.push(ts - prev);
+    prev = ts;
+    if(--left > 0){ requestAnimationFrame(tick); return; }
+    times.sort((a, b) => a - b);
+    const med = times[times.length >> 1], p95 = times[Math.floor(times.length * 0.95)];
+    const mean = times.reduce((a, b) => a + b, 0) / times.length;
+    const segs = S.skel.reduce((s, b) => s + (b.visible ? b.nSeg : 0), 0);
+    el("perfNote").innerHTML =
+      "렌더러: " + esc(S.renderer || "?") + "<br>" +
+      "점 " + S.cloud.drawN.toLocaleString() + " · 선분 " + segs.toLocaleString() + "<br>" +
+      "중앙값 " + med.toFixed(2) + " ms (" + (1000 / med).toFixed(0) + " fps) · " +
+      "평균 " + mean.toFixed(2) + " ms · p95 " + p95.toFixed(2) + " ms<br>" +
+      canvas.width + "×" + canvas.height + " 픽셀";
+    log("성능: 중앙값 " + (1000 / med).toFixed(0) + " fps, 점 " + S.cloud.drawN.toLocaleString() +
+        " 선분 " + segs.toLocaleString());
+  };
+  requestAnimationFrame(tick);
+};
+
+for(const h of document.querySelectorAll(".group > h2")){
+  h.onclick = () => h.parentElement.classList.toggle("closed");
+}
+
+window.addEventListener("keydown", e => {
+  if(e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if(e.code === "Space"){ e.preventDefault(); setPlaying(!S.playing); }
+  if(e.code === "KeyF"){ e.preventDefault(); fitView(); }
+  if(e.code === "KeyR"){ e.preventDefault(); el("spinBtn").click(); }
+  if(!S.run) return;
+  if(e.code === "ArrowRight" || e.code === "ArrowLeft"){
+    e.preventDefault();
+    const d = (e.code === "ArrowRight" ? 1 : -1) * (e.shiftKey ? 10 : 1);
+    S.frame = clamp(S.frame + d, 0, S.run.n - 1);
+    S.act.fill(0); injectFrame(S.frame); S.anyActive = true;
+    el("scrub").value = S.frame;
+  }
+});
+
+// ═══════════════════════════════════════════════════════
+//  시작
+// ═══════════════════════════════════════════════════════
+function boot(){
+  S.reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(S.reduceMotion){
+    el("spinBtn").disabled = true;
+    el("spinBtn").title = "prefers-reduced-motion이 켜져 있어 자동 회전을 끈다";
+  }
+  if(!initGL()) return;
+  preset("front");
+
+  const q = new URLSearchParams(location.search);
+  S.mock = q.get("mock") === "1";
+  requestAnimationFrame(render);
+
+  if(S.mock){
+    loadMock();
+  }else{
+    document.body.classList.add("blocked");
+    el("blockerTitle").textContent = "자산을 불러오지 않았다";
+    el("blockerDetail").textContent =
+      "점구름(/neurons-3d.*)과 골격(/skel/*)은 서버가 제공한다. 오른쪽 '서버에서 불러오기'를 누르거나, " +
+      "파일이 아직 없으면 주소에 ?mock=1 을 붙여 합성 데이터로 화면을 확인할 수 있다.";
+    loadFromServer().catch(() => {});
+  }
+}
+boot();
+</script>
+</body>
+</html>
