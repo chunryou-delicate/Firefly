@@ -1,5 +1,7 @@
 # M6 3D 데이터 계약 — 세 창의 공통 원본
 
+**계약 버전 v1.1** (2026-09-18 개정. 변경 내역은 맨 아래 "개정 이력").
+
 총괄 세션 작성 (2026-09-18). **이 문서가 계약이다.** 세 창이 각자 만들므로 여기 없는 파일·필드·메시지는 쓰지 않는다.
 바꿔야 하면 바꾸지 말고 총괄 세션(이 지시를 전달한 메시지의 `from-name`)에 보고한다.
 
@@ -48,7 +50,10 @@
 {
   "set": "pC1", "voxel_nm": 8, "n_neurons": 156, "n_segments": 28114,
   "bbox": {"min": [x,y,z], "max": [x,y,z]},
-  "decimation": {"method": "rdp-per-branch", "tolerance_voxels": 40, "max_segments_per_neuron": 200},
+  "decimation": {"method": "rdp-per-branch", "tolerance_voxels": 40,
+                 "tolerance_voxels_final": [40.0], "max_deviation_voxels": 40.0,
+                 "segment_floor_total": 71999, "neurons_over_cap": 0,
+                 "max_segments_per_neuron": null},
   "neurons": [{"body_id": 98113, "idx": 12345, "seg_offset": 0, "seg_count": 187,
                "soma": [x,y,z] | null, "n_nodes_raw": 1653}],
   "source": {"url_prefix": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc",
@@ -59,7 +64,15 @@
 
 - `idx`는 유지 그래프의 뉴런 인덱스다. 그래프에 없는 bodyId는 묶음에 넣지 않는다.
 - 골격 파일이 없는(404) 뉴런은 조용히 건너뛰지 말고 `.json`의 `missing: [body_id…]`에 적는다.
-- 파일 크기 상한: 묶음 하나가 **20 MB를 넘으면 예외**를 던지고 상한을 낮추라고 안내한다.
+- `missing`은 골격 파일이 404인 bodyId, `not_in_graph`는 유지 그래프에 없어서 제외한 bodyId다. 둘 다 최상위 키이고 비어 있어도 존재해야 한다.
+- `soma`는 **null일 수 있다.** 존스턴 기관 뉴런은 체세포가 더듬이에 있어 촬영 볼륨 밖이다(JO_AB 114개 전부 null). 소비자는 null을 정상으로 다뤄야 한다.
+
+### 간략화 제약 (v1.1에서 개정)
+
+- **크기 제약은 묶음당 20 MB 하나뿐이다.** 묶음이 20 MB를 넘으면 예외를 던지고, 허용오차를 올려 다시 만들도록 안내한다.
+- **뉴런당 선분 상한은 두지 않는다**(`max_segments_per_neuron: null`). 이유는 v1.0에서 확인된 사실이다. RDP는 분기 경로 하나를 선분 1개 아래로 줄일 수 없으므로 **뉴런당 선분 하한 = 분기 경로 수**이고, 실제 뉴런은 분기 경로가 500~1,700개다. 상한 200을 맞추려면 허용오차를 요청값의 256배(10,240복셀 ≈ 82 μm)까지 올려야 하고, 그러면 뉴런 모양이 분기점을 직선으로 이은 위상구조로 대체된다. 실제로 pC1 묶음은 72,362선분이 하한 71,999에 붙어 기하가 99.5% 사라졌다.
+- 허용오차는 **집합마다 다를 수 있다.** 기본 40복셀(0.32 μm)로 만들고, 20 MB를 넘는 집합만 올린다. 확정값: JO_AB·AMMCtype·pC1은 40, WED는 64(0.51 μm, 13.9 MB). 실제로 쓴 값을 `tolerance_voxels_final`에, 최대 편차를 `max_deviation_voxels`에 적는다.
+- 소비자는 계약에 없는 키를 만나도 **무시하고 계속한다.** 모르는 키로 실패하지 않는다.
 
 ## 파일 3 — 활동
 
@@ -91,3 +104,8 @@
 - 그래프 축소, run.json 계약 수정, 뷰어(`flysim-viewer.html`)·조종석(`flysim-live.html`) 수정
 - 새 파이썬 의존성. 3D 뷰어는 **외부 스크립트 없이 WebGL2 직접** 사용(three.js 등 금지)
 - 좌표 재중심화·단위 변환을 파일에 넣는 것
+
+## 개정 이력
+
+- **v1.1** (2026-09-18, 골격 창의 보고 반영): 뉴런당 선분 상한 폐지 — 분기 보존과 양립 불가임이 실측으로 확인됨. 크기 제약은 묶음당 20 MB 하나. 집합별 허용오차 확정(WED만 64). `missing`/`not_in_graph`/`soma: null`/모르는 키 무시를 명문화.
+- v1.0 (2026-09-18) 최초 작성.
