@@ -313,7 +313,10 @@ def test_3d_button_opens_the_page_with_the_ws_query(script):
     assert url, "open3dUrl not found"
     url = url.group(1)
     assert "/flysim-3d.html" in url
-    assert '"?ws=" +' in url, "the 3D window receives the socket address as ?ws= (docs/m6e-brief.md)"
+    assert '"?ws=" +' in url, "the 3D window receives the socket address as ?ws="
+    # 화면 간 링크 규약: the value is always the whole ws:// URL, never host:port
+    assert "wss?:" in url and "S.url" in url, "?ws= must carry the full websocket URL"
+    assert "[^/]+" not in url, "the authority must not be split out of the URL"
     assert re.search(r'el\("open3dBtn"\)\.onclick\s*=.*window\.open\(open3dUrl\(\)', script), \
         "the button must open the 3D page in another tab"
     assert '"_blank"' in script

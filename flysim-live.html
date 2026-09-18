@@ -20,6 +20,7 @@
   v1.2에서 hello.assets를 읽는다. 서버가 가진 3D 자산(점구름·골격 묶음) 유무를 상단에
   표시하고, 3D 화면(flysim-3d.html)을 새 탭으로 여는 버튼을 단다. 조종석은 3D를 직접
   그리지 않는다 — 렌더러는 그쪽 파일에 있고 여기서는 링크만 건다.
+  링크의 ?ws= 값은 전체 웹소켓 URL이다(계약의 "화면 간 링크 규약").
 
   파라미터 값은 hello와 params 브로드캐스트에서만 갱신한다. frame.params_version이
   앞서면 params가 곧 온다는 뜻이므로 그때까지 값을 추측하지 않는다(낙관적 갱신 금지).
@@ -854,9 +855,11 @@ function onHello(msg){
 // 계약 v1.2: hello.assets는 서버가 실제로 가진 3D 자산을 알려 준다. 조종석은 그것을
 // 표시하고 3D 화면으로 넘어가는 링크만 건다 — 여기에 렌더러를 넣지 않는다.
 function open3dUrl(){
-  // 3D 화면은 웹소켓 주소를 ?ws=<host>:<port> 로 받는다 (docs/m6e-brief.md).
-  const m = /^wss?:\/\/([^/]+)/.exec(S.url || "");
-  return "/flysim-3d.html" + (m ? "?ws=" + encodeURIComponent(m[1]) : "");
+  // 화면 간 링크 규약 (docs/m5-protocol.md): ?ws= 의 값은 언제나 전체 웹소켓 URL이다.
+  // ws:// 나 wss:// 로 시작하지 않으면(모의 모드 등) 붙이지 않고 3D 화면의 기본값에 맡긴다.
+  const url = S.url || "";
+  const full = /^wss?:\/\//.test(url) ? url : "";
+  return "/flysim-3d.html" + (full ? "?ws=" + encodeURIComponent(full) : "");
 }
 
 function applyAssets(assets){

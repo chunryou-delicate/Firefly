@@ -5,6 +5,7 @@ neither a GPU nor the connectome cache. The last test is the real-graph integrat
 skips itself when the cache or CUDA is missing.
 """
 import json
+import os
 import subprocess
 import sys
 import time
@@ -615,6 +616,25 @@ def test_hello_assets_reflects_the_files_on_disk(ctx, tmp_path, monkeypatch):
 # ---------------------------------------------------------------------------------------
 # real graph + CUDA integration (skipped when either is missing)
 # ---------------------------------------------------------------------------------------
+def other_cuda_processes() -> list[int]:
+    """PIDs of CUDA compute processes other than this one, as nvidia-smi reports them.
+
+    A neighbour on the GPU (another window's resident flysim-live server, say) multiplies the
+    per-bin wall time — 404 us idle vs 10,027 us measured beside a running server — so a
+    timing assertion made next to one measures the neighbour, not this code. Unknown (no
+    nvidia-smi) counts as "nobody else".
+    """
+    try:
+        out = subprocess.check_output(
+            ["nvidia-smi", "--query-compute-apps=pid", "--format=csv,noheader"],
+            text=True, timeout=10)
+    except Exception:
+        return []
+    me = os.getpid()
+    return [int(t) for t in out.split() if t.strip().isdigit() and int(t) != me]
+
+
+
 @pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
 def test_real_graph_end_to_end(tmp_path):
     from flysim.graph.constants import CACHE_NPZ
@@ -658,9 +678,37 @@ def test_real_graph_end_to_end(tmp_path):
     doc = json.loads((tmp_path / "snap" / "run.json").read_text())
     assert doc["meta"]["n_neurons"] == ctx.n and res["n_frames"] == 300
     m = s.pacing_metrics()
-    # A regression guard, not the pacing measurement: three windows share this laptop, so a
-    # wall-clock assertion at the real budget (1,000 us/bin) fails whenever another window is
-    # busy. The real numbers come from `python -m flysim.live.bench` (docs/m5a-report.md §4);
-    # this ceiling only catches a change that makes the loop several times slower.
-    assert m["mean_bin_us"] < 5000, m
+    assert m["bins"] == 500 and m["steps"] == 500 and m["mean_bin_us"] > 0, m
     s.stop()
+
+
+@pytest.mark.skipif(not torch.cuda.is_available(), reason="CUDA required")
+def test_real_graph_pacing_budget(tmp_path):
+    """The dt = 1 ms budget (< 1,000 us/bin), checked only when this process has the GPU alone.
+
+    The number itself belongs to `python -m flysim.live.bench` (docs/m5a-report.md §4); this is
+    a regression guard. Raising the ceiling to survive a neighbour would leave a guard that
+    guards nothing, so a shared GPU skips the check and says so.
+    """
+    from flysim.graph.constants import CACHE_NPZ
+    if not CACHE_NPZ.exists():
+        pytest.skip("graph cache missing")
+    from flysim.live.export_neurons import build_context
+
+    s = LiveSession(build_context(), params=EngineParams(synapse="conductance", dt=1.0),
+                    device="cuda", a_in=640.0, mode="rate", speed=1e9, session_dir=tmp_path,
+                    session_id="pacing", log_controls=False)
+    s.apply_control(ctrl("stimulus", kind="click_train", ipi_ms=35.0))
+    for _ in range(60):          # Triton compilation and the CUDA-graph capture are one-off
+        s._run_bin()
+    s.metrics.update(bins=0, bin_us_sum=0.0, bin_us_max=0.0, steps=0)
+    for _ in range(500):
+        s._run_bin()
+    m = s.pacing_metrics()
+    s.stop()
+    others = other_cuda_processes()
+    if others:
+        pytest.skip(f"budget not checked: {len(others)} other CUDA process(es) {others} share "
+                    f"the GPU, so this measures them too (got {m['mean_bin_us']:.0f} us/bin; "
+                    f"the number of record comes from `python -m flysim.live.bench`)")
+    assert m["mean_bin_us"] < 1000, m

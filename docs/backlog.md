@@ -40,5 +40,5 @@ Items deferred with a reason. Not scheduled until a milestone needs them.
 - **조종석이 `hello.assets`를 아직 읽지 않는다.** 프로토콜 계약은 v1.2, 조종석은 v1.1이다. 조종석에 3D 필드를 붙일 때 함께 처리한다. `docs/m5-protocol.md` 맨 위에 구현 현황으로 적어 두었고 `tests/test_live_html.py`가 선언 버전과 계약 버전을 대조한다.
 - **독립 3D 뷰어는 웹소켓을 쓰지 않는다.** HTTP로 자산을 직접 물어 404면 "아직 없음"으로 다룬다. 총괄 판단: 그대로 둔다. 자산 광고는 조종석 통합 때 의미가 생긴다.
 - **뉴런 집기(클릭 → bodyId·하류 강조) 미구현.** 묶음의 `seg_offset`/`seg_count`가 이미 있어 붙이기 쉽다. 조종석의 `get_hops`와 엮으면 자연스럽다.
-- **`tests/test_live.py::test_real_graph_end_to_end`의 벽시계 단언을 1,000 → 5,000 μs/빈으로 완화**했다(창 B). 여러 창이 한 노트북을 나눠 쓰면 부하 때문에 실패한다. 성능 수치의 출처는 `python -m flysim.live.bench`이고 이 단언은 회귀 가드로만 남았다.
+- **벽시계 단언은 GPU를 혼자 쓸 때만 검사한다**(창 B, 2026-09-19 갱신). 처음엔 1,000 → 5,000 μs/빈으로 완화했지만, 다른 창의 상주 서버가 GPU에 붙어 있으면 같은 코드가 404 → 10,027 μs로 25배가 되어 숫자를 아무리 올려도 가드 구실을 못 했다. 지금은 `test_real_graph_pacing_budget`으로 분리해 `nvidia-smi`가 다른 컴퓨트 프로세스를 보고하면 이유를 적고 건너뛰며, 혼자일 때만 원래 목표치 1,000 μs를 검사한다. 기능 단언은 `test_real_graph_end_to_end`에 그대로 있고, 성능 수치의 출처는 `python -m flysim.live.bench`다.
 - 3D 자산에 `Cache-Control: no-store`라 새로고침마다 2.3 MB + 묶음을 다시 받는다. 로컬이라 문제 없음. 필요해지면 ETag.
