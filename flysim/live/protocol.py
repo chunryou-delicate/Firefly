@@ -1,4 +1,4 @@
-"""M5a: the flysim-live wire protocol as code (contract v1.1).
+"""M5a: the flysim-live wire protocol as code (contract v1.2).
 
 ``docs/m5-protocol.md`` is the contract; every message type, field and bound below comes
 from it. Nothing here may be changed without changing the contract first (and the contract
@@ -22,7 +22,7 @@ from ..engine.params import SYNAPSE_MODELS, EngineParams
 
 # ---- contract constants ---------------------------------------------------------------
 SERVER_MESSAGES = ("hello", "frame", "ack", "params", "hops", "snapshot_done", "warning", "error")
-CONTRACT_VERSION = "1.1"
+CONTRACT_VERSION = "1.2"
 CLIENT_MESSAGES = ("set_params", "stimulus", "audio_start", "audio_stop", "inject",
                    "pause", "resume", "step", "reset", "get_hops", "snapshot", "set_frame_every")
 STIMULUS_KINDS = ("silence", "click_train", "tone", "audio")
@@ -230,13 +230,24 @@ def validate_client_message(obj: Any) -> tuple[str, dict]:
 
 
 # ---- server -> client builders ---------------------------------------------------------
+def validate_assets(assets: Any) -> dict:
+    """``hello.assets`` (contract v1.2): which 3D assets this server can actually serve."""
+    if not isinstance(assets, dict):
+        raise ValueError("assets must be an object")
+    sets = assets.get("skeleton_sets", [])
+    if not isinstance(sets, list) or any(not isinstance(s, str) for s in sets):
+        raise ValueError("assets.skeleton_sets must be a list of names")
+    return {"neurons_3d": bool(assets.get("neurons_3d", False)), "skeleton_sets": list(sets)}
+
+
 def hello_msg(*, n_neurons: int, regions: list[str], sets: dict, set_sizes: dict, params: dict,
               dt_ms: float, bin_ms: float, engine: dict, neurons_url: str, session_id: str,
-              params_version: int) -> dict:
+              params_version: int, assets: dict | None = None) -> dict:
     return {"type": "hello", "n_neurons": int(n_neurons), "regions": list(regions), "sets": sets,
             "set_sizes": set_sizes, "params": params, "dt_ms": float(dt_ms), "bin_ms": float(bin_ms),
             "engine": engine, "neurons_url": neurons_url, "session_id": session_id,
-            "params_version": int(params_version)}
+            "params_version": int(params_version),
+            "assets": validate_assets(assets or {})}
 
 
 def frame_msg(*, t_ms: float, step: int, rates: list[float], idx: list[int], n_total: int,

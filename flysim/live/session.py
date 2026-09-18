@@ -31,6 +31,7 @@ import torch
 
 from ..data.download import ROOT
 from ..engine import EngineParams, LIFEngine
+from ..probe.export3d import available_assets
 from ..probe.probe import RateTable
 from . import protocol as P
 from .stream import DEFAULT_FS, AudioSource, JOStream, SilenceSource, make_source
@@ -711,7 +712,10 @@ class LiveSession:
                     "adaptation_available": P.ENGINE_HAS_ADAPT,
                     "drive_full_scale": self._drive_ref},
             neurons_url=self.ctx.neurons_url, session_id=self.session_id,
-            params_version=self.params_version)
+            params_version=self.params_version,
+            # read from disk on every hello, so a bundle produced while the server runs shows up
+            # on the next connection (contract v1.2)
+            assets=available_assets())
 
     def snapshot(self, run_id: str, seconds: float, out_dir: Path | None = None) -> dict:
         """Write the last ``seconds`` of the ring buffer as a viewer-contract run.json."""

@@ -17,7 +17,7 @@
 ## 서버 → 클라이언트
 | type | 필드 | 언제 |
 |---|---|---|
-| `hello` | `n_neurons`, `regions:[str]`, `sets:{name:[idx…]}`(프로브 집합, 크기 표시용은 `set_sizes`), `params`(아래 params 객체), **`params_version:int`**, `dt_ms`, `bin_ms`, `engine:{synapse, git_commit}`, `neurons_url` | 접속 직후 |
+| `hello` | `n_neurons`, `regions:[str]`, `sets:{name:[idx…]}`(프로브 집합, 크기 표시용은 `set_sizes`), `params`(아래 params 객체), **`params_version:int`**, `dt_ms`, `bin_ms`, `engine:{synapse, git_commit}`, `neurons_url`, **`assets:{neurons_3d:bool, skeleton_sets:[name…]}`**(서버가 실제로 가진 3D 자산. `docs/m6-3d-contract.md`) | 접속 직후 |
 | `frame` | `t_ms`, `step`, `rates:[float…]`(영역별 Hz/뉴런, **정규화 안 함**), `spikes:{idx:[int…], n_total:int, sample_ratio:float}`(빈당 상한 1,500 균일 샘플), `active_frac_100ms`(최근 100 ms 발화 뉴런 비율), `input_level`(0~1, 현재 자극 포락선), `status`(`"running"`/`"paused"`/`"lagging"`), `speed`, `params_version`, **`n_bins:int`**(이 메시지가 묶은 빈 수. `frame_every`와 같되 reset·pause 경계에서는 실제로 묶인 수) | 빈마다(bin_ms=1이면 1 ms마다; 클라이언트 부하를 위해 서버는 `frame_every`(기본 1) 빈마다 묶어 보낼 수 있고 그때 `rates`/`spikes`는 묶음 평균/합집합) |
 | `ack` | `req_id`, `ok:bool`, `msg`, `params_version` | 모든 제어 메시지에 대해 |
 | `params` | `params`(전체 객체), `params_version:int` | `params_version`이 바뀔 때마다 **모든 클라이언트에 브로드캐스트**. 다른 클라이언트가 바꾼 값을 화면에 반영하는 유일한 경로다 |
@@ -57,5 +57,6 @@
 - `frame.n_bins`로 시간축을 전진시킨다. `t_ms` 차이로 유도하지 않는다(reset 직후 어긋난다).
 
 ## 개정 이력
+- **v1.2** (2026-09-18, M6 3D 계약 반영, 서버 구현 완료): `hello`에 `assets` 추가. 기존 메시지·필드는 그대로다. 조종석이 `assets`를 읽기 시작하면 맨 위 "계약 버전" 줄도 v1.2로 올린다(`tests/test_live_html.py`가 그 줄로 조종석의 구현 버전을 확인한다). 3D 자산 자체는 웹소켓이 아니라 HTTP로 가져간다(`/neurons-3d.{json,bin}`, `/skel/<name>.{json,bin}`, `/skel/index.json`; `docs/m6-3d-contract.md`).
 - **v1.1** (2026-09-16, 조종석 세션의 계약 미비 보고 4건 반영): `hello`에 `params_version` 추가 · `params` 브로드캐스트 메시지 신설 · `frame`에 `n_bins` 추가 · `frame.status`에 `lagging` 명시.
 - v1.0 (2026-09-16) 최초 작성.
