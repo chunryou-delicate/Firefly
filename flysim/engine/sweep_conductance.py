@@ -123,6 +123,25 @@ G_GRID_ADAPT_G = np.geomspace(2e-4, 2e-3, 8)
 # Fourth usable-state condition, new in M2d (CLAUDE.md §3.3; M2c reached 96-100 %).
 USABLE_ACTIVE_FRAC_MAX = 0.30
 
+# ---- M2e (pre-defined; docs/m2e-brief.md, written before the run) -------------
+# M2d's selection rule ("smallest b_g with a usable state") returned b_g = 1.0, the TOP
+# of B_G_GRID, so the rule was not resolved: the true minimum could lie inside
+# (0.534, 1.0], and nothing above 1.0 was tested. M2e opens the grid in both directions
+# and changes NOTHING else - the four usable-state conditions and the selection rule are
+# the M2d ones, reused from the same constants and the same _judge_usable().
+#   refine:  5 geometric points strictly inside [0.534, 1.0]
+#   extend:  6 geometric points on [1.0, 8.0], 1.0 included
+# g grid (8 points) and the 3 stimulus seeds are identical to M2d.
+_B_G_M2D_LOW = float(B_G_GRID[10])                     # 0.53367..., the M2d point below the hit
+B_G_GRID_REFINE = np.geomspace(_B_G_M2D_LOW, 1.0, 7)[1:-1]
+B_G_GRID_EXTEND = np.geomspace(1.0, 8.0, 6)
+B_G_GRID_M2E = np.concatenate([B_G_GRID_REFINE, B_G_GRID_EXTEND])
+# Robustness check (descriptive, NOT part of the selection rule): the selected cell is
+# re-run with these noise seeds. If any of them fails the four conditions at a sigma that
+# was usable with the primary seed, the result is reported as "not robust" - and no
+# substitute cell is looked for (docs/m2e-brief.md §4).
+ROBUSTNESS_SEEDS = (3, 4, 5)
+
 NOISE_SIGMA_GRID = np.geomspace(1.0, 200.0, 12)
 NOISE_ON_MS = 2000
 NOISE_OFF_MS = 400
@@ -651,3 +670,80 @@ def markdown_adapt_g_noise_table(res: dict) -> str:
                 f"{r['ratio_last_first']:.2f} | {r['tail_active_frac']:.3%} | {r['v_min']:.1f} | "
                 f"{'**YES**' if r['usable'] else '-'} |")
     return "\n".join(lines)
+
+
+def run_robustness(b_g: float, g: float, usable_sigma, seeds=ROBUSTNESS_SEEDS,
+                   sigma_grid=NOISE_SIGMA_GRID, graph=None) -> dict:
+    """Re-run one selected (b_g, g) cell under other noise seeds (docs/m2e-brief.md §4).
+
+    Descriptive only: this does NOT choose a cell and does NOT look for a substitute if
+    it fails. ``usable_sigma`` is the set of sigma that were usable with the primary
+    seed; the cell is called robust only if every one of them is usable under every seed.
+    """
+    graph = graph if graph is not None else Graph.load()
+    n = graph.n
+    on, off = NOISE_ON_MS, NOISE_OFF_MS
+    print(f"M2e robustness: b_g={b_g:g}, g={g:.4e}, seeds {list(seeds)} x {len(sigma_grid)} sigma "
+          f"= {len(seeds) * len(sigma_grid)} runs; target sigma {[round(s, 2) for s in usable_sigma]}",
+          flush=True)
+    engine = LIFEngine(graph, _params(g, adapt_g_b=b_g), device="cuda")
+    zero = lambda k, buf: None  # noqa: E731
+    per_seed = []
+    for seed in seeds:
+        rows = []
+        for sigma in sigma_grid:
+            p = _params(g, adapt_g_b=b_g, noise_sigma=float(sigma))
+            engine.params = p
+            engine.reset(seed)
+            engine.i_ext.zero_()
+            t1, i1, vmin1, _ = _run_tracked(engine, on, zero)
+            engine.params = _params(g, adapt_g_b=b_g)
+            t2, i2, vmin2, _ = _run_tracked(engine, off, zero)
+            first, last = (t1 < 1000), (t1 >= on - 1000)
+            rate_first = int(first.sum()) / n
+            rate_last = int(last.sum()) / n
+            active_last = int(np.unique(i1[last]).size) / n
+            tail_active = int(np.unique(i2[t2 >= off - NOISE_TAIL_WINDOW_MS]).size) / n
+            ratio = (rate_last / rate_first) if rate_first > 0 else (float("inf") if rate_last else 0.0)
+            usable, cond = _judge_usable(rate_first, rate_last, active_last, ratio, tail_active)
+            rows.append(dict(seed=seed, sigma=float(sigma), rate_first_s_hz=rate_first,
+                             rate_last_s_hz=rate_last, active_frac_last_s=active_last,
+                             ratio_last_first=ratio, tail_active_frac=tail_active,
+                             usable=usable, conditions=cond, v_min=min(vmin1, vmin2),
+                             v_lower_bound=p.v_lower_bound))
+            print(f"seed={seed} sigma={sigma:7.2f}  rate {rate_first:7.3f}->{rate_last:7.3f} Hz  "
+                  f"active={active_last:8.3%}  ratio={ratio:6.2f}  tail={tail_active:7.3%}  "
+                  f"v[{min(vmin1, vmin2):7.1f}]  {'USABLE' if usable else '-'}", flush=True)
+        hits = [r["sigma"] for r in rows if r["usable"]]
+        ok = all(any(abs(h - s) < 1e-9 for h in hits) for s in usable_sigma)
+        per_seed.append(dict(seed=seed, rows=rows, usable_sigma=hits,
+                             reproduces_primary_sigma=ok))
+        print(f"--- seed {seed}: usable at {[round(h, 2) for h in hits] or 'NONE'}; "
+              f"reproduces the primary sigma: {ok} ---", flush=True)
+    robust = all(x["reproduces_primary_sigma"] for x in per_seed)
+    return dict(
+        generated=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        gpu=torch.cuda.get_device_name(0), n_neurons=n,
+        cell=dict(adapt_g_b=float(b_g), g=float(g)),
+        primary_usable_sigma=[float(s) for s in usable_sigma], seeds=list(seeds),
+        protocol=dict(noise_on_ms=on, noise_off_ms=off, tail_window_ms=NOISE_TAIL_WINDOW_MS,
+                      sigma_grid=[float(s) for s in sigma_grid],
+                      usable_state=dict(rate_hz=LOW_RATE_RANGE_HZ, ratio=STABLE_RATIO_RANGE,
+                                        tail_active_below=IGNITED_ACTIVE_FRAC,
+                                        active_frac_max=USABLE_ACTIVE_FRAC_MAX)),
+        per_seed=per_seed, robust=robust,
+        note="descriptive check; a failure is reported as 'not robust' and no substitute "
+             "cell is selected (docs/m2e-brief.md §4)",
+    )
+
+
+def usable_margins(row: dict) -> dict:
+    """Margin on each of the four conditions for one run (descriptive metric, m2e §5)."""
+    return {
+        "rate_lower": row["rate_last_s_hz"] - LOW_RATE_RANGE_HZ[0],
+        "rate_upper": LOW_RATE_RANGE_HZ[1] - row["rate_last_s_hz"],
+        "ratio_lower": row["ratio_last_first"] - STABLE_RATIO_RANGE[0],
+        "ratio_upper": STABLE_RATIO_RANGE[1] - row["ratio_last_first"],
+        "tail_headroom": IGNITED_ACTIVE_FRAC - row["tail_active_frac"],
+        "active_frac_headroom": USABLE_ACTIVE_FRAC_MAX - row["active_frac_last_s"],
+    }

@@ -1,0 +1,723 @@
+{
+ "generated": "2026-09-19T01:34:19+09:00",
+ "gpu": "NVIDIA GeForce RTX 4090 Laptop GPU",
+ "n_neurons": 165122,
+ "cell": {
+  "adapt_g_b": 0.6579332246575678,
+  "g": 0.000536539159055945
+ },
+ "primary_usable_sigma": [
+  29.12673572985976
+ ],
+ "seeds": [
+  3,
+  4,
+  5
+ ],
+ "protocol": {
+  "noise_on_ms": 2000,
+  "noise_off_ms": 400,
+  "tail_window_ms": 200,
+  "sigma_grid": [
+   1.0,
+   1.6187677556400661,
+   2.6204090466999768,
+   4.241833671385446,
+   6.86654357202708,
+   11.115339327095,
+   17.99315289569933,
+   29.12673572985976,
+   47.149420626546416,
+   76.32396180736399,
+   123.55076835646473,
+   200.0
+  ],
+  "usable_state": {
+   "rate_hz": [
+    0.1,
+    5.0
+   ],
+   "ratio": [
+    0.5,
+    2.0
+   ],
+   "tail_active_below": 0.01,
+   "active_frac_max": 0.3
+  }
+ },
+ "per_seed": [
+  {
+   "seed": 3,
+   "rows": [
+    {
+     "seed": 3,
+     "sigma": 1.0,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -65.8838119506836,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 1.6187677556400661,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -66.43070983886719,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 2.6204090466999768,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -67.31596374511719,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 4.241833671385446,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -68.74901580810547,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 6.86654357202708,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -71.06877899169922,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 11.115339327095,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -74.82395935058594,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 17.99315289569933,
+     "rate_first_s_hz": 6.056128196121656e-06,
+     "rate_last_s_hz": 4.239289737285159e-05,
+     "active_frac_last_s": 4.239289737285159e-05,
+     "ratio_last_first": 7.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -80.90271759033203,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 29.12673572985976,
+     "rate_first_s_hz": 0.5079698647060961,
+     "rate_last_s_hz": 0.4746672157556231,
+     "active_frac_last_s": 0.30069282106563633,
+     "ratio_last_first": 0.9344397152973998,
+     "tail_active_frac": 0.0007267353835345987,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -90.32955169677734,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 47.149420626546416,
+     "rate_first_s_hz": 1.9990310194886205,
+     "rate_last_s_hz": 1.6896113176923728,
+     "active_frac_last_s": 0.9634997153619748,
+     "ratio_last_first": 0.8452151573538856,
+     "tail_active_frac": 0.0001635154612952847,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -105.23542022705078,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 76.32396180736399,
+     "rate_first_s_hz": 3.3567120068797616,
+     "rate_last_s_hz": 2.9111142064655224,
+     "active_frac_last_s": 0.9999636632308233,
+     "ratio_last_first": 0.867251703601333,
+     "tail_active_frac": 9.084192294182483e-05,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -124.4287109375,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 123.55076835646473,
+     "rate_first_s_hz": 5.284849989704582,
+     "rate_last_s_hz": 4.72387689102603,
+     "active_frac_last_s": 1.0,
+     "ratio_last_first": 0.8938525975625828,
+     "tail_active_frac": 5.45051537650949e-05,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -161.05068969726562,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 3,
+     "sigma": 200.0,
+     "rate_first_s_hz": 9.214411162655491,
+     "rate_last_s_hz": 8.406081563934546,
+     "active_frac_last_s": 1.0,
+     "ratio_last_first": 0.9122755014452824,
+     "tail_active_frac": 6.056128196121656e-06,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -213.13316345214844,
+     "v_lower_bound": -75.0
+    }
+   ],
+   "usable_sigma": [],
+   "reproduces_primary_sigma": false
+  },
+  {
+   "seed": 4,
+   "rows": [
+    {
+     "seed": 4,
+     "sigma": 1.0,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -65.87781524658203,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 1.6187677556400661,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -66.42097473144531,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 2.6204090466999768,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -67.30023956298828,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 4.241833671385446,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -68.72354888916016,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 6.86654357202708,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -71.0275650024414,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 11.115339327095,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -74.7572250366211,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 17.99315289569933,
+     "rate_first_s_hz": 3.0280640980608277e-05,
+     "rate_last_s_hz": 3.0280640980608277e-05,
+     "active_frac_last_s": 3.0280640980608277e-05,
+     "ratio_last_first": 1.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -80.79469299316406,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 29.12673572985976,
+     "rate_first_s_hz": 0.5011991133828321,
+     "rate_last_s_hz": 0.4741827254999334,
+     "active_frac_last_s": 0.2995361005801771,
+     "ratio_last_first": 0.9460964970577219,
+     "tail_active_frac": 9.084192294182483e-05,
+     "usable": true,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -90.56792449951172,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 47.149420626546416,
+     "rate_first_s_hz": 1.9930112280616756,
+     "rate_last_s_hz": 1.756222671721515,
+     "active_frac_last_s": 0.9635723889003283,
+     "ratio_last_first": 0.8811905557750159,
+     "tail_active_frac": 0.0021680938942115527,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -104.55976867675781,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 76.32396180736399,
+     "rate_first_s_hz": 3.3493235304804934,
+     "rate_last_s_hz": 2.933661171739683,
+     "active_frac_last_s": 0.9999576071026272,
+     "ratio_last_first": 0.8758966236142678,
+     "tail_active_frac": 0.01708433764125919,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": false,
+      "active_frac_ok": false
+     },
+     "v_min": -124.14045715332031,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 123.55076835646473,
+     "rate_first_s_hz": 5.274978500744904,
+     "rate_last_s_hz": 4.738672012209155,
+     "active_frac_last_s": 1.0,
+     "ratio_last_first": 0.8983301091255604,
+     "tail_active_frac": 1.2112256392243311e-05,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -160.74517822265625,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 4,
+     "sigma": 200.0,
+     "rate_first_s_hz": 9.20811884545972,
+     "rate_last_s_hz": 8.412246702438198,
+     "active_frac_last_s": 1.0,
+     "ratio_last_first": 0.9135684327734381,
+     "tail_active_frac": 1.2112256392243311e-05,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -206.38348388671875,
+     "v_lower_bound": -75.0
+    }
+   ],
+   "usable_sigma": [
+    29.12673572985976
+   ],
+   "reproduces_primary_sigma": true
+  },
+  {
+   "seed": 5,
+   "rows": [
+    {
+     "seed": 5,
+     "sigma": 1.0,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -65.89788818359375,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 1.6187677556400661,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -66.45349884033203,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 2.6204090466999768,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -67.35283660888672,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 4.241833671385446,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -68.80870056152344,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 6.86654357202708,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -71.1653823852539,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 11.115339327095,
+     "rate_first_s_hz": 0.0,
+     "rate_last_s_hz": 0.0,
+     "active_frac_last_s": 0.0,
+     "ratio_last_first": 0.0,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": false,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -74.98031616210938,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 17.99315289569933,
+     "rate_first_s_hz": 6.056128196121655e-05,
+     "rate_last_s_hz": 4.239289737285159e-05,
+     "active_frac_last_s": 4.239289737285159e-05,
+     "ratio_last_first": 0.7000000000000001,
+     "tail_active_frac": 0.0,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": true
+     },
+     "v_min": -81.15581512451172,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 29.12673572985976,
+     "rate_first_s_hz": 0.5099623308826201,
+     "rate_last_s_hz": 0.476302370368576,
+     "active_frac_last_s": 0.30101379586003074,
+     "ratio_last_first": 0.9339952022421206,
+     "tail_active_frac": 6.056128196121656e-06,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -91.15556335449219,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 47.149420626546416,
+     "rate_first_s_hz": 1.9830670655636438,
+     "rate_last_s_hz": 1.7642228170685916,
+     "active_frac_last_s": 0.9642627875146861,
+     "ratio_last_first": 0.8896435464562312,
+     "tail_active_frac": 0.00012717869211855478,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -106.42993927001953,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 76.32396180736399,
+     "rate_first_s_hz": 3.356578772059447,
+     "rate_last_s_hz": 2.919707852375819,
+     "active_frac_last_s": 0.9999333825898427,
+     "ratio_last_first": 0.8698463675811239,
+     "tail_active_frac": 0.00013929094851079807,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -122.7309341430664,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 123.55076835646473,
+     "rate_first_s_hz": 5.2766439359988375,
+     "rate_last_s_hz": 4.735916473879919,
+     "active_frac_last_s": 1.0,
+     "ratio_last_first": 0.8975243604310849,
+     "tail_active_frac": 2.4224512784486623e-05,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": true,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -156.8903045654297,
+     "v_lower_bound": -75.0
+    },
+    {
+     "seed": 5,
+     "sigma": 200.0,
+     "rate_first_s_hz": 9.20738605394799,
+     "rate_last_s_hz": 8.41163503349039,
+     "active_frac_last_s": 1.0,
+     "ratio_last_first": 0.9135747088484039,
+     "tail_active_frac": 0.0018531752280132267,
+     "usable": false,
+     "conditions": {
+      "rate_in_band": false,
+      "stable": true,
+      "not_self_sustained": true,
+      "active_frac_ok": false
+     },
+     "v_min": -207.7906036376953,
+     "v_lower_bound": -75.0
+    }
+   ],
+   "usable_sigma": [],
+   "reproduces_primary_sigma": false
+  }
+ ],
+ "robust": false,
+ "note": "descriptive check; a failure is reported as 'not robust' and no substitute cell is selected (docs/m2e-brief.md \u00a74)"
+}

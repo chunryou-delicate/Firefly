@@ -143,9 +143,11 @@ def markdown_table(res: dict) -> str:
 
 
 def _m2d(a, sc) -> None:
-    """M2d adaptation-conductance sweeps (docs/m2d-brief.md)."""
+    """M2d / M2e adaptation-conductance sweeps (docs/m2d-brief.md, docs/m2e-brief.md)."""
     from ..graph import Graph
     graph = Graph.load()
+    if a.m2e:
+        return _m2e(a, sc, graph)
     if a.noise:
         prev = json.loads(Path("data-provenance/m2d-grid.json").read_text())
         cells = [tuple(c) for c in prev["responsive_cells"]]
@@ -162,6 +164,42 @@ def _m2d(a, sc) -> None:
         return
     res = sc.run_bg_g_grid(graph=graph)
     out = a.out or Path("data-provenance/m2d-grid.json")
+    out.write_text(json.dumps(res, indent=1))
+    print(); print(sc.markdown_bg_g_table(res))
+    print(f"\nRESPONSIVE (all seeds) cells: {len(res['responsive_cells'])}"
+          f"\nv bound violations: {res['v_bound_violations'] or 'NONE'}"
+          f"\nv_min over all runs: {res['v_min_overall']:.2f} mV\nwritten: {out}")
+
+
+def _m2e(a, sc, graph) -> None:
+    """M2e: same conditions and rule as M2d, grid opened in both directions."""
+    if a.robustness:
+        prev = json.loads(Path("data-provenance/m2e-noise-sweep.json").read_text())
+        b_g, g = prev["default_adapt_g_b"], prev["default_g_with_adapt"]
+        if not b_g:
+            raise SystemExit("no usable state in m2e-noise-sweep.json; nothing to check")
+        sig = [s for c in prev["per_cell"]
+               if c["adapt_g_b"] == b_g and c["g"] == g for s in c["usable_sigma"]]
+        res = sc.run_robustness(b_g, g, sig, graph=graph)
+        out = a.out or Path("data-provenance/m2e-robustness.json")
+        out.write_text(json.dumps(res, indent=1))
+        print(f"\nrobust: {res['robust']}\nwritten: {out}")
+        return
+    if a.noise:
+        prev = json.loads(Path("data-provenance/m2e-grid.json").read_text())
+        cells = [tuple(c) for c in prev["responsive_cells"]]
+        if not cells:
+            raise SystemExit("no (b_g, g) cell was RESPONSIVE for all three seeds in m2e-grid.json")
+        res = sc.run_adapt_g_noise_sweep(cells, graph=graph)
+        out = a.out or Path("data-provenance/m2e-noise-sweep.json")
+        out.write_text(json.dumps(res, indent=1))
+        print(); print(sc.markdown_adapt_g_noise_table(res))
+        print(f"\nusable cells: {res['usable_cells'] or 'NONE'}"
+              f"\nDEFAULT_ADAPT_G_B = {res['default_adapt_g_b']}"
+              f"\nDEFAULT_G_WITH_ADAPT = {res['default_g_with_adapt']}\nwritten: {out}")
+        return
+    res = sc.run_bg_g_grid(sc.B_G_GRID_M2E, graph=graph)
+    out = a.out or Path("data-provenance/m2e-grid.json")
     out.write_text(json.dumps(res, indent=1))
     print(); print(sc.markdown_bg_g_table(res))
     print(f"\nRESPONSIVE (all seeds) cells: {len(res['responsive_cells'])}"
@@ -214,6 +252,10 @@ def main() -> None:
     ap.add_argument("--g-resweep", action="store_true",
                     help="M2c: g re-sweep at --b (default: the b chosen by the recorded rule)")
     ap.add_argument("--b", type=float, default=None, help="M2c g re-sweep: override adapt_b")
+    ap.add_argument("--m2e", action="store_true",
+                    help="M2e: use the refined+extended b_g grid (docs/m2e-brief.md)")
+    ap.add_argument("--robustness", action="store_true",
+                    help="M2e: re-run the selected cell under the robustness noise seeds")
     ap.add_argument("--adapt-g", action="store_true",
                     help="M2d: (b_g x g) grid for conductance-based adaptation; "
                          "with --noise the noise sweep at the RESPONSIVE cells")

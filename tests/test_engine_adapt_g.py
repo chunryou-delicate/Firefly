@@ -9,7 +9,8 @@ import pytest
 import torch
 
 from flysim.engine import CSRGraph, EngineParams, LIFEngine
-from flysim.engine.params import DEFAULT_ADAPT_G_B, DEFAULT_G_WITH_ADAPT
+from flysim.engine.params import (DEFAULT_ADAPT_G_B, DEFAULT_ADAPT_G_B_ROBUST,
+                                  DEFAULT_G_WITH_ADAPT)
 from flysim.graph import Graph
 
 import regression_cases as rc
@@ -54,10 +55,14 @@ def test_defaults_keep_adaptation_off():
 
 def test_defaults_match_the_recorded_sweep_rule():
     """DEFAULT_ADAPT_G_B = smallest b_g with a usable state; DEFAULT_G_WITH_ADAPT = the
-    geometric mean of the g values usable at that b_g (rule fixed before the sweep)."""
+    geometric mean of the g values usable at that b_g.
+
+    The rule is the one fixed before the M2d sweep, unchanged. It is enforced against the
+    M2e sweep, which re-ran that same rule on a grid opened in both directions and
+    supersedes M2d's grid-edge answer (docs/m2e-report.md)."""
     import json
     from pathlib import Path
-    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2d-noise-sweep.json"
+    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2e-noise-sweep.json"
     if not path.exists():
         pytest.skip("sweep result not present")
     res = json.loads(path.read_text())
@@ -68,8 +73,26 @@ def test_defaults_match_the_recorded_sweep_rule():
     gs = [g for b, g in res["usable_cells"] if b == pytest.approx(DEFAULT_ADAPT_G_B)]
     assert DEFAULT_G_WITH_ADAPT == pytest.approx(np.sqrt(min(gs) * max(gs)))
     assert res["default_adapt_g_b"] == pytest.approx(DEFAULT_ADAPT_G_B)
-    assert res["protocol"]["usable_state"]["active_frac_max"] == 0.30   # the new condition
-    assert res["protocol"]["adapt_tau_a"] if "adapt_tau_a" in res["protocol"] else True
+    assert res["protocol"]["usable_state"]["active_frac_max"] == 0.30   # unchanged in M2e
+    # the selected cell is an interior grid point, not an edge (what M2e was for)
+    grid = sorted({b for b, _ in res["usable_cells"]})
+    assert DEFAULT_ADAPT_G_B == pytest.approx(grid[0])
+
+
+def test_selected_cell_is_recorded_as_not_robust():
+    """The pre-registered robustness check failed (2 of 3 seeds), and the constant says so,
+    so nothing can quietly adopt it as an operating point (docs/m2e-report.md §5)."""
+    import json
+    from pathlib import Path
+    path = Path(__file__).resolve().parents[1] / "data-provenance" / "m2e-robustness.json"
+    if not path.exists():
+        pytest.skip("robustness result not present")
+    res = json.loads(path.read_text())
+    assert DEFAULT_ADAPT_G_B_ROBUST is res["robust"]
+    assert res["cell"]["adapt_g_b"] == pytest.approx(DEFAULT_ADAPT_G_B)
+    assert res["cell"]["g"] == pytest.approx(DEFAULT_G_WITH_ADAPT)
+    # a failure must not have been repaired by picking a different cell
+    assert res["note"].startswith("descriptive check")
 
 
 def test_adapt_g_requires_conductance_synapses():

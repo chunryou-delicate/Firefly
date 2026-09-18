@@ -1,0 +1,33 @@
+{
+ "checked_at": "2026-09-19T01:35:01+09:00",
+ "method": "clocks.sm sampled while a sustained matmul load runs; an idle GPU downclocks (throttle 0x1 = GpuIdle) so an idle reading cannot answer the question",
+ "clocks_max_sm_mhz": 3105.0,
+ "samples_mhz": [
+  420.0,
+  435.0,
+  435.0,
+  435.0,
+  465.0,
+  465.0,
+  465.0,
+  480.0,
+  495.0,
+  495.0,
+  495.0,
+  525.0,
+  525.0,
+  540.0,
+  555.0
+ ],
+ "clock_under_load_median_mhz": 480.0,
+ "clock_ratio": 0.155,
+ "clock_ok": false,
+ "throttle_reasons_seen": [
+  "0x0000000000000004"
+ ],
+ "other_compute_pids_during_check": [
+  "108985"
+ ],
+ "precondition_met": false,
+ "rule": "docs/m2e-brief.md: re-run the bench only if no other compute process and clocks.sm >= 0.9 * clocks.max.sm; otherwise record as unverified"
+}
