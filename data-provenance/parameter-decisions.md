@@ -163,3 +163,52 @@ bin ceiling, JO_post to 57/50 Hz and WED to 4.5 Hz (hop 2, matching M4b); `param
 broadcast, `n_bins`, `get_hops` and `snapshot` all behave per contract; the snapshot is a
 valid viewer run.json (1,000 frames, 0.57 % of neurons active, no failure warning); static
 serving works and path escape returns 404. Pacing: speed 1 holds at dt 1.0 ms and 0.1 ms.
+
+## 2026-09-19 — M2d: adaptation as a conductance fixes the voltage artefact
+
+M2d (b166749, engine session) moves adaptation from the current slot into the conductance
+slot: `g_a` decays with tau_a = 100 ms, increments by `b_g` per spike, and enters both `G`
+and `v_inf` against `E_adapt = -75 mV`. Only valid with `synapse="conductance"`; combining it
+with the current model, or with M2c's `adapt_b`, raises. Default `adapt_g_b = 0.0`, so M3/M4
+and the live server are untouched and the regression stays bit-identical (a new case at
+g = 1e-3 with noise, 946,163 spikes, was captured before the edit and replays identically).
+
+**The artefact is gone, structurally.** Verified independently by the planning session from
+`data-provenance/m2d-grid.json`: across all 288 grid runs v_min = -74.95 mV against a bound of
+-75.0 mV, zero violations, v_max never reaches threshold. `v_inf` is a convex combination of
+the reversal potentials, so no value of `g_a` can pull v past `E_adapt`. Compare: M2 current
+synapses -4,136 mV, M2c adaptation current -834 mV.
+
+| model | adaptation enters as | sweep v_min | bounded by construction |
+|---|---|---|---|
+| M2 current synapses | — | -4,136 mV | no |
+| M2b conductance synapses | — | -75.0 mV | yes |
+| M2c adaptation current | `i_ext - w` | -834 mV | no |
+| M2d adaptation conductance | `G`, `v_inf`, `E_adapt` | **-74.95 mV** | **yes** |
+
+**It also widens the usable gain band**, from x1.44 in g (M2b) to x3.7 at b_g >= 0.53.
+26 of 96 grid cells are RESPONSIVE on all three seeds.
+
+**A usable background state exists but is marginal, and is not adopted.** Of 312 noise runs
+exactly one satisfies all four conditions: b_g = 1.0, g = 5.365e-4, sigma = 29.13, with 29.13 %
+of neurons active against the 30 % cap — a margin of 0.87 points, with the neighbouring cell
+failing at 30.48 %. Worse, b_g = 1.0 is the **top edge of the pre-registered grid**, so the rule
+"smallest b_g that works" resolved to the boundary and nothing above it was tested. The engine
+session refused to extend the grid post hoc, which is right: that is a new pre-registered
+decision, taken as M2e (`docs/m2e-brief.md`).
+
+**The fourth condition earned its place.** 32 noise runs pass M2c's three conditions and fail
+only the new active-fraction cap; their median active fraction is 96.9 % and 23 of them sit
+above the 90 % line CLAUDE.md §3.3 calls a parameter failure. Without it this sweep would have
+reported 33 usable states, 23 of them failures by the project's own rule — which is exactly
+what happened in M2c.
+
+`DEFAULT_ADAPT_G_B = 1.0` and `DEFAULT_G_WITH_ADAPT = 5.36539e-4` are recorded constants, not
+dataclass defaults. **Not adopted** pending M2e.
+
+**Open:** the M2d bench could not verify the 100 us target. The GPU was power-capped at
+1,455 of 3,105 MHz (40 W) with another process resident, and the *current*-model rows — a code
+path M2d does not touch and which is bit-identical — inflated by the same 1.4-3.4x, which is
+the evidence that the slowdown is environmental. The adaptation branch costs +1.5 us/step,
+measured as a matched pair in the same conditions, and that increment is valid. A rerun on an
+idle, unthrottled GPU is the only outstanding item.
