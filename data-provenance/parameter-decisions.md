@@ -299,3 +299,46 @@ operating point: `docs/m2h-brief.md`.
 active background by design. A control-relative version showed no stimulus-driven excess in any
 configuration (-0.66 to +0.79 %, all within 3 sigma). The criterion is rewritten as
 control-relative in M2h and should be used that way from now on.
+
+## 2026-09-19 — M2h: powered, the hop-2 answer flips. Hop 3 does not.
+
+M2h (0a71ab7) reran the click train at both operating points with 10 seeds, a 2,000 ms
+stimulus window, three noise levels and the standard error of the mean as the test statistic:
+240 runs. The detection floor fell to 0.007-0.042 Hz, below the no-adaptation hop-2 signal
+(0.053-0.167 Hz) in every cell, so a signal of the old size could not have hidden.
+
+**Rule 1 applies: adaptation preserves hop-2 propagation.** WED clears threshold in all six
+phase-lock cells, at both operating points and all three noise levels, and the effect grows
+monotonically as noise falls (A +0.026→+0.031, B +0.037→+0.056) and is consistently larger at
+B than A — two independent dose-response directions, not a threshold accident. SAD is marginal
+(3 cells, all at the lowest noise with the stronger point). AMMCtype is zero everywhere.
+
+**M2g's hop-2 negative was a power artefact, exactly as its own §6 warned.** That section is why
+this round happened, and it was right.
+
+**Hop 3 is unchanged. pC1 is not reached at any operating point, noise level or mode**, now
+including a floor six times lower than before. One of 24 pC1 tests crossed by 0.004 Hz
+(A, sigma 26.21, phase-lock, right side); the engine session called it a false positive on four
+grounds — it fails the stricter statistic, the left side does not cross, it does not reproduce
+across noise levels (the more sensitive neighbours are negative), and the twelve pC1 differences
+scatter symmetrically about zero. Recorded as not reached, with the crossing left in the report
+and the JSON.
+
+**The two modes disagree, and that is not hidden.** In rate mode, at the same a_in and with both
+sides non-ignited, hop 2 is 5-7x *smaller* with adaptation than without (WED 0.120/0.167 →
++0.024/+0.026) and never clears the floor — rule 2's case in isolation. In phase-lock the
+comparison cannot be made at all, and that is the finding: without adaptation that gain
+**ignited** (m3b phase-lock a_in 2560 = FAIL_IGNITED), so its old WED numbers came from an
+invalid run. With adaptation the same gain runs without igniting and shows a detectable hop-2
+response. There adaptation did not preserve a signal, it made an unusable operating point usable.
+A plausible reading, untested: adaptation penalises sustained firing, so it costs a rate code
+more than a phase-locked one.
+
+**The redefined ignition test works.** Control-relative excess plus an absolute 90 % floor flags
+0 of 12 cells (peak late activity 18.3 %), where M2g's absolute rule flagged 24 of 24 including
+every silent control.
+
+**One confound, raised by the engine session.** The no-adaptation baseline (m3b) ran at
+g = 3.162e-4 while M2h runs at 5.365e-4, so the rate-mode comparison is between two operating
+points, not a single variable. `docs/m2i-brief.md` tests whether a like-for-like control even
+exists.
