@@ -55,6 +55,25 @@ Rationale, recorded before the sweep: both models are bistable (silent or ignite
 at 150-245 Hz) with no low-rate state, because nothing makes a neuron's own firing
 oppose itself. This adds that mechanism; it is not a parameter tuned to a result.
 
+M2d (docs/m2d-brief.md): the same mechanism as a *conductance* instead of a current.
+Per-neuron state g_a (1/ms, the same unit as the synaptic conductances):
+
+    g_a  <- g_a * exp(-dt/tau_a)              every step, before the membrane update
+    ga_bar = g_a * avg_a                      step-average, as for g_e / g_i
+    G    = 1/tau_m + ge_bar + gi_bar + ga_bar
+    v_inf = ((v_rest + i_ext)/tau_m + ge_bar*E_exc + gi_bar*E_inh + ga_bar*E_adapt) / G
+    g_a  <- g_a + adapt_g_b                   for every neuron that spiked this step
+
+This is the real mechanism (a potassium conductance), and unlike the M2c current it
+is bounded by construction: it can only pull v towards E_adapt, never past it. M2c's
+adaptation current drove v to -834 mV because a current has no reversal potential —
+the same defect M2b fixed for the synapses. This is a model-structure fix of that
+same kind, not a parameter tuned to a result.
+
+Only defined for synapse == "conductance" (a current model has no reversal
+potentials, so the concept is meaningless there) and mutually exclusive with the
+M2c current-based adapt_b, which is kept at 0 for history.
+
 i_ext enters as (v_rest + i_ext)/tau_m, i.e. with g_e = g_i = 0 a constant i_ext
 drives v towards v_rest + i_ext exactly as in the current model. One gain g for
 both signs (no inhibitory scale factor — no extra free parameter). Reversal
@@ -92,6 +111,19 @@ DEFAULT_G_CONDUCTANCE = 3.162e-4   # sqrt(2.637e-4 * 3.793e-4), data-provenance/
 # of neurons active. See docs/m2c-report.md §4.3 and §5 before using it.
 DEFAULT_ADAPT_B = 56.21452268581154   # data-provenance/m2c-noise-sweep.json (2026-09-16)
 
+# M2d conductance-based adaptation increment per spike (1/ms, the synaptic conductance
+# unit). Rule fixed before the sweep (docs/m2d-brief.md): the smallest b_g on the grid
+# at which the pre-registered usable state exists. None = the sweep found none; see
+# docs/m2d-report.md. Like DEFAULT_ADAPT_B this is NOT the dataclass default -
+# EngineParams.adapt_g_b defaults to 0.0 so existing call sites are unaffected.
+# Caveats that belong with these numbers (docs/m2d-report.md §5): the usable state was
+# found in exactly 1 of 312 noise runs; b_g = 1.0 is the TOP of the pre-registered grid,
+# so the rule's "smallest b_g" landed on the grid edge and the true minimum lies
+# somewhere in (0.534, 1.0] with nothing above 1.0 tested; and it clears the <= 30 %
+# active-fraction condition by 0.87 points (29.13 %). Adopting it is a planning decision.
+DEFAULT_ADAPT_G_B = 1.0                        # data-provenance/m2d-noise-sweep.json (2026-09-19)
+DEFAULT_G_WITH_ADAPT = 0.000536539159055945    # the g that goes with it (same rule)
+
 SYNAPSE_MODELS = ("current", "conductance")
 
 
@@ -119,6 +151,14 @@ class EngineParams:
     adapt_b: float = 0.0       # increment of w per spike; 0 = off (pre-M2c path, bit-identical).
                                #   The sweep-selected value is DEFAULT_ADAPT_B — opt in explicitly.
     adapt_tau_w: float = 100.0         # ms, adaptation decay. FIXED by the brief; do not tune.
+    # ---- M2d conductance-based adaptation (ASSUMPTIONS; conductance synapses only) ----
+    adapt_g_b: float = 0.0     # increment of g_a per spike (1/ms); 0 = off (bit-identical).
+                               #   The sweep-selected value is DEFAULT_ADAPT_G_B - opt in explicitly.
+    adapt_tau_a: float = 100.0 # ms, adaptation conductance decay. FIXED by the brief (= tau_w, so
+                               #   M2c and M2d are comparable); do not tune.
+    E_adapt: float = -75.0     # mV, adaptation reversal potential (ASSUMPTION: = E_inh. The K+
+                               #   reversal is usually -80..-90, but the brief keeps the constant
+                               #   count down; exposed as a parameter rather than hard-coded).
 
     def __post_init__(self) -> None:
         if self.synapse not in SYNAPSE_MODELS:
@@ -140,6 +180,22 @@ class EngineParams:
             raise ValueError("adapt_b must be >= 0 (w is an outward/hyperpolarising current)")
         if self.adapt_tau_w <= 0:
             raise ValueError("adapt_tau_w must be > 0")
+        if self.adapt_g_b < 0:
+            raise ValueError("adapt_g_b must be >= 0 (g_a is an outward conductance)")
+        if self.adapt_tau_a <= 0:
+            raise ValueError("adapt_tau_a must be > 0")
+        if self.adapt_g_b > 0:
+            if self.synapse != "conductance":
+                raise ValueError(
+                    "adapt_g_b > 0 requires synapse='conductance': the current model has no "
+                    "reversal potentials, so an adaptation conductance is meaningless there "
+                    "(docs/m2d-brief.md). Use adapt_b for the M2c current-based adaptation.")
+            if self.adapt_b > 0:
+                raise ValueError(
+                    "adapt_b (M2c, current) and adapt_g_b (M2d, conductance) are mutually "
+                    "exclusive; set exactly one of them")
+            if not (self.E_adapt <= self.v_reset):
+                raise ValueError("need E_adapt <= v_reset (adaptation must hyperpolarise)")
         if not (self.v_reset < self.v_thresh):
             raise ValueError("need v_reset < v_thresh")
         if self.v_floor is not None and self.v_floor > self.v_reset:
@@ -198,8 +254,29 @@ class EngineParams:
 
     @property
     def adapt(self) -> bool:
-        """Whether the adaptation path runs at all (adapt_b = 0 keeps the pre-M2c kernel)."""
+        """Whether the M2c adaptation-current path runs (adapt_b = 0 keeps the pre-M2c kernel)."""
         return self.adapt_b > 0.0
+
+    @property
+    def decay_a(self) -> float:
+        """Per-step decay of the M2d adaptation conductance."""
+        return math.exp(-self.dt / self.adapt_tau_a)
+
+    @property
+    def avg_a(self) -> float:
+        """Step-average of exp(-t/tau_a) over one step, as for avg_e / avg_i (-> 1 as dt -> 0)."""
+        return self.adapt_tau_a * (1.0 - self.decay_a) / self.dt
+
+    @property
+    def adapt_g(self) -> bool:
+        """Whether the M2d adaptation-conductance path runs (adapt_g_b = 0 keeps the pre-M2d kernel)."""
+        return self.adapt_g_b > 0.0
+
+    @property
+    def v_lower_bound(self) -> float:
+        """Lowest v the model can reach with i_ext >= 0: the most negative reversal potential
+        in play. M2d's acceptance check (docs/m2d-brief.md §4) is v >= this."""
+        return min(self.E_inh, self.E_adapt) if self.synapse == "conductance" else float("-inf")
 
     @property
     def noise_scale(self) -> float:
@@ -211,5 +288,7 @@ class EngineParams:
         d = asdict(self)
         d.update(decay_m=self.decay_m, decay_syn=self.decay_syn, c_syn=self.c_syn, ref_steps=self.ref_steps,
                  noise_scale=self.noise_scale, decay_e=self.decay_e, decay_i=self.decay_i,
-                 avg_e=self.avg_e, avg_i=self.avg_i, decay_w=self.decay_w, adapt=self.adapt)
+                 avg_e=self.avg_e, avg_i=self.avg_i, decay_w=self.decay_w, adapt=self.adapt,
+                 decay_a=self.decay_a, avg_a=self.avg_a, adapt_g=self.adapt_g,
+                 v_lower_bound=self.v_lower_bound)
         return d

@@ -5,6 +5,8 @@
     python -m flysim.engine.sweep --synapse conductance --adapt              # M2c b response sweep
     python -m flysim.engine.sweep --synapse conductance --adapt --noise      # M2c b x sigma noise sweep
     python -m flysim.engine.sweep --synapse conductance --adapt --g-resweep  # M2c g re-sweep at b*
+    python -m flysim.engine.sweep --synapse conductance --adapt-g            # M2d b_g x g grid
+    python -m flysim.engine.sweep --synapse conductance --adapt-g --noise    # M2d noise sweep
 
 Protocol and verdict criteria are FIXED HERE BEFORE RUNNING. Changing them
 requires a note in docs/m2b-report.md.
@@ -102,6 +104,25 @@ IGNITED_ACTIVE_FRAC = 0.01
 B_GRID = np.geomspace(0.03, 300.0, 12)
 G_REGRID = np.geomspace(1e-5, 1e-2, 12)     # same span as G_GRID, 12 points per the brief
 
+# ---- M2d (pre-defined; docs/m2d-brief.md) ------------------------------------
+# b_g grid: 12 log-spaced points in [1e-3, 1]. g_a has the unit of the synaptic
+# conductances (1/ms) and the leak is 1/tau_m = 0.05/ms, so a neuron firing at rate r
+# settles at g_a_ss ~ b_g * tau_a * r = b_g * (0.1 s) * r. Setting g_a_ss equal to the
+# leak - i.e. adaptation doubling the neuron's resting conductance - gives
+#   b_g = 0.0033 at 150 Hz (the ignited saturation rate, m2b-report.md §5),
+#   b_g = 0.033  at 15 Hz  (the noise-ignited rate, m2b-report.md §6),
+#   b_g = 0.5    at 1 Hz   (the middle of the usable band).
+# The grid brackets all three. A prototype at sigma = 29.13 before fixing the grid
+# (docs/m2d-report.md §4.1) confirmed the transition lies inside it: b_g = 1e-3 barely
+# moves the rate (15.5 -> 14.5 Hz), b_g = 0.1 reaches 0.58 Hz, and it saturates by 1.
+B_G_GRID = np.geomspace(1e-3, 1.0, 12)
+# g grid: 8 log-spaced points in [2e-4, 2e-3], the span named by the brief. It brackets
+# M2b's RESPONSIVE window [2.637e-4, 3.793e-4] and the point the M2c re-sweep moved it
+# to (4.329e-4), with the top of the range well inside M2b's ignited regime.
+G_GRID_ADAPT_G = np.geomspace(2e-4, 2e-3, 8)
+# Fourth usable-state condition, new in M2d (CLAUDE.md §3.3; M2c reached 96-100 %).
+USABLE_ACTIVE_FRAC_MAX = 0.30
+
 NOISE_SIGMA_GRID = np.geomspace(1.0, 200.0, 12)
 NOISE_ON_MS = 2000
 NOISE_OFF_MS = 400
@@ -110,8 +131,9 @@ LOW_RATE_RANGE_HZ = (0.1, 5.0)
 STABLE_RATIO_RANGE = (0.5, 2.0)
 
 
-def _params(g: float, adapt_b: float = 0.0, **kw) -> EngineParams:
-    return EngineParams(dt=DT_MS, synapse="conductance", g=float(g), adapt_b=float(adapt_b), **kw)
+def _params(g: float, adapt_b: float = 0.0, adapt_g_b: float = 0.0, **kw) -> EngineParams:
+    return EngineParams(dt=DT_MS, synapse="conductance", g=float(g), adapt_b=float(adapt_b),
+                        adapt_g_b=float(adapt_g_b), **kw)
 
 
 def _run_tracked(engine: LIFEngine, n_steps: int, i_ext_fn) -> tuple[np.ndarray, np.ndarray, float, float]:
@@ -426,4 +448,206 @@ def markdown_b_noise_table(res: dict) -> str:
             lines.append(f"| {blk['adapt_b']:.3f} | {r['sigma']:.2f} | {r['rate_first_s_hz']:.3f} | "
                          f"{r['rate_last_s_hz']:.3f} | {r['active_frac_last_s']:.3%} | {r['ratio_last_first']:.2f} | "
                          f"{r['tail_active_frac']:.3%} | {r['w_max']:.1f} | {v} |")
+    return "\n".join(lines)
+
+
+# ==============================================================================
+# M2d: adaptation as a conductance (docs/m2d-brief.md). Grids, the usable-state
+# definition and the voltage-bound check are pre-registered above / here.
+# ==============================================================================
+def _judge_usable(rate_first: float, rate_last: float, active_last: float,
+                  ratio: float, tail_active: float) -> tuple[bool, dict]:
+    """The M2d 'usable state', all four conditions required (docs/m2d-brief.md §3).
+
+    Conditions 1-3 are M2b's STABLE_LOW_RATE unchanged; condition 4 is new, because
+    M2c satisfied 1-3 with 96-100 % of neurons active, which CLAUDE.md §3.3 calls a
+    parameter failure. The active fraction is reported whether or not it passes.
+    """
+    c = {
+        "rate_in_band": LOW_RATE_RANGE_HZ[0] <= rate_last <= LOW_RATE_RANGE_HZ[1],
+        "stable": STABLE_RATIO_RANGE[0] <= ratio <= STABLE_RATIO_RANGE[1],
+        "not_self_sustained": tail_active < IGNITED_ACTIVE_FRAC,
+        "active_frac_ok": active_last <= USABLE_ACTIVE_FRAC_MAX,
+    }
+    return all(c.values()), c
+
+
+def run_bg_g_grid(b_g_grid=B_G_GRID, g_grid=G_GRID_ADAPT_G, seeds=SEEDS, graph=None) -> dict:
+    """Combined (b_g, g) grid with the M2b stimulus protocol and verdicts.
+
+    No noise here, so with i_ext >= 0 the model guarantees v >= min(E_inh, E_adapt);
+    that bound is checked on every run and is the headline acceptance test of M2d.
+    """
+    graph = graph if graph is not None else Graph.load()
+    n = graph.n
+    total = STIM_MS + OBSERVE_MS
+    n_runs = len(b_g_grid) * len(g_grid) * len(seeds)
+    print(f"M2d (b_g x g) grid: {len(b_g_grid)} b_g x {len(g_grid)} g x {len(seeds)} seeds "
+          f"= {n_runs} runs x {total} steps = {n_runs * total:,} steps; expected ~3-6 min "
+          f"(spike transfer dominates in ignited cells)", flush=True)
+    engine = LIFEngine(graph, _params(g_grid[0], adapt_g_b=float(b_g_grid[0])), device="cuda")
+    stims = {}
+    for seed in seeds:
+        stim_idx = np.random.default_rng(seed).choice(n, N_STIM, replace=False)
+        stim = torch.zeros(n, device="cuda")
+        stim[torch.as_tensor(stim_idx, device="cuda")] = STIM_CURRENT
+        stims[seed] = (stim_idx, stim)
+    rows = []
+    t0 = time.perf_counter()
+    for b_g in b_g_grid:
+        for g in g_grid:
+            p = _params(g, adapt_g_b=float(b_g))
+            bound = p.v_lower_bound
+            engine.params = p
+            for seed in seeds:
+                stim_idx, stim = stims[seed]
+
+                def fn(k, buf, stim=stim):
+                    if k == 0:
+                        buf.copy_(stim)
+                    elif k == STIM_MS:
+                        buf.zero_()
+                engine.reset(seed)
+                t, idx, vmin, vmax = _run_tracked(engine, total, fn)
+                r = dict(adapt_g_b=float(b_g), g=float(g), seed=seed, total_spikes=int(len(t)),
+                         g_a_max=float(engine.g_a.max()), g_a_mean=float(engine.g_a.mean()),
+                         v_min=vmin, v_max=vmax, v_lower_bound=bound,
+                         v_within_bounds=bool(vmin >= bound and vmax < p.v_thresh),
+                         finite=bool(torch.isfinite(engine.v).all() and torch.isfinite(engine.g_a).all()),
+                         bins_50ms=np.bincount(t // 50, minlength=total // 50).tolist())
+                r.update(judge_g(t, idx, stim_idx, n))
+                rows.append(r)
+            v = [x["verdict"] for x in rows[-len(seeds):]]
+            vb = all(x["v_within_bounds"] for x in rows[-len(seeds):])
+            print(f"b_g={b_g:8.5f} g={g:9.3e}  {'/'.join(v):34s}  "
+                  f"v[{min(x['v_min'] for x in rows[-len(seeds):]):7.1f}] bound={bound:6.1f} "
+                  f"{'OK' if vb else 'VIOLATED'}", flush=True)
+    per_cell = []
+    for b_g in b_g_grid:
+        for g in g_grid:
+            sel = [r for r in rows if r["adapt_g_b"] == float(b_g) and r["g"] == float(g)]
+            vs = [r["verdict"] for r in sel]
+            per_cell.append(dict(adapt_g_b=float(b_g), g=float(g), verdicts=vs,
+                                 all_responsive=all(x == "RESPONSIVE" for x in vs),
+                                 any_ignited=any(x == "IGNITED" for x in vs),
+                                 all_silent=all(x == "SILENT" for x in vs),
+                                 v_min=min(r["v_min"] for r in sel),
+                                 v_within_bounds=all(r["v_within_bounds"] for r in sel)))
+    violations = [c for c in per_cell if not c["v_within_bounds"]]
+    return dict(
+        generated=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        gpu=torch.cuda.get_device_name(0), n_neurons=n, n_edges=graph.m,
+        protocol=dict(dt_ms=DT_MS, n_stim=N_STIM, seeds=list(seeds), stim_current=STIM_CURRENT,
+                      stim_ms=STIM_MS, observe_ms=OBSERVE_MS, late_window_ms=LATE_WINDOW,
+                      ignited_active_frac=IGNITED_ACTIVE_FRAC,
+                      b_g_grid=[float(b) for b in b_g_grid], g_grid=[float(g) for g in g_grid],
+                      adapt_tau_a=_params(g_grid[0], adapt_g_b=1.0).adapt_tau_a,
+                      E_adapt=_params(g_grid[0], adapt_g_b=1.0).E_adapt),
+        base_params={k: v for k, v in _params(g_grid[0], adapt_g_b=0.0).to_dict().items()
+                     if k not in ("g", "adapt_g_b")},
+        rows=rows, per_cell=per_cell,
+        responsive_cells=[(c["adapt_g_b"], c["g"]) for c in per_cell if c["all_responsive"]],
+        v_bound_violations=[(c["adapt_g_b"], c["g"], c["v_min"]) for c in violations],
+        v_min_overall=min(r["v_min"] for r in rows),
+        total_seconds=round(time.perf_counter() - t0, 1),
+    )
+
+
+def run_adapt_g_noise_sweep(cells, sigma_grid=NOISE_SIGMA_GRID, seed: int = 0, graph=None) -> dict:
+    """Noise sweep at each (b_g, g) cell that was RESPONSIVE for all three seeds."""
+    graph = graph if graph is not None else Graph.load()
+    n = graph.n
+    on, off = NOISE_ON_MS, NOISE_OFF_MS
+    steps = len(cells) * len(sigma_grid) * (on + off)
+    print(f"M2d noise sweep: {len(cells)} cells x {len(sigma_grid)} sigma x {on + off} steps "
+          f"= {steps:,} steps; expected ~{max(1, steps // 400_000)}-{max(2, steps // 150_000)} min",
+          flush=True)
+    engine = LIFEngine(graph, _params(cells[0][1], adapt_g_b=cells[0][0]), device="cuda")
+    zero = lambda k, buf: None  # noqa: E731
+    out = []
+    t0 = time.perf_counter()
+    for b_g, g in cells:
+        print(f"\n--- b_g = {b_g:g}, g = {g:.4e} ---", flush=True)
+        rows = []
+        for sigma in sigma_grid:
+            p = _params(g, adapt_g_b=b_g, noise_sigma=float(sigma))
+            engine.params = p
+            engine.reset(seed)
+            engine.i_ext.zero_()
+            t1, i1, vmin1, vmax1 = _run_tracked(engine, on, zero)
+            engine.params = _params(g, adapt_g_b=b_g)      # noise off, state kept
+            t2, i2, vmin2, vmax2 = _run_tracked(engine, off, zero)
+            first, last = (t1 < 1000), (t1 >= on - 1000)
+            rate_first = int(first.sum()) / n
+            rate_last = int(last.sum()) / n
+            active_last = int(np.unique(i1[last]).size) / n
+            tail = t2 >= off - NOISE_TAIL_WINDOW_MS
+            tail_active = int(np.unique(i2[tail]).size) / n
+            ratio = (rate_last / rate_first) if rate_first > 0 else (float("inf") if rate_last else 0.0)
+            usable, cond = _judge_usable(rate_first, rate_last, active_last, ratio, tail_active)
+            r = dict(adapt_g_b=float(b_g), g=float(g), sigma=float(sigma),
+                     rate_first_s_hz=rate_first, rate_last_s_hz=rate_last,
+                     active_frac_last_s=active_last, ratio_last_first=ratio,
+                     tail_active_frac=tail_active, usable=usable, conditions=cond,
+                     ignited=tail_active >= IGNITED_ACTIVE_FRAC,
+                     g_a_max=float(engine.g_a.max()),
+                     v_min=min(vmin1, vmin2), v_max=max(vmax1, vmax2),
+                     v_lower_bound=p.v_lower_bound,
+                     v_within_bounds_noise_free_part=bool(min(vmin1, vmin2) >= p.v_lower_bound))
+            rows.append(r)
+            print(f"sigma={sigma:7.2f}  rate {rate_first:7.3f}->{rate_last:7.3f} Hz  "
+                  f"active={active_last:8.3%}  ratio={ratio:6.2f}  tail={tail_active:7.3%}  "
+                  f"v[{r['v_min']:7.1f}]  {'USABLE' if usable else '-'}"
+                  f"{'' if usable else '  fail:' + ','.join(k for k, v in cond.items() if not v)}",
+                  flush=True)
+        hits = [r["sigma"] for r in rows if r["usable"]]
+        out.append(dict(adapt_g_b=float(b_g), g=float(g), rows=rows,
+                        usable_sigma=hits, usable_exists=bool(hits)))
+    usable_cells = [(c["adapt_g_b"], c["g"]) for c in out if c["usable_exists"]]
+    default_b_g = min((b for b, _ in usable_cells), default=None)
+    gs = [g for b, g in usable_cells if b == default_b_g] if default_b_g is not None else []
+    default_g = float(np.sqrt(min(gs) * max(gs))) if gs else None
+    return dict(
+        generated=datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds"),
+        gpu=torch.cuda.get_device_name(0), n_neurons=n, seed=seed,
+        protocol=dict(noise_on_ms=on, noise_off_ms=off, tail_window_ms=NOISE_TAIL_WINDOW_MS,
+                      sigma_grid=[float(s) for s in sigma_grid],
+                      cells=[[float(b), float(g)] for b, g in cells],
+                      usable_state=dict(rate_hz=LOW_RATE_RANGE_HZ, ratio=STABLE_RATIO_RANGE,
+                                        tail_active_below=IGNITED_ACTIVE_FRAC,
+                                        active_frac_max=USABLE_ACTIVE_FRAC_MAX)),
+        per_cell=out, usable_cells=[[b, g] for b, g in usable_cells],
+        default_rule="DEFAULT_ADAPT_G_B = smallest b_g with a usable state; DEFAULT_G_WITH_ADAPT = "
+                     "geometric mean of the g values usable at that b_g",
+        default_adapt_g_b=default_b_g, default_g_with_adapt=default_g,
+        total_seconds=round(time.perf_counter() - t0, 1),
+    )
+
+
+def markdown_bg_g_table(res: dict) -> str:
+    """Verdict matrix: rows = b_g, cols = g. S/R/I = all-seed SILENT/RESPONSIVE/mixed-ignited."""
+    gs = res["protocol"]["g_grid"]
+    lines = ["| b_g \\ g | " + " | ".join(f"{g:.3e}" for g in gs) + " |",
+             "|---" * (len(gs) + 1) + "|"]
+    for b_g in res["protocol"]["b_g_grid"]:
+        cells = []
+        for g in gs:
+            c = next(c for c in res["per_cell"] if c["adapt_g_b"] == b_g and c["g"] == g)
+            cells.append("**R**" if c["all_responsive"] else
+                         ("I" if c["any_ignited"] else ("S" if c["all_silent"] else "·")))
+        lines.append(f"| {b_g:.5f} | " + " | ".join(cells) + " |")
+    return "\n".join(lines)
+
+
+def markdown_adapt_g_noise_table(res: dict) -> str:
+    lines = ["| b_g | g | sigma | rate first s | rate last s | **active last s** | last/first | "
+             "tail active | v min | usable |",
+             "|---|---|---|---|---|---|---|---|---|---|"]
+    for c in res["per_cell"]:
+        for r in c["rows"]:
+            lines.append(
+                f"| {c['adapt_g_b']:.5f} | {c['g']:.3e} | {r['sigma']:.2f} | {r['rate_first_s_hz']:.3f} | "
+                f"{r['rate_last_s_hz']:.3f} | **{r['active_frac_last_s']:.2%}** | "
+                f"{r['ratio_last_first']:.2f} | {r['tail_active_frac']:.3%} | {r['v_min']:.1f} | "
+                f"{'**YES**' if r['usable'] else '-'} |")
     return "\n".join(lines)

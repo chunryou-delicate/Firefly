@@ -67,6 +67,10 @@ CASES = {
     # current existed (docs/m2c-brief.md). Guards the adapt_b = 0 path.
     "real_cond_default":  ("real",  dict(synapse="conductance", g=DEFAULT_G_CONDUCTANCE),
                                                                 dict(device="cuda"),                      100, 0, dict()),
+    # M2d: a second conductance case in a busier regime (higher g, noise on), added
+    # before the adaptation *conductance* existed. Guards the adapt_g_b = 0 path.
+    "real_cond_g1e3_noise": ("real", dict(synapse="conductance", g=1e-3, noise_sigma=10.0),
+                                                                dict(device="cuda"),                      200, 11, dict()),
 }
 
 CURRENT_CASES = [k for k, c in CASES.items() if c[1].get("synapse", "current") == "current"]

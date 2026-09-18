@@ -142,6 +142,33 @@ def markdown_table(res: dict) -> str:
     return "\n".join(lines)
 
 
+def _m2d(a, sc) -> None:
+    """M2d adaptation-conductance sweeps (docs/m2d-brief.md)."""
+    from ..graph import Graph
+    graph = Graph.load()
+    if a.noise:
+        prev = json.loads(Path("data-provenance/m2d-grid.json").read_text())
+        cells = [tuple(c) for c in prev["responsive_cells"]]
+        if not cells:
+            raise SystemExit("no (b_g, g) cell was RESPONSIVE for all three seeds in "
+                             "m2d-grid.json; nothing to sweep (report this as the result)")
+        res = sc.run_adapt_g_noise_sweep(cells, graph=graph)
+        out = a.out or Path("data-provenance/m2d-noise-sweep.json")
+        out.write_text(json.dumps(res, indent=1))
+        print(); print(sc.markdown_adapt_g_noise_table(res))
+        print(f"\nusable cells: {res['usable_cells'] or 'NONE'}"
+              f"\nDEFAULT_ADAPT_G_B = {res['default_adapt_g_b']}"
+              f"\nDEFAULT_G_WITH_ADAPT = {res['default_g_with_adapt']}\nwritten: {out}")
+        return
+    res = sc.run_bg_g_grid(graph=graph)
+    out = a.out or Path("data-provenance/m2d-grid.json")
+    out.write_text(json.dumps(res, indent=1))
+    print(); print(sc.markdown_bg_g_table(res))
+    print(f"\nRESPONSIVE (all seeds) cells: {len(res['responsive_cells'])}"
+          f"\nv bound violations: {res['v_bound_violations'] or 'NONE'}"
+          f"\nv_min over all runs: {res['v_min_overall']:.2f} mV\nwritten: {out}")
+
+
 def _m2c(a, sc) -> None:
     """M2c adaptation sweeps (docs/m2c-brief.md). Grids and criteria live in sweep_conductance."""
     from ..graph import Graph
@@ -187,11 +214,16 @@ def main() -> None:
     ap.add_argument("--g-resweep", action="store_true",
                     help="M2c: g re-sweep at --b (default: the b chosen by the recorded rule)")
     ap.add_argument("--b", type=float, default=None, help="M2c g re-sweep: override adapt_b")
+    ap.add_argument("--adapt-g", action="store_true",
+                    help="M2d: (b_g x g) grid for conductance-based adaptation; "
+                         "with --noise the noise sweep at the RESPONSIVE cells")
     a = ap.parse_args()
     if not torch.cuda.is_available():
         raise SystemExit("sweep requires CUDA")
     if a.synapse == "conductance":
         from . import sweep_conductance as sc
+        if a.adapt_g:
+            return _m2d(a, sc)
         if a.adapt or a.g_resweep:
             return _m2c(a, sc)
         if a.noise:

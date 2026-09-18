@@ -33,8 +33,14 @@ Guarded by an ``ADAPT`` constexpr that is False when ``adapt_b == 0``, so the
 default engine compiles to the pre-M2c kernel (regression: real_cond_default in
 data-provenance/m2-regression-spikes.npz).
 
+M2d (docs/m2d-brief.md): the same adaptation as a *conductance* ``g_a`` (float32 state)
+instead of a current. It enters both the total conductance ``G`` and ``v_inf`` with its
+own reversal potential ``E_adapt``, so it is bounded by construction — the fix for M2c's
+-834 mV. Conductance synapses only, guarded by an ``ADAPT_G`` constexpr that is False
+when ``adapt_g_b == 0``, so the default engine still compiles to the pre-M2d kernel.
+
 Model equations and all assumptions: flysim/engine/params.py, docs/m2-report.md,
-docs/m2b-report.md, docs/m2c-report.md.
+docs/m2b-report.md, docs/m2c-report.md, docs/m2d-report.md.
 """
 from __future__ import annotations
 
@@ -151,8 +157,9 @@ if _HAS_TRITON:
                     cnt_ptr, out_t_ptr, out_i_ptr, t_ptr, N, cap,
                     decay_m, decay_s, c_s, g, v_rest, v_reset, v_th, v_floor, noise_scale, ref_steps,
                     decay_e, decay_i, avg_e, avg_i, inv_tau_m, E_e, E_i, dt, decay_w, adapt_b,
+                    ga_ptr, decay_a, avg_a, adapt_g_b, E_a,
                     SYNAPSE: tl.constexpr, NOISE: tl.constexpr, RECORD: tl.constexpr,
-                    ADAPT: tl.constexpr, BLOCK: tl.constexpr):
+                    ADAPT: tl.constexpr, ADAPT_G: tl.constexpr, BLOCK: tl.constexpr):
         i = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
         m = i < N
         t = tl.load(t_ptr)
@@ -186,8 +193,17 @@ if _HAS_TRITON:
             gi = gi * decay_i + g * acc_i
             ge_bar = ge * avg_e                      # step-average conductance (params.py)
             gi_bar = gi * avg_i
-            G = inv_tau_m + ge_bar + gi_bar
-            vinf = ((v_rest + iext) * inv_tau_m + ge_bar * E_e + gi_bar * E_i) / G
+            if ADAPT_G:
+                # M2d: the adaptation conductance joins G and v_inf with its own
+                # reversal potential, so it can only pull v towards E_a, never past it.
+                ga = tl.load(ga_ptr + i, mask=m, other=0.0) * decay_a
+                ga_bar = ga * avg_a
+                G = inv_tau_m + ge_bar + gi_bar + ga_bar
+                vinf = ((v_rest + iext) * inv_tau_m + ge_bar * E_e + gi_bar * E_i
+                        + ga_bar * E_a) / G
+            else:
+                G = inv_tau_m + ge_bar + gi_bar
+                vinf = ((v_rest + iext) * inv_tau_m + ge_bar * E_e + gi_bar * E_i) / G
             vn = vinf + (v - vinf) * tl.exp(-dt * G)
             tl.store(ge_ptr + i, ge, mask=m)
             tl.store(gi_ptr + i, gi, mask=m)
@@ -200,6 +216,8 @@ if _HAS_TRITON:
         ref = tl.where(s, ref_steps, tl.maximum(ref - 1, 0))
         if ADAPT:
             tl.store(w_ptr + i, tl.where(s, w + adapt_b, w), mask=m)
+        if ADAPT_G:
+            tl.store(ga_ptr + i, tl.where(s, ga + adapt_g_b, ga), mask=m)
         tl.store(v_ptr + i, vn, mask=m)
         tl.store(ref_ptr + i, ref, mask=m)
         tl.store(spk_ptr + i, s.to(tl.int8), mask=m)
@@ -312,6 +330,7 @@ class LIFEngine:
         self.acc_e = torch.zeros(n, **i32)                        # conductance model accumulators
         self.acc_i = torch.zeros(n, **i32)
         self.w = torch.zeros(n, **f32)                            # M2c adaptation current
+        self.g_a = torch.zeros(n, **f32)                          # M2d adaptation conductance
         self.ref = torch.zeros(n, **i32)
         self._s = torch.zeros(n, dtype=torch.int8, device=dev)   # spikes of the last step (0/1)
         self.i_ext = torch.zeros(n, **f32)                        # external current buffer
@@ -347,6 +366,7 @@ class LIFEngine:
         self.acc_e.zero_()
         self.acc_i.zero_()
         self.w.zero_()
+        self.g_a.zero_()
         self.ref.zero_()
         self._s.zero_()
         self.i_ext.zero_()
@@ -366,7 +386,8 @@ class LIFEngine:
 
     def gpu_memory_bytes(self) -> int:
         arrays = (self.indptr, self.indices, self.weight, self.v, self.i_syn, self.g_e, self.g_i,
-                  self.acc, self.acc_e, self.acc_i, self.w, self.ref, self._s, self.i_ext, self._noise, self._t)
+                  self.acc, self.acc_e, self.acc_i, self.w, self.g_a, self.ref, self._s,
+                  self.i_ext, self._noise, self._t)
         return sum(a.numel() * a.element_size() for a in arrays) + self.recorder.nbytes
 
     # ---- one step ----------------------------------------------------------
@@ -419,8 +440,9 @@ class LIFEngine:
             float("-inf") if p.v_floor is None else p.v_floor, p.noise_scale, p.ref_steps,
             p.decay_e, p.decay_i, p.avg_e, p.avg_i, p.inv_tau_m, p.E_exc, p.E_inh, p.dt,
             p.decay_w, p.adapt_b,
+            self.g_a, p.decay_a, p.avg_a, p.adapt_g_b, p.E_adapt,
             SYNAPSE=1 if cond else 0, NOISE=p.noise_sigma > 0, RECORD=record,
-            ADAPT=p.adapt, BLOCK=LIF_BLOCK)
+            ADAPT=p.adapt, ADAPT_G=p.adapt_g, BLOCK=LIF_BLOCK)
         self._t.add_(1)
 
     def _graph(self, record: bool) -> "torch.cuda.CUDAGraph":
@@ -429,7 +451,7 @@ class LIFEngine:
             # Warm-up + capture mutate the state; snapshot and restore so that
             # capturing is invisible to the simulation.
             state = (self.v, self.i_syn, self.g_e, self.g_i, self.acc, self.acc_e, self.acc_i,
-                     self.w, self.ref, self._s, self._t, self.recorder.counter)
+                     self.w, self.g_a, self.ref, self._s, self._t, self.recorder.counter)
             snap = [x.clone() for x in state]
             side = torch.cuda.Stream()
             side.wait_stream(torch.cuda.current_stream())
@@ -461,7 +483,13 @@ class LIFEngine:
             self.g_i.mul_(p.decay_i).add_(self.acc_i.to(torch.float32), alpha=p.g)
             ge_bar, gi_bar = self.g_e * p.avg_e, self.g_i * p.avg_i
             G = p.inv_tau_m + ge_bar + gi_bar
-            vinf = ((p.v_rest + i_in) * p.inv_tau_m + ge_bar * p.E_exc + gi_bar * p.E_inh) / G
+            num = (p.v_rest + i_in) * p.inv_tau_m + ge_bar * p.E_exc + gi_bar * p.E_inh
+            if p.adapt_g:                       # M2d: adaptation conductance (params.py)
+                self.g_a.mul_(p.decay_a)
+                ga_bar = self.g_a * p.avg_a
+                G = G + ga_bar
+                num = num + ga_bar * p.E_adapt
+            vinf = num / G
             vn = vinf + (self.v - vinf) * torch.exp(-p.dt * G)
             self.acc_e.zero_()
             self.acc_i.zero_()
@@ -477,6 +505,8 @@ class LIFEngine:
         vn = torch.where(s, torch.full_like(vn, p.v_reset), vn)
         if p.adapt:
             self.w.add_(s.to(self.w.dtype), alpha=p.adapt_b)
+        if p.adapt_g:
+            self.g_a.add_(s.to(self.g_a.dtype), alpha=p.adapt_g_b)
         self.ref.copy_(torch.where(s, torch.full_like(self.ref, p.ref_steps), (self.ref - 1).clamp_(min=0)))
         self.v.copy_(vn)
         self._s.copy_(s.to(torch.int8))

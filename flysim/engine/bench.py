@@ -39,6 +39,7 @@ from .params import EngineParams
 
 ACTIVITY_LEVELS = (0.0, 0.001, 0.01, 0.05)
 ADAPT_BENCH_B = 1e-6          # switches the ADAPT branch on without perturbing the forced activity
+ADAPT_G_BENCH_B = 1e-9        # same idea for M2d: g_a_ss = 1e-7/ms against a leak of 0.05/ms
 STIM_CURRENT = 1.0e4          # >> threshold gap / (1 - decay_m): fires every step with t_ref = 0
 TARGET_US = 100.0
 
@@ -56,13 +57,14 @@ def _time_run(engine: LIFEngine, steps: int, warmup: int, record: bool) -> tuple
 
 
 def run_bench(steps: int = 10_000, warmup: int = 100, seed: int = 0, synapse: str = "current",
-              graph: Graph | None = None, adapt_b: float = 0.0) -> dict:
+              graph: Graph | None = None, adapt_b: float = 0.0, adapt_g_b: float = 0.0) -> dict:
     if not torch.cuda.is_available():
         raise SystemExit("bench requires CUDA (the target is the GPU kernel)")
     graph = graph or Graph.load()
     n = graph.n
-    print(f"graph: {graph!r}  synapse={synapse}  adapt_b={adapt_b:g}")
-    params = EngineParams(dt=0.1, g=0.0, t_ref=0.0, synapse=synapse, adapt_b=adapt_b)
+    print(f"graph: {graph!r}  synapse={synapse}  adapt_b={adapt_b:g}  adapt_g_b={adapt_g_b:g}")
+    params = EngineParams(dt=0.1, g=0.0, t_ref=0.0, synapse=synapse, adapt_b=adapt_b,
+                          adapt_g_b=adapt_g_b)
     rng = np.random.default_rng(seed)
     perm = rng.permutation(n)
     rows = []
@@ -90,6 +92,7 @@ def run_bench(steps: int = 10_000, warmup: int = 100, seed: int = 0, synapse: st
                 transient = (torch.cuda.max_memory_allocated() - static_alloc) / 2**20
                 spk_per_step = n_spk / n_steps if n_spk >= 0 else k
                 rows.append(dict(synapse=synapse, adapt=params.adapt, adapt_b=adapt_b,
+                                 adapt_g=params.adapt_g, adapt_g_b=adapt_g_b,
                                  backend=name, activity=p, forced_neurons=k, record=record,
                                  steps=n_steps, us_per_step=round(us, 1),
                                  spikes_per_step=round(spk_per_step, 1),
@@ -111,7 +114,8 @@ def markdown_table(result: dict) -> str:
     lines = ["| synapse | adapt | backend | activity | forced neurons | recorder | steps | us/step | spikes/step | transient peak MiB | <100us |",
              "|---|---|---|---|---|---|---|---|---|---|---|"]
     for r in result["rows"]:
-        lines.append(f"| {r.get('synapse', 'current')} | {'on' if r.get('adapt') else 'off'} | "
+        kind = "g_a" if r.get("adapt_g") else ("w" if r.get("adapt") else "off")
+        lines.append(f"| {r.get('synapse', 'current')} | {kind} | "
                      f"{r['backend']} | {r['activity']:.1%} | {r['forced_neurons']:,} | "
                      f"{'on' if r['record'] else 'off'} | {r['steps']:,} | {r['us_per_step']:.1f} | "
                      f"{r['spikes_per_step']:.1f} | {r['transient_peak_mib']:.0f} | "
@@ -126,22 +130,28 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=Path("data-provenance/m2-bench.json"))
     ap.add_argument("--synapse", choices=("current", "conductance", "both"), default="current")
     ap.add_argument("--adapt", action="store_true",
-                    help="M2c: also bench each synapse model with the adaptation branch compiled in")
+                    help="M2c: also bench each synapse model with the adaptation-current branch in")
+    ap.add_argument("--adapt-g", action="store_true",
+                    help="M2d: also bench the conductance model with the adaptation-conductance branch in")
     a = ap.parse_args()
-    configs = [("current", 0.0), ("conductance", 0.0)] if a.synapse == "both" else [(a.synapse, 0.0)]
+    base = [("current", 0.0, 0.0), ("conductance", 0.0, 0.0)] if a.synapse == "both" \
+        else [(a.synapse, 0.0, 0.0)]
+    configs = list(base)
     if a.adapt:
-        configs += [(syn, ADAPT_BENCH_B) for syn, _ in list(configs)]
+        configs += [(syn, ADAPT_BENCH_B, 0.0) for syn, _, _ in base]
+    if a.adapt_g:
+        configs += [(syn, 0.0, ADAPT_G_BENCH_B) for syn, _, _ in base if syn == "conductance"]
     graph = Graph.load()
     res = None
-    for syn, b in configs:
-        r = run_bench(a.steps, a.warmup, synapse=syn, graph=graph, adapt_b=b)
+    for syn, b, bg in configs:
+        r = run_bench(a.steps, a.warmup, synapse=syn, graph=graph, adapt_b=b, adapt_g_b=bg)
         torch.cuda.empty_cache()
         if res is None:
             res = r
         else:
             res["rows"] += r["rows"]
-            res[f"params_{syn}_adapt{b:g}"] = r["params"]
-    res["configs"] = [dict(synapse=syn, adapt_b=b) for syn, b in configs]
+            res[f"params_{syn}_adapt{b:g}_adaptg{bg:g}"] = r["params"]
+    res["configs"] = [dict(synapse=syn, adapt_b=b, adapt_g_b=bg) for syn, b, bg in configs]
     a.out.parent.mkdir(parents=True, exist_ok=True)
     a.out.write_text(json.dumps(res, indent=1))
     print()
