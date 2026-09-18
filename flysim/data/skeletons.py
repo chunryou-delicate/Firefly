@@ -25,14 +25,18 @@ Pipeline
                 boundaries, so they survive by construction.
   4. bundle     segments concatenated in graph-index order.
 
-NOTE on ``max_segments_per_neuron`` (measured, see docs/m6a-report.md): RDP cannot
-reduce a neuron below one segment per branch path, so the per-neuron floor is the
-neuron's branch count — 500-1,700 for a typical pC1/AMMC/WED cell. The brief's
-default of 200 is therefore unreachable for most real neurons at any tolerance.
-``simplify_neuron`` raises the tolerance while it still helps, stops as soon as it
-hits that floor, and reports whether the cap was met; ``build_bundle`` records the
-per-neuron outcome instead of silently pretending the cap held. The contract's
-20 MB ceiling is enforced as a hard exception.
+There is **no per-neuron segment cap** (contract v1.1, ``max_segments_per_neuron:
+null``): RDP cannot reduce a neuron below one segment per branch path, so the
+per-neuron floor is the neuron's branch count — 500-1,700 for a typical
+pC1/AMMC/WED cell. Forcing a cap of 200 would mean raising the tolerance to 256x
+the requested value and replacing the neuron's shape with its topology; that was
+measured under the v1.0 brief and is written up in docs/m6a-report.md §5.
+
+The only size constraint is the contract's 20 MB per bundle, enforced as a hard
+exception. Tolerance may differ per set: 40 voxels (0.32 um) everywhere except WED,
+which uses 64 (0.51 um) to fit the ceiling. ``max_segments`` is still accepted as an
+optional argument — passing an int restores the old escalate-and-retry behaviour —
+but it defaults to None and the shipped bundles do not use it.
 """
 from __future__ import annotations
 
@@ -62,7 +66,8 @@ MANIFEST_REL = "data-provenance/skeleton-hashes.json"
 
 VOXEL_NM = 8                         # contract: 1 voxel = 8 nm, no conversion in the file
 TOLERANCE_VOXELS = 40.0              # brief default (~0.32 um)
-MAX_SEGMENTS_PER_NEURON = 200        # brief default; see the module note
+MAX_SEGMENTS_PER_NEURON = None       # contract v1.1: no per-neuron cap (see the module note)
+TOLERANCE_BY_SET = {"WED": 64.0}     # contract v1.1: per-set tolerance; default TOLERANCE_VOXELS
 MAX_BUNDLE_BYTES = 20 * 1024 * 1024  # contract: a bundle over 20 MB is an exception
 BYTES_PER_SEGMENT = 24               # 6 float32
 DOWNLOAD_THREADS = 6
@@ -330,13 +335,14 @@ def rdp_mask(points: np.ndarray, tolerance: float) -> tuple[np.ndarray, float]:
 
 
 def simplify_neuron(nodes: dict[str, np.ndarray], tolerance: float = TOLERANCE_VOXELS,
-                    max_segments: int = MAX_SEGMENTS_PER_NEURON) -> dict:
+                    max_segments: int | None = MAX_SEGMENTS_PER_NEURON) -> dict:
     """Decimate one parsed skeleton into line segments.
 
-    Raises the tolerance by ``_TOLERANCE_GROWTH`` while the neuron is over
-    ``max_segments`` AND the previous attempt still removed something. The branch
-    count is a hard floor (one segment per path), so the loop stops there and the
-    result records ``cap_met``; nothing is pruned to force the cap.
+    With ``max_segments=None`` (the contract default) this is a single RDP pass at
+    ``tolerance``. If an int is given, the tolerance is raised by
+    ``_TOLERANCE_GROWTH`` while the neuron is over the cap; the branch count is a
+    hard floor (one segment per path), so the loop stops there and the result
+    records ``cap_met``. Nothing is ever pruned to force a cap.
 
     Returns dict with ``segments`` (float32 [S,2,3]), ``n_nodes_raw``,
     ``n_branch_points``, ``n_roots``, ``n_paths``, ``segment_floor``,
@@ -360,7 +366,8 @@ def simplify_neuron(nodes: dict[str, np.ndarray], tolerance: float = TOLERANCE_V
                 segs.append(np.stack([kept[:-1], kept[1:]], axis=1))
             max_dev = max(max_dev, dev)
         n_seg = int(sum(len(s) for s in segs))
-        if n_seg <= max_segments or n_seg <= floor or steps >= _TOLERANCE_MAX_STEPS:
+        if max_segments is None or n_seg <= max_segments or n_seg <= floor \
+                or steps >= _TOLERANCE_MAX_STEPS:
             break
         tol *= _TOLERANCE_GROWTH
         steps += 1
@@ -369,7 +376,8 @@ def simplify_neuron(nodes: dict[str, np.ndarray], tolerance: float = TOLERANCE_V
     return {"segments": segments, "n_nodes_raw": int(len(nodes["id"])),
             "n_branch_points": n_branch, "n_roots": n_roots, "n_paths": len(paths),
             "segment_floor": floor, "tolerance_voxels": tol,
-            "max_deviation_voxels": float(max_dev), "cap_met": bool(len(segments) <= max_segments),
+            "max_deviation_voxels": float(max_dev),
+            "cap_met": True if max_segments is None else bool(len(segments) <= max_segments),
             "tolerance_steps": steps}
 
 
@@ -377,7 +385,7 @@ def simplify_neuron(nodes: dict[str, np.ndarray], tolerance: float = TOLERANCE_V
 # bundle
 # ---------------------------------------------------------------------------
 def build_bundle(body_ids, name: str, tolerance_voxels: float = TOLERANCE_VOXELS,
-                 max_segments_per_neuron: int = MAX_SEGMENTS_PER_NEURON,
+                 max_segments_per_neuron: int | None = MAX_SEGMENTS_PER_NEURON,
                  graph=None, out_dir: Path = CACHE_DIR, threads: int = DOWNLOAD_THREADS,
                  force: bool = False, progress: bool = True) -> tuple[Path, Path]:
     """Build ``skel-<name>.bin`` / ``.json`` for ``body_ids`` (contract file 2).
@@ -432,8 +440,7 @@ def build_bundle(body_ids, name: str, tolerance_voxels: float = TOLERANCE_VOXELS
         raise SkeletonBundleTooLarge(
             f"bundle {name!r}: {len(allseg):,} segments = {nbytes / 2**20:.1f} MB exceeds the "
             f"{MAX_BUNDLE_BYTES / 2**20:.0f} MB contract ceiling "
-            f"(docs/m6-3d-contract.md). Lower max_segments_per_neuron (currently "
-            f"{max_segments_per_neuron}) or raise tolerance_voxels (currently "
+            f"(docs/m6-3d-contract.md). Raise tolerance_voxels (currently "
             f"{tolerance_voxels}); note the per-neuron floor is the branch count, so a set "
             f"with {len(neurons):,} neurons cannot go below "
             f"{sum(s['segment_floor'] for s in stats) * BYTES_PER_SEGMENT / 2**20:.1f} MB "
@@ -452,9 +459,10 @@ def build_bundle(body_ids, name: str, tolerance_voxels: float = TOLERANCE_VOXELS
         "decimation": {
             "method": "rdp-per-branch",
             "tolerance_voxels": float(tolerance_voxels),
-            "max_segments_per_neuron": int(max_segments_per_neuron),
-            # Recorded per the brief ("최종 허용오차를 .json에 기록한다"). Equal to
-            # tolerance_voxels unless a neuron was retried; see docs/m6a-report.md.
+            "max_segments_per_neuron": (None if max_segments_per_neuron is None
+                                        else int(max_segments_per_neuron)),
+            # Contract v1.1: the tolerance actually used (one value per set unless a
+            # cap forced per-neuron retries) and the deviation it incurred.
             "tolerance_voxels_final": tol_final,
             "max_deviation_voxels": max((s["max_deviation_voxels"] for s in stats), default=0.0),
             "neurons_over_cap": int(sum(not s["cap_met"] for s in stats)),
@@ -507,10 +515,12 @@ def main(argv=None) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--set", dest="sets", action="append", required=True,
                     help="probe set base name (repeatable), e.g. --set JO_AB --set pC1")
-    ap.add_argument("--tolerance", type=float, default=TOLERANCE_VOXELS,
-                    help=f"RDP tolerance in voxels (default {TOLERANCE_VOXELS:g}, 1 voxel = 8 nm)")
+    ap.add_argument("--tolerance", type=float, default=None,
+                    help=f"RDP tolerance in voxels (default {TOLERANCE_VOXELS:g}, "
+                         f"{TOLERANCE_BY_SET} per contract v1.1; 1 voxel = 8 nm)")
     ap.add_argument("--max-segments", type=int, default=MAX_SEGMENTS_PER_NEURON,
-                    help=f"per-neuron segment cap (default {MAX_SEGMENTS_PER_NEURON})")
+                    help="optional per-neuron segment cap; omit for the contract default "
+                         "(no cap). Setting it degrades geometry — see docs/m6a-report.md §5")
     ap.add_argument("--threads", type=int, default=DOWNLOAD_THREADS)
     ap.add_argument("--force", action="store_true", help="re-download even if the cached MD5 matches")
     a = ap.parse_args(argv)
@@ -521,9 +531,11 @@ def main(argv=None) -> int:
     rc = 0
     for name in a.sets:
         body_ids = probe_set_body_ids(graph, name, ps)
-        print(f"[set] {name}: {len(body_ids):,} neurons in the retained graph", flush=True)
+        tol = a.tolerance if a.tolerance is not None else TOLERANCE_BY_SET.get(name, TOLERANCE_VOXELS)
+        print(f"[set] {name}: {len(body_ids):,} neurons in the retained graph, "
+              f"tolerance {tol:g} voxels", flush=True)
         try:
-            build_bundle(body_ids, name, a.tolerance, a.max_segments, graph=graph,
+            build_bundle(body_ids, name, tol, a.max_segments, graph=graph,
                          threads=a.threads, force=a.force)
         except SkeletonBundleTooLarge as e:
             print(f"[FAIL] {e}", file=sys.stderr)

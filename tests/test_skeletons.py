@@ -257,6 +257,31 @@ def test_bundle_json_has_every_contract_key(patched_download, tmp_path):
     assert meta["neurons"][1]["soma"] is None
 
 
+def test_no_cap_is_the_default_and_is_recorded_as_null(patched_download, tmp_path):
+    """Contract v1.1: no per-neuron cap. The JSON must say null, not a sentinel int,
+    and no neuron may be counted as over a cap that does not exist."""
+    assert sk.MAX_SEGMENTS_PER_NEURON is None
+    patched_download[100] = forked()
+    g = StubGraph([100])
+    _, json_path = sk.build_bundle([100], "T", graph=g, out_dir=tmp_path, progress=False)
+    d = json.loads(json_path.read_text())["decimation"]
+    assert d["max_segments_per_neuron"] is None
+    assert d["neurons_over_cap"] == 0
+    assert d["tolerance_voxels_final"] == [40.0]        # one value: no escalation happened
+    assert d["max_deviation_voxels"] <= 40.0
+    # a single RDP pass, so the tolerance is never raised
+    res = sk.simplify_neuron(sk.parse_swc(forked()))
+    assert res["cap_met"] is True and res["tolerance_steps"] == 0
+
+
+def test_per_set_tolerance_table_matches_the_contract():
+    """Contract v1.1 fixes WED at 64 voxels and everything else at 40."""
+    assert sk.TOLERANCE_BY_SET == {"WED": 64.0}
+    assert sk.TOLERANCE_VOXELS == 40.0
+    for name in ("JO_AB", "AMMCtype", "pC1"):
+        assert sk.TOLERANCE_BY_SET.get(name, sk.TOLERANCE_VOXELS) == 40.0
+
+
 def test_bundle_bin_matches_json_offsets(patched_download, tmp_path):
     patched_download[100] = forked()
     patched_download[200] = straight_line()
@@ -309,7 +334,8 @@ def test_bundle_over_20mb_raises(patched_download, tmp_path, monkeypatch):
     monkeypatch.setattr(sk, "MAX_BUNDLE_BYTES", 12)      # one segment = 24 bytes
     with pytest.raises(sk.SkeletonBundleTooLarge) as e:
         sk.build_bundle([100], "T", graph=g, out_dir=tmp_path, progress=False)
-    assert "ceiling" in str(e.value) and "max_segments_per_neuron" in str(e.value)
+    # v1.1: the only lever left is the tolerance, so that is what the message says
+    assert "ceiling" in str(e.value) and "tolerance_voxels" in str(e.value)
     assert not (tmp_path / "skel-T.bin").exists()        # nothing written on failure
 
 
