@@ -1,0 +1,27 @@
+{
+ "sizes": {
+  "LC4_L": 71,
+  "LC4_R": 55,
+  "LPLC2_L": 94,
+  "LPLC2_R": 91,
+  "DNp01_L": 1,
+  "DNp01_R": 1,
+  "TTMn_L": 1,
+  "TTMn_R": 1
+ },
+ "body_ids": {
+  "DNp01_L": [
+   10010
+  ],
+  "DNp01_R": [
+   10001
+  ],
+  "TTMn_L": [
+   804642
+  ],
+  "TTMn_R": [
+   800146
+  ]
+ },
+ "side_source": "somaSide (complete for all four types; the retained annotation cache has no rootSide column)"
+}
