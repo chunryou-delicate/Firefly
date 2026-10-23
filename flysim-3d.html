@@ -34,6 +34,14 @@
     **파라미터 슬라이더는 여기 없다.** 세밀한 조종은 2D 조종석(flysim-live.html)의
     몫이고, 여기서는 자극 프리셋·정지/재개/스텝/리셋·get_hops·snapshot만 보낸다.
 
+  게임 재생 모드 (M7e)
+    M7c가 남긴 재생 묶음(frames.npz + run.json + game.json)을 받으면 화면이 셋으로
+    갈린다: 왼쪽 게임 화면, 가운데 3D 뇌, 아래 타임라인. 시간축은 t_ms 하나다.
+    frames.npz는 브라우저에서 직접 푼다(zip 해석 + DecompressionStream("deflate-raw")
+    + .npy 머리 해석). 집합 소속은 그 판의 run.json(neurons.region/regions)에서 온다.
+    서버 없이 연다: 저장소 루트에서 python3 -m http.server 8000 을 띄우고
+    flysim-3d.html?bundle=runs/m7c/jump-brain-seed10/&assets=data/cache/
+
   ?mock=1 을 붙이면 파일 없이 합성 점구름·골격을 만들어 붙인다. 계약과 **같은
   바이너리 형식**으로 만들어 같은 해석 경로를 타므로 모의 모드가 곧 로더 검증이다.
   모의 모드에는 위 프로토콜을 흉내 내는 모의 서버도 들어 있어 실시간 모드를 서버 없이
@@ -71,6 +79,7 @@
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none!important}   /* .conn{display:flex} 등이 hidden 속성을 덮지 않게 */
 html,body{height:100%}
 body{
   background:var(--ground);
@@ -94,6 +103,94 @@ body{
     "transport side"
     "foot foot";
 }
+
+/* ── 게임 재생 모드: 왼쪽 게임, 가운데 3D, 아래 타임라인 ── */
+body.game-mode #app{
+  grid-template-columns:minmax(300px,0.8fr) minmax(0,1.2fr) 274px;
+  grid-template-rows:auto auto minmax(0,1fr) 214px auto auto;
+  grid-template-areas:
+    "head head head"
+    "banner banner banner"
+    "game view side"
+    "tl tl side"
+    "transport transport side"
+    "foot foot foot";
+}
+#shortcutBanner{
+  grid-area:banner;
+  display:none;
+  gap:14px;
+  align-items:center;
+  flex-wrap:wrap;
+  padding:6px 16px;
+  font-size:12px;
+  background:color-mix(in srgb,var(--warm-hi) 9%,var(--panel));
+  border-bottom:1px solid color-mix(in srgb,var(--warm-hi) 35%,transparent);
+  color:var(--ink);
+}
+#shortcutBanner b{color:var(--warm-hi);font-weight:600}
+#shortcutBanner .runwide{font-family:var(--mono);font-size:11px;color:var(--ink-dim)}
+#shortcutBanner .runwide.caution{color:var(--warm-hi)}
+body.game-mode #shortcutBanner{display:flex}
+
+#gamePane{
+  grid-area:game;
+  display:none;
+  flex-direction:column;
+  background:var(--panel);
+  border-right:1px solid var(--rule);
+  min-height:0;
+  overflow-y:auto;
+  padding:10px 12px 12px;
+}
+body.game-mode #gamePane{display:flex}
+#gamePane .pane-label{position:static;margin-bottom:6px}
+.game-stage{
+  position:relative;
+  width:100%;
+  aspect-ratio:1/1;
+  max-height:52vh;
+  margin:0 auto;
+  background:#000;
+  border:1px solid var(--rule);
+}
+#gameCanvas{width:100%;height:100%;display:block;image-rendering:pixelated;image-rendering:crisp-edges}
+.gf-lamps{position:absolute;top:6px;left:6px;right:6px;display:flex;justify-content:space-between;pointer-events:none}
+.gf-lamps span{
+  font-family:var(--mono);font-size:11px;padding:2px 7px;border-radius:2px;
+  background:rgba(8,12,17,.72);color:var(--ink-faint);border:1px solid var(--rule);
+}
+.gf-lamps span.on{color:#1a1206;background:var(--warm-hi);border-color:var(--warm-hi)}
+.gf-lamps span.on.spont{color:#16101e;background:#B79BE0;border-color:#B79BE0}
+.game-action{
+  position:absolute;left:50%;bottom:8px;transform:translateX(-50%);
+  font-family:var(--mono);font-size:13px;padding:2px 10px;border-radius:2px;
+  background:rgba(8,12,17,.78);color:var(--ink);border:1px solid var(--rule);pointer-events:none;
+}
+.game-event{
+  position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);
+  font-size:20px;font-weight:600;color:var(--warm-hi);text-shadow:0 0 8px #000;
+  pointer-events:none;opacity:0;transition:opacity .15s;
+}
+.game-event.show{opacity:1}
+.game-event.crash{color:var(--alert)}
+.game-event.end{color:var(--ink-dim);font-size:15px}
+.loom-row{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-top:8px}
+.loom-row .meter{flex:1;height:7px;background:var(--ground);border:1px solid var(--rule);border-radius:2px;overflow:hidden}
+.loom-row .meter i{display:block;height:100%;width:0%;background:var(--stimulus)}
+
+#tlPane{
+  grid-area:tl;
+  display:none;
+  position:relative;
+  background:var(--panel);
+  border-top:1px solid var(--rule);
+  min-height:0;
+}
+body.game-mode #tlPane{display:block}
+#tlCanvas{display:block;width:100%;height:100%;cursor:pointer}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-family:var(--mono);font-size:11px;color:var(--ink-dim);margin-top:6px}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:-1px}
 
 /* ── 상단 바 ──────────────────────────────────────────── */
 header{
@@ -134,6 +231,7 @@ header{
 .kv dt{color:var(--ink-faint)}
 .kv dd{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kv dd.big{font-size:13px;color:var(--warm-hi)}
+#gameStats dd,#gameInfo dd{white-space:normal;overflow:visible}
 
 button{
   font-family:inherit;
@@ -305,6 +403,12 @@ body.dragging #drop{display:flex}
   }
   #viewPane{height:58vh;min-height:300px}
   aside{border-left:0;border-top:1px solid var(--rule);overflow:visible}
+  body.game-mode #app{
+    grid-template-columns:minmax(0,1fr);
+    grid-template-rows:auto auto auto auto 220px auto auto auto;
+    grid-template-areas:"head" "banner" "game" "view" "tl" "transport" "side" "foot";
+  }
+  body.game-mode #gamePane{border-right:0;overflow:visible}
 }
 @media (max-width:420px){
   header{gap:8px;padding:8px 10px}
@@ -334,6 +438,29 @@ body.dragging #drop{display:flex}
     <input type="file" id="fileInput" accept="application/json" hidden>
   </header>
 
+  <div id="shortcutBanner">
+    <span><b>지름길</b> 감지기는 직접 짠 것이고, 감지기부터 거대 신경섬유까지만 배선도다.
+      화면 픽셀 → "다가옴" 신호는 사람이 짠 계산이며, LC4·LPLC2에 넣는 순간부터 MaleCNS 연결로 흐른다.</span>
+    <span class="runwide" id="runWide">—</span>
+  </div>
+
+  <section id="gamePane">
+    <span class="pane-label">게임 화면 · 84×84 회색조 · 1틱 = 1/60 s (재생 묶음 frames.npz)</span>
+    <div class="game-stage">
+      <canvas id="gameCanvas" width="84" height="84"></canvas>
+      <div class="gf-lamps"><span id="gfLampL">거대 신경섬유 L</span><span id="gfLampR">거대 신경섬유 R</span></div>
+      <div class="game-event" id="gameEvent"></div>
+      <div class="game-action" id="gameAction">행동 —</div>
+    </div>
+    <div class="loom-row">감지기 L <span class="meter"><i id="loomL"></i></span> R <span class="meter"><i id="loomR"></i></span></div>
+    <p class="note">램프는 해독기가 보는 창(직전 50 ms)에 그 쪽 거대 신경섬유 스파이크가 있으면 켜진다. 주황 = 같은 쪽 감지기 입력이 있던 때, 보라 = 입력이 없던 때(자발).</p>
+    <dl class="kv" id="gameInfo"><dt>—</dt><dd>재생 묶음을 불러오지 않았다</dd></dl>
+  </section>
+
+  <section id="tlPane">
+    <canvas id="tlCanvas"></canvas>
+  </section>
+
   <section id="viewPane">
     <span class="pane-label">뉴런 형상 · MaleCNS 복셀 (8 nm)</span>
     <span class="hint" id="hint">드래그 회전 · 휠 줌 · Shift+드래그 이동 · run.json 끌어다 놓기</span>
@@ -359,6 +486,27 @@ body.dragging #drop{display:flex}
   </div>
 
   <aside>
+
+    <section class="group" id="gameGroup">
+      <h2>게임 재생</h2>
+      <div class="body">
+        <div class="seg">
+          <button id="bundleBtn">묶음 열기</button>
+          <button id="bundleZoomBtn" disabled>타임라인 확대</button>
+        </div>
+        <input type="file" id="bundleInput" multiple accept=".npz,.json" hidden>
+        <p class="note" id="bundleNote">frames.npz · run.json · game.json 세 파일을 함께 고르거나 끌어다 놓는다. 주소에 ?bundle=경로/ 를 붙여도 된다.</p>
+        <div class="legend" id="gameLegend" hidden>
+          <span><i style="background:#3FBFCF"></i>감지기</span>
+          <span><i style="background:#E8A13A"></i>GF 입력 동반</span>
+          <span><i style="background:#B79BE0"></i>GF 입력 없음(자발)</span>
+          <span><i style="background:#E5484D"></i>TTMn</span>
+          <span><i style="background:rgba(183,155,224,0.35);border-radius:1px"></i>리셋 직후 과도 구간 ~2 s (M7a2)</span>
+        </div>
+        <dl class="kv" id="gameStats"></dl>
+        <p class="note" id="gameStatsNote" hidden>분류는 기술 통계이고 판정이 아니다. "입력 동반" = 스파이크 직전 50 ms(해독기 창) 안에 같은 쪽 감지기 출력이 0보다 컸다는 뜻이고, 입력이 그 스파이크를 일으켰다는 뜻이 아니다. 입력이 영향을 줬다면 "입력 있을 때"의 발화율이 "없을 때"보다 높아야 한다. 발화율은 판 전체로 셌고, 묶음에 예열이 없어 리셋 직후 과도 구간(M7a2, 약 2 s)의 발화도 들어 있다.</p>
+      </div>
+    </section>
 
     <section class="group" id="dataGroup">
       <h2>자산</h2>
@@ -521,6 +669,17 @@ const ENDPOINTS = {
   skelJson:  name => "skel/" + name + ".json",
   skelBin:   name => "skel/" + name + ".bin",
 };
+// ?assets=data/cache/ 이면 서버 엔드포인트 대신 디스크의 파일 이름(계약 "파일 1·2")으로 읽는다.
+// 엔진 서버 없이 정적 HTTP 서버만으로 열기 위한 것이다. 이 경우 골격 목록(index.json)은 없으므로
+// 어떤 묶음을 읽을지는 재생 중인 run.json의 집합에서 정한다.
+function assetUrl(kind, name){
+  const b = S.assetBase;
+  if(!b) return kind === "cloudJson" ? ENDPOINTS.cloudJson : kind === "cloudBin" ? ENDPOINTS.cloudBin
+             : kind === "skelIndex" ? ENDPOINTS.skelIndex : kind === "skelJson" ? ENDPOINTS.skelJson(name)
+             : ENDPOINTS.skelBin(name);
+  return kind === "cloudJson" ? b + "neurons-3d.json" : kind === "cloudBin" ? b + "neurons-3d.bin"
+       : kind === "skelIndex" ? null : b + "skel-" + name + (kind === "skelJson" ? ".json" : ".bin");
+}
 const DTYPES = {float32: Float32Array, float64: Float64Array, uint8: Uint8Array,
                 int8: Int8Array, uint16: Uint16Array, int16: Int16Array,
                 uint32: Uint32Array, int32: Int32Array};
@@ -533,6 +692,11 @@ const STAGE_COLOR = {
   AMMCtype: [0xC7, 0x9A, 0x45],
   WED:      [0xDB, 0x84, 0x33],
   pC1:      [0xE5, 0x48, 0x4D],
+  // escape 프로필 (M7): 감지 → 명령 → 운동뉴런
+  LC4:      [0x3F, 0xBF, 0xCF],
+  LPLC2:    [0x5A, 0x9C, 0xD8],
+  DNp01:    [0xE8, 0xA1, 0x3A],
+  TTMn:     [0xE5, 0x48, 0x4D],
   rest:     [0x2E, 0x3A, 0x48],
 };
 const SIDE_COLOR = {L: [0x3F, 0xBF, 0xCF], R: [0xE8, 0xA1, 0x3A], other: [0x55, 0x60, 0x6E]};
@@ -598,6 +762,11 @@ const S = {
   liveStatus: "—", liveParams: null, liveHello: null,
   warnings: new Map(),
   reconnectTimer: null, wantLive: false,
+
+  // 게임 재생 (M7e)
+  assetBase: null,           // ?assets= — 디스크 이름으로 읽기
+  game: null,                // 적재된 재생 묶음
+  skelGlow: new Map(),       // 뉴런 인덱스 -> {g, kind} : 골격을 가진 뉴런의 번쩍임
 };
 
 function log(line){
@@ -732,6 +901,27 @@ layout(location=0) in vec3 aPos;
 uniform mat4 uMVP;
 void main(){ gl_Position = uMVP * vec4(aPos, 1.0); }`;
 
+// 골격을 가진 뉴런이 발화하면 그 뉴런의 선분 꼭짓점을 빛나는 점으로 다시 그린다.
+// 선 굵기는 WebGL에서 1로 고정이라, 굵게 번쩍이게 하려면 점이 필요하다. 같은 골격 버퍼를 쓴다.
+const GLOW_VS = `#version 300 es
+precision highp float;
+layout(location=0) in vec3 aPos;
+uniform mat4 uMVP;
+uniform float uSize;
+void main(){ gl_Position = uMVP * vec4(aPos, 1.0); gl_PointSize = uSize; }`;
+
+const GLOW_FS = `#version 300 es
+precision highp float;
+uniform vec3 uColor;
+uniform float uAlpha;
+out vec4 frag;
+void main(){
+  vec2 d = gl_PointCoord - vec2(0.5);
+  float r2 = dot(d, d);
+  if(r2 > 0.25) discard;
+  frag = vec4(uColor, uAlpha * (1.0 - smoothstep(0.05, 0.25, r2)));   // 일반 알파 혼합용
+}`;
+
 const LINE_FS = `#version 300 es
 precision highp float;
 uniform vec3 uColor;
@@ -758,7 +948,7 @@ function program(gl, vs, fs){
 }
 
 const canvas = el("gl");
-let GL = null, progPoint = null, progLine = null, uP = {}, uL = {};
+let GL = null, progPoint = null, progLine = null, progGlow = null, uP = {}, uL = {}, uG = {};
 let vaoPoint = null, bufPos = null, bufAct = null, bufSet = null, bufHop = null;
 
 function initGL(){
@@ -777,6 +967,9 @@ function initGL(){
     uP[k] = gl.getUniformLocation(progPoint, k);
   for(const k of ["uMVP", "uColor", "uAlpha"])
     uL[k] = gl.getUniformLocation(progLine, k);
+  progGlow = program(gl, GLOW_VS, GLOW_FS);
+  for(const k of ["uMVP", "uSize", "uColor", "uAlpha"])
+    uG[k] = gl.getUniformLocation(progGlow, k);
   gl.clearColor(0.031, 0.047, 0.067, 1);
   const dbg = gl.getExtension("WEBGL_debug_renderer_info");
   const renderer = dbg ? gl.getParameter(dbg.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
@@ -980,7 +1173,7 @@ function addSkel(bundle, synthetic){
   el("skelLine").textContent = "골격 " + S.skel.length + "묶음 · " + total.toLocaleString() + " 선분";
 }
 
-async function loadFromServer(assets){
+async function loadFromServer(assets, onlySets){
   el("assetNote").textContent = "불러오는 중…";
   // 프로토콜 v1.2: hello.assets가 있으면 그 목록을 쓰고, 없으면 HTTP로 직접 물어본다.
   if(assets && assets.neurons_3d === false){
@@ -990,8 +1183,8 @@ async function loadFromServer(assets){
   }
   let loaded = 0;
   try{
-    const meta = await (await fetchOk(ENDPOINTS.cloudJson)).json();
-    const buf = await (await fetchOk(ENDPOINTS.cloudBin)).arrayBuffer();
+    const meta = await (await fetchOk(assetUrl("cloudJson"))).json();
+    const buf = await (await fetchOk(assetUrl("cloudBin"))).arrayBuffer();
     setCloud(parseCloud(meta, buf), false);
     loaded++;
   }catch(err){
@@ -1003,20 +1196,27 @@ async function loadFromServer(assets){
   }
   try{
     let list;
-    if(assets && Array.isArray(assets.skeleton_sets)){
+    if(Array.isArray(onlySets)){
+      list = onlySets.map(name => ({name}));                   // 재생 묶음의 집합이 정한 목록
+    }else if(assets && Array.isArray(assets.skeleton_sets)){
       list = assets.skeleton_sets.map(name => ({name}));       // hello.assets가 알려 준 목록
       log("hello.assets의 골격 목록 사용: " + assets.skeleton_sets.join(", "));
+    }else if(!assetUrl("skelIndex")){
+      list = [];                                               // 디스크 모드: 재생 묶음이 정한다
+      el("skelNote").textContent = "디스크 모드(?assets=)라 골격은 재생 묶음의 집합에 맞춰 읽는다.";
     }else{
-      const idx = await (await fetchOk(ENDPOINTS.skelIndex)).json();
+      const idx = await (await fetchOk(assetUrl("skelIndex"))).json();
       list = Array.isArray(idx) ? idx : (idx.sets || []);
     }
-    if(!list.length){ el("skelNote").textContent = "서버에 골격 묶음이 없다. 점구름만 표시한다."; }
+    if(!list.length && !Array.isArray(onlySets) && assetUrl("skelIndex"))
+      el("skelNote").textContent = "서버에 골격 묶음이 없다. 점구름만 표시한다.";
     const failed = [], noMissing = [];
     for(const entry of list){
       const name = entry.name || entry;
       try{
-        const m = await (await fetchOk(ENDPOINTS.skelJson(name))).json();
-        const b = await (await fetchOk(ENDPOINTS.skelBin(name))).arrayBuffer();
+        if(S.skel.some(x => x.name === name)) continue;           // 이미 있다
+        const m = await (await fetchOk(assetUrl("skelJson", name))).json();
+        const b = await (await fetchOk(assetUrl("skelBin", name))).arrayBuffer();
         const bundle = parseSkel(name, m, b);
         addSkel(bundle, false);
         if(bundle.missing.length) noMissing.push(name + " " + bundle.missing.length + "개");
@@ -1437,6 +1637,7 @@ function loadRun(raw, synthetic){
     if(d < 0){ outOfRange++; continue; }        // 좌표 없는 뉴런이거나 범위 밖
     buckets[t].push(d);
   }
+  applyRunGrouping(regions, raw.neurons && raw.neurons.region);
   S.run = {
     meta: raw.meta || {}, regions,
     rates: fr.rates.map(a => Float32Array.from(a)),
@@ -1463,10 +1664,57 @@ function loadRun(raw, synthetic){
   return S.run;
 }
 
+// 집합 소속은 재생 중인 run.json(neurons.region / regions)에서 온다 (M7e 준비 결정).
+// 점구름의 set 배열은 run.json이 소속을 주지 않을 때의 기본값이다.
+function applyRunGrouping(names, regionOf){
+  const c = S.cloud;
+  if(!c.baseSetIdx){ c.baseSetIdx = c.setIdx.slice(); c.baseNames = c.names.slice(); }
+  let dSet = null, src = "점구름 기본값";
+  if(regionOf && regionOf.length === c.n && names.length && names.length <= MAX_SETS){
+    dSet = new Uint8Array(c.drawN);
+    let bad = 0;
+    for(let d = 0; d < c.drawN; d++){
+      const r = regionOf[c.drawToNeuron[d]];
+      if(r >= 0 && r < names.length) dSet[d] = r; else { dSet[d] = names.length - 1; bad++; }
+    }
+    if(bad) log("주의: run.json의 neurons.region에 범위 밖 값 " + bad + "개 — 마지막 집합으로 넣었다");
+    c.names = names.slice();
+    src = "run.json";
+  }else{
+    if(regionOf && regionOf.length !== c.n)
+      log("run.json의 neurons.region 길이 " + regionOf.length + " != 점구름 " + c.n + " — 기본 소속을 쓴다");
+    dSet = c.baseSetIdx.slice();
+    c.names = c.baseNames.slice();
+  }
+  c.setIdx = dSet;
+  c.counts = {};
+  for(let d = 0; d < c.drawN; d++) c.counts[dSet[d]] = (c.counts[dSet[d]] || 0) + 1;
+  c.groupSource = src;
+  GL.bindBuffer(GL.ARRAY_BUFFER, bufSet);
+  GL.bufferSubData(GL.ARRAY_BUFFER, 0, dSet);
+  S.setNames = c.names.slice();
+  S.setVisible = c.names.map(() => 1);
+  rebuildColors();
+}
+
+function exitGameMode(){
+  if(!S.game) return;
+  S.game = null;
+  document.body.classList.remove("game-mode");
+  el("gameLegend").hidden = true;
+  el("gameStatsNote").hidden = true;
+  el("bundleZoomBtn").disabled = true;
+  el("gameStats").innerHTML = "";
+  for(const b of S.skel) b.visible = true;
+  buildSkelList();
+  resize();
+}
+
 function readRunFile(f){
   const r = new FileReader();
   r.onload = () => {
     try{
+      exitGameMode();
       loadRun(JSON.parse(r.result), false);
       log("런 적재: " + f.name);
     }catch(err){
@@ -1666,6 +1914,7 @@ function advancePlayback(dtMs){
       const steps = Math.floor(S._acc);
       S._acc -= steps;
       for(let k = 0; k < steps; k++){
+        if(S.game && S.frame >= run.n - 1){ setPlaying(false); break; }   // 판은 끝에서 멈춘다
         S.frame++;
         if(S.frame >= run.n){ S.frame = 0; S.act.fill(0); }
         injectFrame(S.frame);
@@ -1674,10 +1923,48 @@ function advancePlayback(dtMs){
     }
   }
 }
-function injectFrame(f){
+function injectFrame(f, weight){
   const b = S.run.buckets[f];
-  for(let k = 0; k < b.length; k++) S.act[b[k]] = 255;
+  const w = weight == null ? 1 : weight;
+  const v = Math.round(255 * w);
+  const map = S.cloud.drawToNeuron;
+  for(let k = 0; k < b.length; k++){
+    const d = b[k];
+    if(S.act[d] < v) S.act[d] = v;
+    const i = map[d];
+    if(S.skelIndex.has(i)){                     // 골격을 가진 뉴런이면 그 가지가 번쩍인다
+      const prev = S.skelGlow.get(i);
+      const kind = S.game ? gameSpikeKind(i, f) : "spike";
+      if(!prev || prev.g < w) S.skelGlow.set(i, {g: w, kind});
+    }
+  }
   if(b.length) S.anyActive = true;
+}
+
+// 한 시각의 화면을 다시 만든다: 지나간 스파이크를 잔광 감쇠만큼 약하게 다시 넣는다.
+// 정지 중에는 감쇠하지 않으므로, 멈춘 화면은 그 순간의 모습이다 (2D 뷰어와 같다).
+const GLOW_HALF_MS = 90;
+function seekTo(f){
+  if(!S.run) return;
+  f = clamp(f | 0, 0, S.run.n - 1);
+  S.frame = f;
+  S.act.fill(0);
+  S.skelGlow.clear();
+  const perMs = Math.pow(S.glow || 0.8, 1 / 16.7);      // 1× 재생, 60 fps 기준의 1 ms당 잔광 감쇠
+  for(let k = Math.max(0, f - 120); k <= f; k++) injectFrame(k, Math.pow(perMs, f - k));
+  // 골격 번쩍임은 마지막 스파이크로부터의 반감기로 다시 맞춘다
+  for(const [i, e] of S.skelGlow){
+    const tl = lastSpikeBefore(i, f);
+    e.g = tl < 0 ? 0 : Math.pow(0.5, (f - tl) / GLOW_HALF_MS);
+    if(S.game) e.kind = gameSpikeKind(i, tl);
+  }
+  S.anyActive = true;
+  el("scrub").value = f;
+}
+function lastSpikeBefore(i, f){
+  const d = S.cloud.neuronToDraw[i];
+  for(let k = f; k >= Math.max(0, f - 400); k--) if(S.run.buckets[k].includes(d)) return k;
+  return -1;
 }
 
 function render(ts){
@@ -1691,9 +1978,14 @@ function render(ts){
   if(S.spin && !S.reduceMotion) S.cam.az += dt * 0.00022;
   advancePlayback(dt);
 
-  // 잔광 감쇠 — 활동이 있을 때만 훑는다
+  // 잔광 감쇠 — 활동이 있을 때만 훑는다. 재생 중이 아니면(정지·스크럽) 그 순간을 유지한다.
+  const decaying = S.live || S.playing || !S.run;
+  if(decaying && S.skelGlow.size){
+    const f = Math.pow(0.5, dt / GLOW_HALF_MS);
+    for(const [i, e] of S.skelGlow){ e.g *= f; if(e.g < 0.03) S.skelGlow.delete(i); }
+  }
   if(S.anyActive){
-    const act = S.act, g = S.glow;
+    const act = S.act, g = decaying ? S.glow : 1;
     let any = 0;
     for(let i = 0; i < act.length; i++){
       const v = act[i];
@@ -1727,6 +2019,8 @@ function render(ts){
       gl.bindVertexArray(b.vao);
       gl.drawArrays(gl.LINES, 0, b.nSeg * 2);
     }
+    // 발화한 뉴런의 가지를 밝게 덧그린다 (계약의 seg_offset/seg_count 구간)
+    drawSkeletonGlow(mvp);
     // 고른 뉴런의 선분만 밝게 덧그린다 (계약의 seg_offset/seg_count 구간)
     const sel = S.pick >= 0 ? S.skelIndex.get(S.pick) : null;
     if(sel){
@@ -1763,6 +2057,7 @@ function render(ts){
 
   drawAxes(view);
   updateReadouts();
+  if(S.game) updateGame();
 
   S.fpsN++;
   if(ts - S.fpsT > 500){
@@ -1815,6 +2110,665 @@ function setPlaying(v){
   S.playing = v && !!S.run;
   el("playBtn").textContent = S.playing ? "❚❚" : "▶";
   el("playBtn").setAttribute("aria-label", S.playing ? "일시정지" : "재생");
+}
+
+// ═══════════════════════════════════════════════════════
+//  게임 재생 (M7e) — 왼쪽 게임, 가운데 3D 뇌, 아래 타임라인
+//
+//  재생 묶음 = frames.npz(frames, t_ms, actions, loom) + run.json(escape 프로필)
+//  + game.json(점수·사건·에이전트). 시간축은 t_ms 하나다. 화면은 현재 시각 이하의
+//  마지막 게임 프레임을 띄운다.
+//
+//  하네스(flysim/apps/games/brain.py)의 시각 규칙을 그대로 따른다:
+//    틱 k의 프레임은 t_ms[k]에 보이고, 감지기 출력 loom[k] × k가 틱 k 동안
+//    같은 쪽 LC4·LPLC2 전부에 들어간다. 틱이 끝나는 시각 e_k에서 해독기가
+//    [e_k − 50 ms, e_k)의 거대 신경섬유 스파이크로 actions[k]를 정한다.
+//  이 규칙으로 해독기를 다시 돌려 기록된 행동과 맞는지 대조한다(정렬 검증).
+// ═══════════════════════════════════════════════════════
+const GAME_ACTIONS = ["NOOP", "JUMP", "LEFT", "RIGHT"];   // flysim/apps/games/base.py Action 순서
+const GAME_ACTION_KO = {NOOP: "가만히", JUMP: "점프", LEFT: "← 왼쪽", RIGHT: "오른쪽 →"};
+const GAME_EVENT_TYPES = ["jump", "move_left", "move_right", "pass", "crash"];
+const GAME_EVENT_KO = {jump: "점프", move_left: "← 이동", move_right: "이동 →", pass: "통과", crash: "충돌"};
+const GAME_DECODER_MS = 50;           // brain.py DECODER_WINDOW_MS (game.json의 값을 우선한다)
+const GAME_NPZ_ARRAYS = ["frames", "t_ms", "actions", "loom"];
+const C_GF_INPUT = [0xE8, 0xA1, 0x3A];
+const C_GF_SPONT = [0xB7, 0x9B, 0xE0];
+const C_TTMN = [0xE5, 0x48, 0x4D];
+
+// ── frames.npz: zip 해석 + deflate 풀기 + .npy 머리 해석 ──────────────
+async function inflateRaw(bytes){
+  if(typeof DecompressionStream === "undefined")
+    throw new Error("이 브라우저는 DecompressionStream이 없어 frames.npz를 풀 수 없다");
+  const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+
+async function parseNpz(buf){
+  const u8 = new Uint8Array(buf), dv = new DataView(buf);
+  let eocd = -1;                                     // 중앙 디렉터리 끝 레코드 (끝에서 거꾸로)
+  for(let i = u8.length - 22; i >= Math.max(0, u8.length - 22 - 65535); i--){
+    if(dv.getUint32(i, true) === 0x06054b50){ eocd = i; break; }
+  }
+  if(eocd < 0) throw new Error("npz: zip 끝 레코드를 못 찾았다");
+  const nEntries = dv.getUint16(eocd + 10, true);
+  let p = dv.getUint32(eocd + 16, true);
+  if(p === 0xFFFFFFFF || nEntries === 0xFFFF) throw new Error("npz: zip64는 지원하지 않는다");
+  const out = {};
+  for(let k = 0; k < nEntries; k++){
+    if(dv.getUint32(p, true) !== 0x02014b50) throw new Error("npz: 중앙 디렉터리 머리가 깨졌다");
+    const method = dv.getUint16(p + 10, true);
+    const csize = dv.getUint32(p + 20, true), usize = dv.getUint32(p + 24, true);
+    const nlen = dv.getUint16(p + 28, true), xlen = dv.getUint16(p + 30, true), clen = dv.getUint16(p + 32, true);
+    const lho = dv.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nlen));
+    p += 46 + nlen + xlen + clen;
+    if(csize === 0xFFFFFFFF || usize === 0xFFFFFFFF || lho === 0xFFFFFFFF)
+      throw new Error("npz: zip64 항목은 지원하지 않는다 (" + name + ")");
+    if(dv.getUint32(lho, true) !== 0x04034b50) throw new Error("npz: 지역 머리가 깨졌다 (" + name + ")");
+    const start = lho + 30 + dv.getUint16(lho + 26, true) + dv.getUint16(lho + 28, true);
+    const raw = u8.subarray(start, start + csize);  // 크기는 중앙 디렉터리 값을 쓴다(데이터 서술자 무관)
+    let data;
+    if(method === 0) data = raw.slice();
+    else if(method === 8) data = await inflateRaw(raw);
+    else throw new Error("npz: 모르는 압축 방식 " + method + " (" + name + ")");
+    if(data.length !== usize) throw new Error("npz: " + name + " 풀린 길이 " + data.length + " != " + usize);
+    out[name.replace(/\.npy$/, "")] = parseNpy(data, name);
+  }
+  return out;
+}
+
+const NPY_DTYPES = {"|u1": Uint8Array, "|i1": Int8Array, "<u2": Uint16Array, "<i2": Int16Array,
+                    "<u4": Uint32Array, "<i4": Int32Array, "<f4": Float32Array, "<f8": Float64Array};
+function parseNpy(bytes, name){
+  const magic = String.fromCharCode(bytes[1], bytes[2], bytes[3], bytes[4], bytes[5]);
+  if(bytes[0] !== 0x93 || magic !== "NUMPY") throw new Error("npy: " + name + " 머리가 NUMPY가 아니다");
+  const major = bytes[6];
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  const hstart = major === 1 ? 10 : 12;
+  const hlen = major === 1 ? dv.getUint16(8, true) : dv.getUint32(8, true);
+  const header = new TextDecoder("latin1").decode(bytes.subarray(hstart, hstart + hlen));
+  const descr = (header.match(/'descr':\s*'([^']+)'/) || [])[1];
+  const shapeStr = (header.match(/'shape':\s*\(([^)]*)\)/) || [])[1];
+  if(!descr || shapeStr === undefined) throw new Error("npy: " + name + " 머리를 못 읽었다");
+  if(/'fortran_order':\s*True/.test(header)) throw new Error("npy: " + name + " fortran 순서는 지원하지 않는다");
+  const Ctor = NPY_DTYPES[descr];
+  if(!Ctor) throw new Error("npy: " + name + " dtype " + descr + "는 지원하지 않는다");
+  const shape = shapeStr.split(",").map(x => x.trim()).filter(Boolean).map(Number);
+  const count = shape.reduce((a, b) => a * b, 1);
+  const off = hstart + hlen;
+  if(off + count * Ctor.BYTES_PER_ELEMENT > bytes.length) throw new Error("npy: " + name + " 자료가 짧다");
+  const copy = bytes.slice(off, off + count * Ctor.BYTES_PER_ELEMENT);   // 정렬을 위해 복사
+  return {data: new Ctor(copy.buffer, 0, count), shape, descr};
+}
+
+// ── 묶음 적재 ─────────────────────────────────────────────────────────
+async function loadBundleUrl(base){
+  if(!base.endsWith("/")) base += "/";
+  el("bundleNote").textContent = "묶음을 읽는 중… " + base;
+  const [npz, run, game] = await Promise.all([
+    fetchOk(base + "frames.npz").then(r => r.arrayBuffer()),
+    fetchOk(base + "run.json").then(r => r.json()),
+    fetchOk(base + "game.json").then(r => r.json()),
+  ]);
+  await loadBundle({npz, run, game, label: base});
+}
+
+async function loadBundleFiles(fileList){
+  const files = Array.from(fileList);
+  const pick = test => files.find(test);
+  const fNpz = pick(f => f.name.endsWith(".npz"));
+  const fGame = pick(f => f.name === "game.json");
+  const fRun = pick(f => f.name.endsWith(".json") && f.name !== "game.json");
+  const missing = [!fNpz && "frames.npz", !fRun && "run.json", !fGame && "game.json"].filter(Boolean);
+  if(missing.length) throw new Error("묶음에 " + missing.join(", ") + "이(가) 없다 — 세 파일을 함께 고른다");
+  await loadBundle({npz: await fNpz.arrayBuffer(), run: JSON.parse(await fRun.text()),
+                    game: JSON.parse(await fGame.text()), label: fRun.name + " 외 2개"});
+}
+
+async function loadBundle({npz, run, game, label}){
+  if(!S.cloud) throw new Error("점구름이 먼저 있어야 한다 — 자산을 불러온 뒤 묶음을 연다");
+  if(S.live) disconnectLive();
+  const arr = await parseNpz(npz);
+  for(const k of GAME_NPZ_ARRAYS) if(!arr[k]) throw new Error("frames.npz에 " + k + " 배열이 없다");
+  const fr = arr.frames;
+  if(fr.shape.length !== 3) throw new Error("frames 모양이 [T,H,W]가 아니다: " + fr.shape.join("×"));
+  const [T, H, W] = fr.shape;
+  if(arr.t_ms.shape[0] !== T || arr.actions.shape[0] !== T || arr.loom.shape[0] !== T || arr.loom.shape[1] !== 2)
+    throw new Error("frames.npz 배열 길이가 서로 다르다");
+
+  loadRun(run, false);                                 // 집합 소속도 여기서 run.json으로 바뀐다
+  const R = S.run;
+  const meta = run.meta || {};
+  const dur = game.bundle_ms || game.duration_ms || R.n * R.binMs;
+  const t = Float64Array.from(arr.t_ms.data);
+  const tEnd = new Float64Array(T);                    // 틱이 끝나는 시각 (해독 시각)
+  for(let k = 0; k < T; k++) tEnd[k] = k + 1 < T ? t[k + 1] : dur;
+  const win = (game.agent && game.agent.decoder && game.agent.decoder.window_ms) || GAME_DECODER_MS;
+
+  // 1개짜리 영역의 발화율이 곧 스파이크다 (프로필 영역 — 표본 상한과 무관, 결정 3)
+  const regionSize = name => {
+    if(meta.region_sizes && meta.region_sizes[name] != null) return meta.region_sizes[name];
+    const r = R.regions.indexOf(name);
+    return r < 0 ? 0 : (S.cloud.counts[r] || 0);
+  };
+  const spikeTimes = name => {
+    const r = R.regions.indexOf(name);
+    if(r < 0) return [];
+    const scale = (meta.rate_norm_hz || 1000) * regionSize(name) * R.binMs / 1000;
+    const out = [];
+    const row = R.rates[r];
+    for(let b = 0; b < row.length; b++){
+      const c = Math.round(row[b] * scale);
+      for(let j = 0; j < c; j++) out.push(b * R.binMs);
+    }
+    return out;
+  };
+  const gfT = {L: spikeTimes("DNp01_L"), R: spikeTimes("DNp01_R")};
+  const ttT = {L: spikeTimes("TTMn_L"), R: spikeTimes("TTMn_R")};
+
+  // 집합 구성원 (run.json neurons.region)
+  const members = name => {
+    const r = R.regions.indexOf(name), reg = run.neurons && run.neurons.region;
+    const out = [];
+    if(r < 0 || !reg) return out;
+    for(let i = 0; i < reg.length; i++) if(reg[i] === r) out.push(i);
+    return out;
+  };
+  const gfIdx = {L: members("DNp01_L"), R: members("DNp01_R")};
+  const ttIdx = {L: members("TTMn_L"), R: members("TTMn_R")};
+
+  // 교차 확인: 스파이크 목록에서 센 GF 수와 발화율에서 센 수
+  const sn = run.spikes ? run.spikes.neuron_idx : [], st = run.spikes ? run.spikes.t_bin : [];
+  const gfSet = new Map([...gfIdx.L.map(i => [i, "L"]), ...gfIdx.R.map(i => [i, "R"])]);
+  const fromList = {L: 0, R: 0};
+  for(let k = 0; k < sn.length; k++){ const s2 = gfSet.get(sn[k]); if(s2) fromList[s2]++; }
+
+  // 입력 있음: 그 쪽 감지기 출력이 0보다 큰 틱이 [t − win, t]와 겹친다
+  const loom = arr.loom.data;
+  const tickAt = ms => {                               // ms가 속한 틱 (t[k] <= ms < tEnd[k])
+    let lo = 0, hi = T - 1;
+    if(ms < t[0]) return -1;
+    while(lo < hi){ const mid = (lo + hi + 1) >> 1; if(t[mid] <= ms) lo = mid; else hi = mid - 1; }
+    return lo;
+  };
+  const inputBefore = (side, ms) => {
+    const col = side === "L" ? 0 : 1;
+    for(let k = tickAt(ms); k >= 0 && tEnd[k] > ms - win; k--) if(loom[k * 2 + col] > 0) return true;
+    return false;
+  };
+  const gfKind = {L: gfT.L.map(ms => inputBefore("L", ms) ? "input" : "spont"),
+                  R: gfT.R.map(ms => inputBefore("R", ms) ? "input" : "spont")};
+
+  // 입력 없던 시간(같은 쪽 감지기가 창 안에서 0) 동안의 GF 발화율
+  const quietRate = side => {
+    let quietMs = 0, n = 0;
+    const col = side === "L" ? 0 : 1;
+    const busy = new Uint8Array(Math.ceil(dur) + 1);
+    for(let k = 0; k < T; k++){
+      if(loom[k * 2 + col] <= 0) continue;
+      for(let ms = Math.floor(t[k]); ms < Math.min(dur, tEnd[k] + win); ms++) busy[ms] = 1;
+    }
+    for(let ms = 0; ms < dur; ms++) if(!busy[ms]) quietMs++;
+    let nIn = 0;
+    gfT[side].forEach((ms, j) => { if(gfKind[side][j] === "spont") n++; else nIn++; });
+    const busyMs = dur - quietMs;
+    return {n, quietMs, hz: quietMs > 0 ? n / (quietMs / 1000) : null,
+            nIn, busyMs, hzIn: busyMs > 0 ? nIn / (busyMs / 1000) : null};
+  };
+
+  // 해독기 재현과 행동 귀속
+  const decoded = new Int8Array(T);
+  let match = 0;
+  const onsets = {input: 0, spont: 0, total: 0};
+  for(let k = 0; k < T; k++){
+    const lo = tEnd[k] - win, hi = tEnd[k];
+    const inWin = side => gfT[side].map((ms, j) => [ms, gfKind[side][j]]).filter(([ms]) => ms >= lo && ms < hi);
+    const wl = inWin("L"), wr = inWin("R");
+    const a = wl.length && wr.length ? 1 : wl.length ? 3 : wr.length ? 2 : 0;   // JUMP / RIGHT / LEFT / NOOP
+    decoded[k] = a;
+    if(a === arr.actions.data[k]) match++;
+    const rec = arr.actions.data[k];
+    if(rec !== 0 && (k === 0 || arr.actions.data[k - 1] !== rec)){
+      onsets.total++;
+      const used = rec === 1 ? wl.concat(wr) : rec === 3 ? wl : rec === 2 ? wr : [];
+      if(used.some(([, kind]) => kind === "input")) onsets.input++; else onsets.spont++;
+    }
+  }
+
+  const events = (game.events || []).slice().sort((a, b) => a.t_ms - b.t_ms);
+  const unknownEv = [...new Set(events.map(e => e.type).filter(x => !GAME_EVENT_TYPES.includes(x)))];
+  S.game = {
+    label, T, H, W, frames: fr.data, t, tEnd, actions: arr.actions.data, loom, decoded, match,
+    events, unknownEv, doc: game, meta, dur, win, gfT, gfKind, ttT, gfIdx, ttIdx, fromList,
+    quiet: {L: quietRate("L"), R: quietRate("R")}, onsets, zoom: false,
+    image: new ImageData(W, H), lastShown: -1, tlCache: null,
+  };
+  S.game.gfSide = new Map([...gfIdx.L.map(i => [i, "L"]), ...gfIdx.R.map(i => [i, "R"])]);
+  S.game.ttSide = new Map([...ttIdx.L.map(i => [i, "L"]), ...ttIdx.R.map(i => [i, "R"])]);
+  S.game.gfSpont = {L: new Set(gfT.L.filter((_, j) => gfKind.L[j] === "spont")),
+                    R: new Set(gfT.R.filter((_, j) => gfKind.R[j] === "spont"))};
+
+  document.body.classList.add("game-mode");
+  el("gameLegend").hidden = false;
+  el("gameStatsNote").hidden = false;
+  el("bundleZoomBtn").disabled = false;
+
+  // 이 판의 프로필에 맞는 골격만 보인다 (없으면 읽어 온다)
+  const want = [...new Set(R.regions.filter(n => n !== "rest").map(baseOf))];
+  await loadFromServer.skeletonsOnly(want);
+  for(const b of S.skel) b.visible = want.includes(b.name);
+  buildSkelList();
+  buildSetList();
+  fillGameInfo();
+  fillGameStats();
+  resize();
+  fitView();
+  seekTo(0);
+  el("bundleNote").textContent = "재생 묶음: " + label;
+  log("재생 묶음 적재: " + label + " — " + T + "틱, " + dur + " ms, 해독기 재현 " + match + "/" + T);
+}
+
+// 골격만 더 읽는다 (점구름은 이미 있다)
+loadFromServer.skeletonsOnly = async function(names){
+  const need = names.filter(n => !S.skel.some(b => b.name === n));
+  const failed = [];
+  for(const name of need){
+    try{
+      const m = await (await fetchOk(assetUrl("skelJson", name))).json();
+      const b = await (await fetchOk(assetUrl("skelBin", name))).arrayBuffer();
+      addSkel(parseSkel(name, m, b), false);
+    }catch(err){ failed.push(name + " (" + err.message + ")"); }
+  }
+  if(failed.length){
+    el("skelNote").textContent = "이 판의 골격 중 못 읽은 것: " + failed.join(", ") + " — 점만 보인다";
+    el("skelNote").classList.add("caution");
+  }
+};
+
+// 골격 번쩍임의 종류: 거대 신경섬유는 입력 동반/자발을 가른다
+function gameSpikeKind(i, f){
+  const g = S.game;
+  if(!g) return "spike";
+  const side = g.gfSide.get(i);
+  if(side) return g.gfSpont[side].has(f * S.run.binMs) ? "spont" : "input";
+  if(g.ttSide.has(i)) return "ttmn";
+  return "spike";
+}
+
+function drawSkeletonGlow(mvp){
+  if(!S.skelGlow.size) return;
+  const gl = GL;
+  const colourOf = (i, e) => {
+    if(e.kind === "input") return C_GF_INPUT;
+    if(e.kind === "spont") return C_GF_SPONT;
+    if(e.kind === "ttmn") return C_TTMN;
+    const ent = S.skelIndex.get(i);
+    const c = STAGE_COLOR[ent && ent[0].bundle.name] || [200, 210, 220];
+    return c.map(v => Math.min(255, v * 0.5 + 128));
+  };
+  const big = e => e.kind === "input" || e.kind === "spont" || e.kind === "ttmn";
+  // 1) 선분을 밝게
+  gl.useProgram(progLine);
+  gl.uniformMatrix4fv(uL.uMVP, false, mvp);
+  for(const [i, e] of S.skelGlow){
+    const c = colourOf(i, e);
+    gl.uniform3f(uL.uColor, c[0] / 255, c[1] / 255, c[2] / 255);
+    gl.uniform1f(uL.uAlpha, Math.min(1, 0.25 + e.g));
+    for(const r of S.skelIndex.get(i) || []){
+      if(!r.bundle.visible) continue;
+      gl.bindVertexArray(r.bundle.vao);
+      gl.drawArrays(gl.LINES, r.seg_offset * 2, r.seg_count * 2);
+    }
+  }
+  // 2) 같은 꼭짓점을 빛나는 점으로 — 거대 신경섬유·운동뉴런은 굵게 번쩍인다
+  gl.useProgram(progGlow);
+  gl.uniformMatrix4fv(uG.uMVP, false, mvp);
+  // 가산 합성이면 수천 개 점이 겹쳐 하얗게 날아가 색이 안 읽힌다 → 일반 알파 혼합
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.depthMask(false);
+  for(const [i, e] of S.skelGlow){
+    const c = colourOf(i, e);
+    gl.uniform3f(uG.uColor, c[0] / 255, c[1] / 255, c[2] / 255);
+    gl.uniform1f(uG.uAlpha, big(e) ? 0.9 * e.g : 0.35 * e.g);
+    gl.uniform1f(uG.uSize, big(e) ? 3 + 5 * e.g : 1.5 + 1.5 * e.g);
+    for(const r of S.skelIndex.get(i) || []){
+      if(!r.bundle.visible) continue;
+      gl.bindVertexArray(r.bundle.vao);
+      gl.drawArrays(gl.POINTS, r.seg_offset * 2, r.seg_count * 2);
+    }
+  }
+  gl.depthMask(true);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(progLine);
+  gl.bindVertexArray(null);
+}
+
+// ── 머리·통계 ─────────────────────────────────────────────────────────
+const fmtNum = v => v == null ? "—" : Math.abs(v) >= 1e4 || (Math.abs(v) < 1e-2 && v !== 0) ? Number(v).toExponential(3) : String(+Number(v).toPrecision(4));
+
+function endingText(g){
+  const crashEv = g.events.find(e => e.type === "crash");
+  if(crashEv) return "충돌 " + crashEv.t_ms + " ms" + (g.doc.loss_cause ? " · 원인 " + g.doc.loss_cause : "");
+  if(g.doc.crashed === true) return "충돌 (crashed=true, 사건은 묶음 밖)" + (g.doc.loss_cause ? " · 원인 " + g.doc.loss_cause : "");
+  if(g.doc.crashed === false) return g.doc.truncated ? "시간 상한으로 끝남" : "충돌 없이 끝남";
+  return "판 종료 — game.json에 종료 사유 없음";
+}
+
+function fillGameInfo(){
+  const g = S.game, d = g.doc, a = d.agent || {}, pr = (a.brain && a.brain.params) || g.meta.engine_params || {};
+  const rows = [
+    ["게임", d.game || "?", "big"],
+    ["점수", String(d.score), "big"],
+    ["에이전트", a.kind || "?", ""],
+    ["시드", String(d.seed), ""],
+    ["k", fmtNum(a.k), ""],
+    ["동작점", "g " + fmtNum(pr.g) + " · σ " + fmtNum(pr.noise_sigma) + (pr.adapt_g ? " · 적응 g_b " + fmtNum(pr.adapt_g_b) : ""), ""],
+    ["프로필", g.meta.probe_profile || "?", ""],
+    ["해독기", "직전 " + g.win + " ms GF: 양쪽→점프, 왼쪽만→오른쪽, 오른쪽만→왼쪽", ""],
+    ["길이", g.dur + " ms · " + g.T + "틱", ""],
+    ["판 끝", endingText(g), ""],
+    ["감각 모드", (g.meta.sensory_mode || "?") + (g.meta.sensory_mode_note ? " (" + g.meta.sensory_mode_note + ")" : ""), ""],
+  ];
+  el("gameInfo").innerHTML = rows.map(([k, v, c]) => "<dt>" + esc(k) + "</dt><dd class=\"" + c + "\" title=\"" + esc(v) + "\">" + esc(v) + "</dd>").join("");
+
+  // 판 전체 발화 비율 — 경고선에 가까우므로 설명과 함께 띄운다
+  const act = g.meta.active_neurons, n = g.meta.n_neurons || S.cloud.n;
+  const rw = el("runWide");
+  if(act != null){
+    const f = act / n;
+    rw.textContent = (f > 0.90 ? WARN_RUNAWAY + " · " : "") +
+      "판 전체에서 한 번이라도 발화한 뉴런 " + (100 * f).toFixed(1) + " % (뷰어 경고선 90 %). " +
+      (g.dur / 1000).toFixed(1) + " s 동안 배경 잡음이 쌓인 값이다 — 입력 없는 대조군도 5 s에 약 66 % (M7c 리포트 §4·§5.3).";
+    rw.classList.toggle("caution", f >= 0.75);
+  }else{
+    rw.textContent = "판 전체 발화 비율이 run.json에 없다";
+  }
+}
+
+function fillGameStats(){
+  const g = S.game;
+  const cnt = side => {
+    const k = g.gfKind[side];
+    return g.gfT[side].length + "개 (입력 동반 " + k.filter(x => x === "input").length +
+           " · 입력 없음 " + k.filter(x => x === "spont").length + ")";
+  };
+  const q = side => {
+    const v = g.quiet[side];
+    return v.hz == null ? "—" : v.hz.toFixed(2) + " Hz (" + v.n + "개 / " + (v.quietMs / 1000).toFixed(1) + " s)";
+  };
+  const qi = side => {
+    const v = g.quiet[side];
+    return v.hzIn == null ? "—" : v.hzIn.toFixed(2) + " Hz (" + v.nIn + "개 / " + (v.busyMs / 1000).toFixed(1) + " s)";
+  };
+  const rows = [
+    ["GF 왼쪽", cnt("L")],
+    ["GF 오른쪽", cnt("R")],
+    ["입력 있을 때 L", qi("L")],
+    ["입력 없을 때 L", q("L")],
+    ["입력 있을 때 R", qi("R")],
+    ["입력 없을 때 R", q("R")],
+    ["대조군", "한쪽당 약 1.9 Hz (M7c §5.2)"],
+    ["행동 시작", g.onsets.total + "번 — 입력 동반 GF " + g.onsets.input + " · 자발 GF만 " + g.onsets.spont],
+    ["해독기 재현", g.match + " / " + g.T + "틱 일치" + (g.match === g.T ? "" : " — 정렬 확인 필요")],
+    ["TTMn", "L " + g.ttT.L.length + " · R " + g.ttT.R.length + "개"],
+    ["GF 대조", "발화율 L " + g.gfT.L.length + "/R " + g.gfT.R.length + " · 스파이크 목록 L " + g.fromList.L + "/R " + g.fromList.R],
+  ];
+  if(g.unknownEv.length) rows.push(["모르는 사건", g.unknownEv.join(", ")]);
+  el("gameStats").innerHTML = rows.map(([k, v]) => "<dt>" + esc(k) + "</dt><dd title=\"" + esc(v) + "\">" + esc(v) + "</dd>").join("");
+}
+
+// ── 매 프레임: 게임 화면 · 램프 · 감지기 막대 · 사건 ─────────────────
+function gameFrameAt(ms){
+  const t = S.game.t;
+  let lo = 0, hi = t.length - 1;
+  if(ms < t[0]) return 0;
+  while(lo < hi){ const mid = (lo + hi + 1) >> 1; if(t[mid] <= ms) lo = mid; else hi = mid - 1; }
+  return lo;
+}
+
+function updateGame(){
+  const g = S.game;
+  if(!g || !S.run) return;
+  const ms = S.frame * S.run.binMs;
+  const k = gameFrameAt(ms);
+  if(k !== g.lastShown){
+    const px = g.image.data, src = g.frames, base = k * g.H * g.W;
+    for(let j = 0; j < g.H * g.W; j++){
+      const v = src[base + j], o = j * 4;
+      px[o] = v; px[o + 1] = v; px[o + 2] = v; px[o + 3] = 255;
+    }
+    el("gameCanvas").getContext("2d").putImageData(g.image, 0, 0);
+    g.lastShown = k;
+  }
+  const a = GAME_ACTIONS[g.actions[k]] || "?";
+  el("gameAction").textContent = "행동 " + (GAME_ACTION_KO[a] || a) + " · 틱 " + k;
+  const lmax = Math.max(1e-9, g.loomMax || (g.loomMax = g.loom.reduce((m, v) => v > m ? v : m, 0)));
+  el("loomL").style.width = (100 * g.loom[k * 2] / lmax).toFixed(1) + "%";
+  el("loomR").style.width = (100 * g.loom[k * 2 + 1] / lmax).toFixed(1) + "%";
+
+  // 해독기가 보는 창(직전 win ms)의 GF 스파이크
+  for(const side of ["L", "R"]){
+    const lamp = el(side === "L" ? "gfLampL" : "gfLampR");
+    let on = false, spont = true;
+    g.gfT[side].forEach((t0, j) => { if(t0 <= ms && t0 > ms - g.win){ on = true; if(g.gfKind[side][j] === "input") spont = false; } });
+    lamp.classList.toggle("on", on);
+    lamp.classList.toggle("spont", on && spont);
+  }
+
+  // 사건: 최근 350 ms 안의 마지막 사건을 띄운다. 끝에 다다르면 판 끝을 띄운다.
+  // 충돌 사건은 마지막 틱이 끝나는 시각(= duration_ms)에 찍히는데 재생 시계의 마지막 빈은
+  // 그보다 1 빈 앞이다. 마지막 빈에서는 판 끝 시각까지의 사건을 본다.
+  const evEl = el("gameEvent");
+  const atEnd = S.frame >= S.run.n - 1;
+  const evMs = atEnd ? Math.max(ms, g.dur) : ms;
+  let shown = null;
+  for(const e of g.events) if(e.t_ms <= evMs && e.t_ms > evMs - 350) shown = e;
+  if(atEnd && !g.events.some(e => e.type === "crash")){
+    evEl.textContent = endingText(g);
+    evEl.className = "game-event show end";
+  }else if(shown){
+    evEl.textContent = GAME_EVENT_KO[shown.type] || shown.type;
+    evEl.className = "game-event show" + (shown.type === "crash" ? " crash" : "");
+  }else{
+    evEl.className = "game-event";
+  }
+  drawTimeline(ms);
+}
+
+// ── 타임라인 ──────────────────────────────────────────────────────────
+// 활동 색 램프 — flysim-viewer.html과 같은 정지점 (유휴 회청 → 앰버 → 적색)
+function ramp(v){
+  v = clamp(v, 0, 1);
+  const stops = [[0.00, 22, 30, 40], [0.06, 58, 71, 86], [0.35, 176, 118, 46], [0.70, 232, 161, 58], [1.00, 229, 72, 77]];
+  for(let i = 1; i < stops.length; i++){
+    if(v <= stops[i][0]){
+      const a = stops[i - 1], b = stops[i], t = (v - a[0]) / (b[0] - a[0] || 1);
+      return [Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t), Math.round(a[3] + (b[3] - a[3]) * t)];
+    }
+  }
+  return [229, 72, 77];
+}
+
+// M7c 묶음은 리셋 직후부터 기록됐고 예열이 없다. M7a2(docs/m7-game-ladder.md)는 P2에서 거대
+// 신경섬유가 리셋 직후 함께 한 발 쏘고 약 0.6 s에 다시 풀리며, 약 2 s에 자리 잡는다고 적었다.
+// 그 구간의 발화는 정상 상태의 배경과 다르므로 타임라인에 따로 칠한다(문서 값, 이 화면이 잰 값 아님).
+const RESET_TRANSIENT_MS = 2000;
+
+const TL_GUTTER = 118;
+const TL_RIGHT = 70;              // 오른쪽 여백: 행별 최대값·개수
+const TL_ROWS = [
+  {key: "loomL",  label: "감지기 L (직접 짠 것)", h: 15},
+  {key: "loomR",  label: "감지기 R (직접 짠 것)", h: 15},
+  {key: "popL",   label: "LC4+LPLC2 L (배선도)", h: 13},
+  {key: "popR",   label: "LC4+LPLC2 R (배선도)", h: 13},
+  {key: "gfL",    label: "거대 신경섬유 L", h: 18},
+  {key: "gfR",    label: "거대 신경섬유 R", h: 18},
+  {key: "ttL",    label: "TTMn L", h: 11},
+  {key: "ttR",    label: "TTMn R", h: 11},
+  {key: "act",    label: "해독기 행동", h: 15},
+  {key: "ev",     label: "게임 사건", h: 22},
+];
+
+function tlWindow(ms){
+  const g = S.game;
+  if(!g.zoom) return [0, g.dur];
+  const half = 1500;
+  let a = ms - half, b = ms + half;
+  if(a < 0){ b -= a; a = 0; }
+  if(b > g.dur){ a -= b - g.dur; b = g.dur; }
+  return [Math.max(0, a), b];
+}
+
+function drawTimeline(ms){
+  const g = S.game, cv = el("tlCanvas");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const r = cv.getBoundingClientRect();
+  const W = Math.max(1, Math.round(r.width * dpr)), H = Math.max(1, Math.round(r.height * dpr));
+  if(cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; g.tlCache = null; }
+  const [t0, t1] = tlWindow(ms);
+  const key = W + "x" + H + ":" + t0.toFixed(0) + "-" + t1.toFixed(0);
+  if(!g.tlCache || g.tlCache.key !== key) g.tlCache = {key, canvas: renderTimelineStatic(W, H, t0, t1, dpr)};
+  const ctx = cv.getContext("2d");
+  ctx.clearRect(0, 0, W, H);
+  ctx.drawImage(g.tlCache.canvas, 0, 0);
+  const x0 = TL_GUTTER * dpr, xs = (W - x0 - TL_RIGHT * dpr) / Math.max(1, t1 - t0);
+  const x = x0 + (ms - t0) * xs;
+  ctx.fillStyle = "rgba(63,191,207,0.95)";
+  ctx.fillRect(Math.round(x), 0, Math.max(1, dpr), H);
+  ctx.font = `${10 * dpr}px "IBM Plex Mono", monospace`;
+  ctx.textBaseline = "top";
+  const label = ms.toFixed(0) + " ms", lw = ctx.measureText(label).width + 6 * dpr;
+  const lx = Math.min(x + 3 * dpr, W - lw - 2 * dpr);
+  ctx.fillStyle = "#0F151C";
+  ctx.fillRect(lx, 0, lw, 13 * dpr);
+  ctx.fillStyle = "#3FBFCF";
+  ctx.fillText(label, lx + 3 * dpr, 2 * dpr);
+}
+
+function renderTimelineStatic(W, H, t0, t1, dpr){
+  const g = S.game, R = S.run;
+  const off = document.createElement("canvas");
+  off.width = W; off.height = H;
+  const ctx = off.getContext("2d");
+  ctx.fillStyle = "#161E27"; ctx.fillRect(0, 0, W, H);
+  const x0 = TL_GUTTER * dpr, x1 = W - TL_RIGHT * dpr, xs = (x1 - x0) / Math.max(1, t1 - t0);
+  const X = t => x0 + (t - t0) * xs;
+  const top = 16 * dpr, total = TL_ROWS.reduce((s2, r2) => s2 + r2.h, 0);
+  const scale = (H - top - 4 * dpr) / (total * dpr) * dpr;
+  ctx.font = `${10 * dpr}px "IBM Plex Mono", monospace`;
+  ctx.textBaseline = "middle";
+
+  // 리셋 직후 과도 구간 (M7a2)
+  if(t0 < RESET_TRANSIENT_MS){
+    const xa = X(Math.max(t0, 0)), xb = X(Math.min(t1, RESET_TRANSIENT_MS));
+    ctx.fillStyle = "rgba(183,155,224,0.07)";
+    ctx.fillRect(xa, top - 2 * dpr, xb - xa, H - top);
+    ctx.fillStyle = "#8D7BB0";
+    ctx.fillText("과도 구간 (M7a2)", xa + 30 * dpr, 7 * dpr);     // 눈금 줄에 둬서 사건 글자와 겹치지 않게
+  }
+
+  // 시간 눈금
+  ctx.fillStyle = "#4A5766";
+  const span = t1 - t0, step = span > 6000 ? 1000 : span > 2500 ? 500 : 250;
+  for(let t = Math.ceil(t0 / step) * step; t <= t1; t += step){
+    ctx.fillRect(Math.round(X(t)), top - 3 * dpr, 1, H);
+    ctx.fillText((t / 1000).toFixed(step < 1000 ? 2 : 0) + " s", X(t) + 2 * dpr, 7 * dpr);
+  }
+  ctx.fillStyle = "#4A5766";
+
+  // 같은 쪽 LC4+LPLC2 집단 발화율 (크기 가중 평균, Hz)
+  const pop = side => {
+    const names = ["LC4_" + side, "LPLC2_" + side];
+    const rows = names.map(n => R.regions.indexOf(n)).filter(r => r >= 0);
+    const sizes = names.map(n => (g.meta.region_sizes || {})[n] || 1);
+    const out = new Float32Array(R.n);
+    const tot = sizes.reduce((a, b) => a + b, 0);
+    rows.forEach((r, j) => { const row = R.rates[r]; for(let b = 0; b < R.n; b++) out[b] += row[b] * sizes[j] / tot; });
+    return out.map(v => v * (g.meta.rate_norm_hz || 1000));
+  };
+  if(!g.popCache) g.popCache = {L: pop("L"), R: pop("R")};
+
+  let y = top;
+  const lmax = Math.max(1e-9, g.loom.reduce((m, v) => v > m ? v : m, 0));
+  const pmax = Math.max(1e-9, ...["L", "R"].map(s2 => g.popCache[s2].reduce((m, v) => v > m ? v : m, 0)));
+  for(const row of TL_ROWS){
+    const h = row.h * scale, mid = y + h / 2;
+    ctx.fillStyle = "#93A2B2";
+    ctx.fillText(row.label, 6 * dpr, mid);
+    ctx.fillStyle = "#1C2632";
+    ctx.fillRect(x0, Math.round(y + h - 1), x1 - x0, 1);
+    const side = row.key.endsWith("L") ? "L" : "R";
+    if(row.key.startsWith("loom")){
+      const col = side === "L" ? 0 : 1;
+      ctx.fillStyle = "rgba(63,191,207,0.85)";
+      for(let k = 0; k < g.T; k++){
+        const v = g.loom[k * 2 + col];
+        if(v <= 0 || g.tEnd[k] < t0 || g.t[k] > t1) continue;
+        const a = X(Math.max(t0, g.t[k])), b = X(Math.min(t1, g.tEnd[k]));
+        const hh = Math.max(dpr, (h - 3 * dpr) * v / lmax);
+        ctx.fillRect(a, y + h - 2 * dpr - hh, Math.max(1, b - a), hh);
+      }
+    }else if(row.key.startsWith("pop")){
+      const arr = g.popCache[side];
+      for(let px = Math.floor(x0); px < x1; px++){
+        const ta = Math.max(0, Math.floor(t0 + (px - x0) / xs)), tb = Math.min(R.n, Math.ceil(t0 + (px + 1 - x0) / xs));
+        let m = 0;
+        for(let b = ta; b < tb; b++) if(arr[b] > m) m = arr[b];
+        if(m <= 0) continue;
+        const u = Math.min(1, m / pmax);
+        const c = ramp(0.08 + 0.92 * u);
+        ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+        ctx.fillRect(px, y + 2 * dpr, 1, h - 4 * dpr);
+      }
+      ctx.fillStyle = "#6D7C8C";
+      ctx.fillText("≤" + pmax.toFixed(0) + " Hz", x1 + 6 * dpr, mid);
+    }else if(row.key.startsWith("gf")){
+      g.gfT[side].forEach((t, j) => {
+        if(t < t0 || t > t1) return;
+        const c = g.gfKind[side][j] === "input" ? C_GF_INPUT : C_GF_SPONT;
+        ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
+        ctx.fillRect(Math.round(X(t)) - dpr, y + 2 * dpr, 2.5 * dpr, h - 4 * dpr);
+      });
+      const kinds = g.gfKind[side];
+      ctx.fillStyle = "#6D7C8C";
+      ctx.fillText(kinds.length + " · 보라 " + kinds.filter(x => x === "spont").length, x1 + 6 * dpr, mid);
+    }else if(row.key.startsWith("tt")){
+      ctx.fillStyle = `rgb(${C_TTMN[0]},${C_TTMN[1]},${C_TTMN[2]})`;
+      for(const t of g.ttT[side]) if(t >= t0 && t <= t1) ctx.fillRect(Math.round(X(t)), y + 2 * dpr, 2 * dpr, h - 4 * dpr);
+    }else if(row.key === "act"){
+      const colA = {1: "#E8A13A", 2: "#3FBFCF", 3: "#5A9CD8"};
+      for(let k = 0; k < g.T; k++){
+        const a = g.actions[k];
+        if(!a || g.tEnd[k] < t0 || g.t[k] > t1) continue;
+        ctx.fillStyle = colA[a] || "#888";
+        const a0 = X(Math.max(t0, g.t[k])), b0 = X(Math.min(t1, g.tEnd[k]));
+        ctx.fillRect(a0, y + 3 * dpr, Math.max(1, b0 - a0), h - 6 * dpr);
+      }
+    }else if(row.key === "ev"){
+      const colE = {jump: "#E8A13A", move_left: "#3FBFCF", move_right: "#5A9CD8", pass: "#4FA97B", crash: "#E5484D"};
+      let lastX = -1e9;
+      for(const e of g.events){
+        if(e.t_ms < t0 || e.t_ms > t1) continue;
+        const ex = X(e.t_ms);
+        ctx.fillStyle = colE[e.type] || "#93A2B2";
+        ctx.beginPath();
+        ctx.moveTo(ex, y + 3 * dpr); ctx.lineTo(ex + 4 * dpr, y + 9 * dpr); ctx.lineTo(ex - 4 * dpr, y + 9 * dpr);
+        ctx.closePath(); ctx.fill();
+        if(ex - lastX > 34 * dpr || e.type === "crash" || e.type === "pass"){
+          const label = GAME_EVENT_KO[e.type] || e.type;
+          const tw = ctx.measureText(label).width;
+          ctx.fillText(label, ex + 3 * dpr + tw > W - 2 * dpr ? ex - tw - 3 * dpr : ex + 3 * dpr, y + h - 6 * dpr);
+          lastX = ex;
+        }
+      }
+      if(!g.events.some(e => e.type === "crash") && t1 >= g.dur - 1){
+        ctx.fillStyle = "#6D7C8C";
+        ctx.fillRect(Math.round(X(g.dur)) - dpr, y + 2 * dpr, 2 * dpr, h - 4 * dpr);
+      }
+    }
+    y += h;
+  }
+  return off;
 }
 
 // ═══════════════════════════════════════════════════════
@@ -2093,13 +3047,13 @@ const LIVE_HANDLERS = {
 // ═══════════════════════════════════════════════════════
 //  조작
 // ═══════════════════════════════════════════════════════
-el("playBtn").onclick = () => setPlaying(!S.playing);
+el("playBtn").onclick = () => {
+  if(S.game && S.run && !S.playing && S.frame >= S.run.n - 1) seekTo(0);
+  setPlaying(!S.playing);
+};
 el("scrub").oninput = e => {
   if(!S.run) return;
-  S.frame = +e.target.value;
-  S.act.fill(0);
-  injectFrame(S.frame);
-  S.anyActive = true;
+  seekTo(+e.target.value);
 };
 el("speedBtn").onclick = () => {
   S.speedIdx = (S.speedIdx + 1) % SPEEDS.length;
@@ -2116,9 +3070,50 @@ window.addEventListener("dragover", e => e.preventDefault());
 window.addEventListener("drop", e => {
   e.preventDefault();
   dragDepth = 0; document.body.classList.remove("dragging");
-  const f = e.dataTransfer.files[0];
-  if(f) readRunFile(f);
+  const files = Array.from(e.dataTransfer.files);
+  if(files.length > 1 || files.some(f => f.name.endsWith(".npz"))){
+    loadBundleFiles(files).catch(err => {
+      el("bundleNote").textContent = "묶음을 못 읽었다: " + err.message;
+      el("bundleNote").classList.add("caution");
+      log("묶음 로드 실패: " + err.message);
+    });
+    return;
+  }
+  if(files[0]) readRunFile(files[0]);
 });
+
+// ── 게임 재생 조작 ───────────────────────────────────
+el("bundleBtn").onclick = () => el("bundleInput").click();
+el("bundleInput").onchange = e => {
+  loadBundleFiles(e.target.files).catch(err => {
+    el("bundleNote").textContent = "묶음을 못 읽었다: " + err.message;
+    el("bundleNote").classList.add("caution");
+  });
+};
+el("bundleZoomBtn").onclick = () => {
+  if(!S.game) return;
+  S.game.zoom = !S.game.zoom;
+  S.game.tlCache = null;
+  el("bundleZoomBtn").classList.toggle("on", S.game.zoom);
+  el("bundleZoomBtn").textContent = S.game.zoom ? "타임라인 전체" : "타임라인 확대";
+};
+{
+  const tl = el("tlCanvas");
+  let dragging = false;
+  const seekFromX = clientX => {
+    if(!S.game || !S.run) return;
+    const r = tl.getBoundingClientRect();
+    const [t0, t1] = tlWindow(S.frame * S.run.binMs);
+    const x = clientX - r.left - TL_GUTTER;
+    const w = r.width - TL_GUTTER - TL_RIGHT;
+    if(x < 0) return;
+    setPlaying(false);
+    seekTo(Math.round((t0 + clamp(x / w, 0, 1) * (t1 - t0)) / S.run.binMs));
+  };
+  tl.addEventListener("pointerdown", e => { dragging = true; tl.setPointerCapture(e.pointerId); seekFromX(e.clientX); });
+  tl.addEventListener("pointermove", e => { if(dragging) seekFromX(e.clientX); });
+  tl.addEventListener("pointerup", () => { dragging = false; });
+}
 
 for(const b of el("presetSeg").children) b.onclick = () => preset(b.dataset.preset);
 el("spinBtn").onclick = () => {
@@ -2214,6 +3209,7 @@ el("hopsClearBtn").onclick = () => {
 };
 el("mockBtn").onclick = () => {
   disconnectLive();
+  exitGameMode();
   S.skel.forEach(b => { GL.deleteBuffer(b.vbo); GL.deleteVertexArray(b.vao); });
   S.skel = [];
   S.skelIndex.clear();
@@ -2260,9 +3256,7 @@ window.addEventListener("keydown", e => {
   if(e.code === "ArrowRight" || e.code === "ArrowLeft"){
     e.preventDefault();
     const d = (e.code === "ArrowRight" ? 1 : -1) * (e.shiftKey ? 10 : 1);
-    S.frame = clamp(S.frame + d, 0, S.run.n - 1);
-    S.act.fill(0); injectFrame(S.frame); S.anyActive = true;
-    el("scrub").value = S.frame;
+    seekTo(S.frame + d);
   }
 });
 
@@ -2280,6 +3274,9 @@ function boot(){
 
   const q = new URLSearchParams(location.search);
   S.mock = q.get("mock") === "1";
+  const assets = q.get("assets");
+  if(assets && !/^[a-z]+:/i.test(assets) && !assets.includes("..")) S.assetBase = assets.endsWith("/") ? assets : assets + "/";
+  const bundle = q.get("bundle");
   S.liveMock = S.mock;                 // 모의 모드에서는 모의 실시간 서버에 붙는다
   requestAnimationFrame(render);
   setLiveStatus(false, "연결 안 됨");
@@ -2297,7 +3294,21 @@ function boot(){
     el("blockerDetail").textContent =
       "점구름(/neurons-3d.*)과 골격(/skel/*)은 서버가 제공한다. 오른쪽 '서버에서 불러오기'를 누르거나, " +
       "파일이 아직 없으면 주소에 ?mock=1 을 붙여 합성 데이터로 화면을 확인할 수 있다.";
-    loadFromServer().catch(() => {});
+    (async () => {
+      await loadFromServer(undefined, bundle ? [] : undefined);
+      if(bundle && S.cloud){
+        if(/^[a-z]+:/i.test(bundle) || bundle.includes("..")){
+          el("bundleNote").textContent = "?bundle= 값은 같은 서버의 상대 경로여야 한다";
+          return;
+        }
+        try{ await loadBundleUrl(bundle); }
+        catch(err){
+          el("bundleNote").textContent = "묶음을 못 읽었다: " + err.message;
+          el("bundleNote").classList.add("caution");
+          log("묶음 로드 실패: " + err.message);
+        }
+      }
+    })().catch(() => {});
   }
 }
 boot();

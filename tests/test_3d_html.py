@@ -472,3 +472,212 @@ def test_mock_live_server_speaks_the_same_protocol(script):
     for t in ("hello", "frame", "ack", "hops", "snapshot_done"):
         assert f'"{t}"' in mock, f"the mock server must be able to send {t}"
     assert "assets:" in mock, "the mock advertises assets like the real server"
+
+
+# ═══════════════════════════════════════════════════════════════════
+#  M7e — 게임 재생 모드 (분할 화면): 왼쪽 게임, 가운데 3D 뇌, 아래 타임라인
+# ═══════════════════════════════════════════════════════════════════
+import zipfile
+
+GAMES_BASE = ROOT / "flysim" / "apps" / "games" / "base.py"
+GAMES_BRAIN = ROOT / "flysim" / "apps" / "games" / "brain.py"
+GAMES_M7C = ROOT / "flysim" / "apps" / "games" / "m7c.py"
+MOTOR = ROOT / "flysim" / "probe" / "motor.py"
+SETS_PY = ROOT / "flysim" / "probe" / "sets.py"
+BUNDLE_DIR = ROOT / "runs" / "m7c"
+BUNDLES = sorted(BUNDLE_DIR.glob("*-brain-seed10")) if BUNDLE_DIR.exists() else []
+needs_bundles = pytest.mark.skipif(not BUNDLES, reason="M7c replay bundles not present (runs/ is gitignored)")
+
+
+def _js_list(script, name):
+    return re.findall(r'"([^"]+)"', re.search(rf"const {name} = \[(.*?)\];", script, re.S).group(1))
+
+
+# ---------------------------------------------------------------- 파일 형태
+def test_replay_is_a_mode_of_the_3d_viewer_not_a_second_renderer(script, html):
+    """Brief: one renderer (M6d). The game view lives inside flysim-3d.html."""
+    assert not (ROOT / "flysim-game.html").exists(), "a second viewer file would duplicate the renderer"
+    assert 'id="gamePane"' in html and 'id="tlPane"' in html and 'id="gameCanvas"' in html
+    assert "body.game-mode" in html
+    assert script.count('getContext("webgl2"') == 1, "still exactly one WebGL2 context"
+
+
+def test_npz_is_read_in_the_browser(script):
+    """Decision: frames.npz is unpacked client-side (no extra producer output)."""
+    assert 'new DecompressionStream("deflate-raw")' in script
+    for sig in ("0x06054b50", "0x02014b50", "0x04034b50"):
+        assert sig in script, f"zip record signature {sig} not parsed"
+    assert "zip64는 지원하지 않는다" in script, "zip64 must be rejected loudly, not misread"
+    npy = re.search(r"function parseNpy\((.*?)\n\}", script, re.S).group(1)
+    assert "'descr'" in npy and "'shape'" in npy and "fortran_order" in npy
+
+
+def test_bundle_files_and_arrays(script):
+    assert set(_js_list(script, "GAME_NPZ_ARRAYS")) == {"frames", "t_ms", "actions", "loom"}
+    loader = re.search(r"async function loadBundleUrl\((.*?)\n\}", script, re.S).group(1)
+    for f in ("frames.npz", "run.json", "game.json"):
+        assert f in loader
+
+
+@needs_bundles
+@pytest.mark.parametrize("bundle", BUNDLES, ids=lambda p: p.name)
+def test_real_bundles_fit_the_browser_parser(script, bundle):
+    """The JS parser handles stored/deflate zip entries without zip64 and the dtypes listed
+    in NPY_DTYPES. If the producer's npz ever changes shape, this fails before the browser does."""
+    known = set(re.findall(r'"([<|][a-z]\d)"', re.search(r"const NPY_DTYPES = \{(.*?)\};", script, re.S).group(1)))
+    with zipfile.ZipFile(bundle / "frames.npz") as z:
+        names = {i.filename for i in z.infolist()}
+        assert {"frames.npy", "t_ms.npy", "actions.npy", "loom.npy"} <= names
+        for info in z.infolist():
+            assert info.compress_type in (0, 8), f"{info.filename}: zip method {info.compress_type}"
+            assert info.file_size < 0xFFFFFFFF and info.compress_size < 0xFFFFFFFF, "zip64 entry"
+            head = z.read(info.filename)[:256].decode("latin1")
+            descr = re.search(r"'descr':\s*'([^']+)'", head).group(1)
+            assert descr in known, f"{info.filename}: dtype {descr} not handled by parseNpy"
+            assert "'fortran_order': False" in head
+    for f in ("run.json", "game.json"):
+        assert (bundle / f).exists()
+
+
+# ---------------------------------------------------------------- 하네스와 같은 규칙
+def test_actions_match_the_game_action_enum(script):
+    src = GAMES_BASE.read_text(encoding="utf-8")
+    body = re.search(r"class Action\(IntEnum\):(.*?)\n\n", src, re.S).group(1)
+    enum = sorted(re.findall(r"(\w+) = (\d+)", body), key=lambda kv: int(kv[1]))
+    assert _js_list(script, "GAME_ACTIONS") == [k for k, _ in enum]
+
+
+def test_every_event_type_the_harness_emits_is_known(script):
+    src = GAMES_M7C.read_text(encoding="utf-8")
+    emitted = set(re.findall(r'"type":\s*"([a-z_]+)"', src)) | set(re.findall(r'"(crash|pass)" if', src)) \
+        | set(re.findall(r'else "(crash|pass)"', src)) | set(re.findall(r'"(move_left|move_right)"', src))
+    assert emitted, "could not read event types from the harness"
+    known = set(_js_list(script, "GAME_EVENT_TYPES"))
+    assert emitted <= known, f"replay does not know events {emitted - known}"
+    assert "unknownEv" in script, "unknown event types are listed, not dropped silently"
+
+
+def test_decoder_window_and_rule_match_the_harness(script):
+    win = re.search(r"DECODER_WINDOW_MS\s*=\s*([\d.]+)", GAMES_BRAIN.read_text(encoding="utf-8")).group(1)
+    assert f"const GAME_DECODER_MS = {int(float(win))};" in script
+    motor = MOTOR.read_text(encoding="utf-8")
+    assert "left side only          -> RIGHT" in motor and "right side only         -> LEFT" in motor
+    # JUMP=1, LEFT=2, RIGHT=3: both -> JUMP, left only -> RIGHT, right only -> LEFT
+    assert "const a = wl.length && wr.length ? 1 : wl.length ? 3 : wr.length ? 2 : 0;" in script
+
+
+@needs_bundles
+@pytest.mark.parametrize("bundle", BUNDLES, ids=lambda p: p.name)
+def test_time_alignment_reproduces_the_recorded_actions(bundle):
+    """The replay's alignment rule, re-implemented here: tick k is decided at the end of the tick
+    from the giant-fibre spikes in [end - 50 ms, end). The giant-fibre spikes come from the
+    one-neuron escape regions of run.json. Every recorded action must come out the same."""
+    import json as _json
+    import numpy as np
+    run = _json.loads((bundle / "run.json").read_text())
+    game = _json.loads((bundle / "game.json").read_text())
+    arr = np.load(bundle / "frames.npz")
+    t, actions = arr["t_ms"], arr["actions"]
+    dur = game.get("bundle_ms") or game["duration_ms"]
+    t_end = np.append(t[1:], dur)
+    meta = run["meta"]
+    gf = {}
+    for side in ("L", "R"):
+        r = run["regions"].index(f"DNp01_{side}")
+        rate = np.asarray(run["frames"]["rates"][r])
+        count = np.rint(rate * meta["rate_norm_hz"] * meta["region_sizes"][f"DNp01_{side}"] * meta["bin_ms"] / 1000)
+        gf[side] = np.repeat(np.arange(len(rate)) * meta["bin_ms"], count.astype(int))
+    win = game["agent"]["decoder"]["window_ms"]
+    got = []
+    for e in t_end:
+        l = ((gf["L"] >= e - win) & (gf["L"] < e)).any()
+        r = ((gf["R"] >= e - win) & (gf["R"] < e)).any()
+        got.append(1 if l and r else 3 if l else 2 if r else 0)
+    assert np.array_equal(np.asarray(got), actions), "replay timing does not reproduce the harness"
+
+
+# ---------------------------------------------------------------- 정직성 표시
+def test_shortcut_is_stated_on_screen(html):
+    assert "감지기는 직접 짠 것이고, 감지기부터 거대 신경섬유까지만 배선도다" in html
+    assert "직접 짠 것" in html  # timeline rows label the detector rows too
+
+
+def test_spontaneous_firing_is_shown_not_hidden(script, html):
+    assert "자발" in html, "spontaneous giant-fibre spikes must be labelled"
+    assert "C_GF_SPONT" in script and "C_GF_INPUT" in script
+    assert "gfKind" in script and "quietRate" in script
+    assert "입력 있을 때" in script and "입력 없을 때" in script, \
+        "rates with and without input side by side, so co-occurrence is not read as cause"
+    assert "입력이 그 스파이크를 일으켰다는 뜻이 아니다" in html
+    assert "1.9 Hz" in script, "the no-input control rate from M7c is cited next to the measured one"
+
+
+def test_events_and_actions_are_drawn(script):
+    rows = [r for r in re.findall(r'\{key: "(\w+)"', re.search(r"const TL_ROWS = \[(.*?)\];", script, re.S).group(1))]
+    for key in ("loomL", "loomR", "gfL", "gfR", "ttL", "ttR", "act", "ev"):
+        assert key in rows, f"timeline row {key} missing"
+    assert "GAME_EVENT_KO" in re.search(r"function updateGame\((.*?)\n\}", script, re.S).group(1)
+
+
+def test_ending_is_never_invented(script):
+    """Until the producer fix, game.json had no crash event; the replay must not make one up."""
+    fn = re.search(r"function endingText\((.*?)\n\}", script, re.S).group(1)
+    assert 'e.type === "crash"' in fn and "g.doc.crashed" in fn and "loss_cause" in fn
+    assert "종료 사유 없음" in fn
+
+
+def test_run_wide_active_fraction_is_explained(script, html):
+    assert 'id="runWide"' in html
+    info = re.search(r"function fillGameInfo\((.*?)\n\}", script, re.S).group(1)
+    assert "active_neurons" in info and "배경 잡음" in info and "WARN_RUNAWAY" in info
+
+
+def test_header_carries_score_agent_seed_k_and_operating_point(script):
+    info = re.search(r"function fillGameInfo\((.*?)\n\}", script, re.S).group(1)
+    for label in ("점수", "에이전트", "시드", '"k"', "동작점"):
+        assert label in info, f"game header lacks {label}"
+
+
+# ---------------------------------------------------------------- 소속·시간·표시
+def test_group_membership_comes_from_the_run(script):
+    """M7e preparation decision: membership from run.json neurons.region/regions, the point
+    cloud's set array only as the fallback."""
+    fn = re.search(r"function applyRunGrouping\((.*?)\n\}", script, re.S).group(1)
+    assert "regionOf.length === c.n" in fn and "c.baseSetIdx" in fn
+    assert "applyRunGrouping(regions, raw.neurons && raw.neurons.region)" in script
+
+
+def test_escape_profile_sets_have_colours(script):
+    types = re.findall(r'"(\w+)"', re.search(r"ESCAPE_TYPES = \[(.*?)\]", SETS_PY.read_text(encoding="utf-8")).group(1))
+    colours = re.search(r"const STAGE_COLOR = \{(.*?)\};", script, re.S).group(1)
+    for t in types:
+        assert re.search(rf"\b{t}:", colours), f"escape set {t} has no colour"
+
+
+def test_game_frame_is_the_last_one_not_after_now(script):
+    fn = re.search(r"function gameFrameAt\((.*?)\n\}", script, re.S).group(1)
+    assert "t[mid] <= ms" in fn, "the shown game frame must be the last one at or before now"
+
+
+def test_crash_on_the_final_tick_is_reachable(script):
+    """The crash is stamped at duration_ms, one bin after the clock's last bin."""
+    fn = re.search(r"function updateGame\((.*?)\n\}", script, re.S).group(1)
+    assert "atEnd ? Math.max(ms, g.dur) : ms" in fn
+
+
+def test_paused_frame_holds_and_glow_is_skeleton_based(script):
+    assert "const decaying = S.live || S.playing || !S.run;" in script
+    assert "function drawSkeletonGlow" in script and "progGlow" in script
+    glow = re.search(r"function drawSkeletonGlow\((.*?)\n\}", script, re.S).group(1)
+    assert "seg_offset * 2" in glow and "seg_count * 2" in glow
+
+
+def test_hidden_attribute_wins_over_display_rules(html):
+    """.conn{display:flex} used to override hidden, so '연결 안 됨' showed in file mode."""
+    assert "[hidden]{display:none!important}" in html
+
+
+def test_static_assets_path_is_relative_only(script):
+    boot = re.search(r"function boot\((.*?)\nboot\(\);", script, re.S).group(1)
+    assert 'q.get("assets")' in boot and 'q.get("bundle")' in boot
+    assert boot.count('includes("..")') >= 2, "asset/bundle paths must not climb out of the served tree"
