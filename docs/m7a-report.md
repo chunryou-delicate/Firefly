@@ -1,5 +1,8 @@
 # M7a report — does a looming stimulus reach the jump command?
 
+> **정정 (2026-10-23, M7a2 이후 · 총괄 세션이 추가).** 이 리포트의 P2 통과(선택 이득 10)와 "대조군 0, 반대쪽 0, 동측 먼저 199/199"는 **리셋 직후 과도 구간**에서 잰 값이다. 리셋 순간 모든 뉴런이 같이 출발해 거대 신경섬유가 한 발 쏘고, 적응(b_g 8.0)이 0.1~0.4 s 동안 묶어 두었다가 0.6 s 무렵 모든 시드에서 동시에 풀린다. 판정 창 0.2~0.5 s가 정확히 그 묶인 구간이었다. 예열 5 s 뒤 정상 상태에서 다시 잰 M7a2(c32cba3)의 결과는 이렇다: 회로는 **통과하지만 이득 640부터**이고 10은 통과하지 못한다. 대조군 거대 신경섬유는 판정 창당 0.6~0.7발(약 2.2 Hz)을 저절로 쏜다. 동측 먼저는 17/20(우연 수준 약 0.43). 지연이 강도를 부호화한다는 것과 `TTMn`이 구동되지 않는다는 것은 유지된다. 아래 원문은 그 시점의 기록으로 남긴다. 사전 등록에 예열 구간을 두지 않은 것은 총괄의 누락이다. 근거는 `docs/m7a2-report.md`.
+
+
 Engine window ("M3"), 2026-10-23. Pre-registration: `docs/m7a-brief.md` (background
 `docs/m7-game-ladder.md`), written before this ran and not edited afterwards. Code:
 `flysim/apps/m7a_escape_probe.py`. Tests: `tests/test_m7a.py`. Raw results:
