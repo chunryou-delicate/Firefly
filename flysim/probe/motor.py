@@ -77,3 +77,43 @@ class MotorDecoder:
                 "min_rate_hz": self.min_rate_hz,
                 "group_sizes": {k: int(len(v)) for k, v in self.groups.items()},
                 "rule": "argmax group rate if >= min_rate_hz, exact tie -> NOOP (ASSUMPTION)"}
+
+
+class GiantFibreDecoder:
+    """M7c's pre-registered read-out (docs/m7c-brief.md "같은 근육"), fixed before any fly run.
+
+    Input: the giant-fibre spikes of the last ``window_ms`` as ``(t_ms, side)`` pairs with side
+    ``"L"`` or ``"R"`` — the brain glue windows them, this class only maps them to an action:
+
+        spikes from both sides  -> JUMP
+        left side only          -> RIGHT   (move away from the side that fired)
+        right side only         -> LEFT
+        none                    -> NOOP
+
+    Which neurons count as the left and right giant fibre is decided by the caller from the
+    ``escape`` probe profile; no cell-type name is written here.
+    """
+
+    def __init__(self, window_ms: float = 50.0):
+        if window_ms <= 0:
+            raise ValueError("window_ms must be > 0")
+        self.window_ms = float(window_ms)
+
+    def decode(self, events) -> str:
+        sides = set()
+        for ev in events:
+            side = ev[1] if isinstance(ev, (tuple, list)) else ev
+            if side not in ("L", "R"):
+                raise ValueError(f"side must be 'L' or 'R', got {side!r}")
+            sides.add(side)
+        if sides == {"L", "R"}:
+            return "JUMP"
+        if sides == {"L"}:
+            return "RIGHT"
+        if sides == {"R"}:
+            return "LEFT"
+        return DEFAULT_ACTION
+
+    def describe(self) -> dict:
+        return {"decoder": "GiantFibreDecoder", "window_ms": self.window_ms,
+                "rule": "both GF -> JUMP; left GF only -> RIGHT; right GF only -> LEFT; none -> NOOP"}

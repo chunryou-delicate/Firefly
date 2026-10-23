@@ -41,6 +41,7 @@ WAIT_MIN, WAIT_MAX = 20, 80
 
 class DodgeGame(GameEnv):
     name = "dodge"
+    x_limit = X_LIMIT          # side walls (v1); DodgeV2Game removes them
 
     def _reset_state(self) -> None:
         self.x = 0.0                   # player lateral position
@@ -55,9 +56,9 @@ class DodgeGame(GameEnv):
 
     def _advance(self, action: Action) -> tuple[int, bool]:
         if action == Action.LEFT:
-            self.x = max(-X_LIMIT, self.x - PLAYER_SPEED)
+            self.x = max(-self.x_limit, self.x - PLAYER_SPEED)
         elif action == Action.RIGHT:
-            self.x = min(X_LIMIT, self.x + PLAYER_SPEED)
+            self.x = min(self.x_limit, self.x + PLAYER_SPEED)
         if self.dist is None:
             self.wait -= 1
             if self.wait <= 0:
@@ -95,6 +96,26 @@ class DodgeGame(GameEnv):
                 "SPEED0": SPEED0, "SPEED_FACTOR": SPEED_FACTOR, "SPEED_EVERY": SPEED_EVERY,
                 "OBJ_HALF_WIDTH": OBJ_HALF_WIDTH, "OBJ_HEIGHT": OBJ_HEIGHT,
                 "SPAWN_OFFSET": SPAWN_OFFSET, "PLAYER_HALF_WIDTH": PLAYER_HALF_WIDTH,
-                "PLAYER_SPEED": PLAYER_SPEED, "X_LIMIT": X_LIMIT, "WAIT": [WAIT_MIN, WAIT_MAX],
+                "PLAYER_SPEED": PLAYER_SPEED,
+                "X_LIMIT": None if self.x_limit == float("inf") else self.x_limit,
+                "walls": self.x_limit != float("inf"), "WAIT": [WAIT_MIN, WAIT_MAX],
                 "max_ticks": self.max_ticks, "score": "pillars avoided",
                 "ends": "touching a pillar, or max_ticks"}
+
+
+class DodgeV2Game(DodgeGame):
+    """Dodge v2 (pre-registered in docs/m7-game-ladder.md before any fly run): **no side walls**.
+
+    Everything else is v1 — speed, waits, speed-up, collision, score, and the pillar's lateral
+    placement (the same ±``SPAWN_OFFSET`` draw, relative to where the player stands at that
+    moment, which is also what v1 does). Only the walls go. It subclasses v1 and overrides
+    nothing but the limit, so the random draws are consumed in the same order: for the same seed
+    and the same actions, v1 and v2 show identical frames until the v1 player would touch a wall.
+
+    Why: in v1, 8 of the brainless bot's 10 evaluation losses were being pinned against a wall
+    (it always steps away and never re-centres), so v1 asks for a memory of where the wall is
+    more than for seeing what approaches. v1 stays on the ladder unchanged.
+    """
+
+    name = "dodge_v2"
+    x_limit = float("inf")

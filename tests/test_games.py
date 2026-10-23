@@ -23,7 +23,7 @@ from flysim.sensory import looming as LM
 from flysim.sensory.looming import LoomingDetector
 
 ROOT = Path(__file__).resolve().parents[1]
-GAMES = ("jump", "dodge")
+GAMES = ("jump", "dodge", "dodge_v2")
 
 
 def play(game, actions_or_agent, seed, n=None):
@@ -83,9 +83,9 @@ def test_step_after_done_raises(game):
 
 
 def test_same_muscles_shared_action_space():
-    a, b = make("jump"), make("dodge")
-    assert a.n_actions == b.n_actions == 4
-    assert a.action_meanings == b.action_meanings == ("NOOP", "JUMP", "LEFT", "RIGHT")
+    a, b, c = make("jump"), make("dodge"), make("dodge_v2")
+    assert a.n_actions == b.n_actions == c.n_actions == 4
+    assert a.action_meanings == b.action_meanings == c.action_meanings == ("NOOP", "JUMP", "LEFT", "RIGHT")
     assert set(B.ALE_FULL_ACTION_INDEX) == set(Action)
     assert all(0 <= v < B.FULL_ACTION_COUNT for v in B.ALE_FULL_ACTION_INDEX.values())
     assert len(set(B.ALE_FULL_ACTION_INDEX.values())) == 4
@@ -171,6 +171,28 @@ def test_dodge_rules():
     assert D.SPAWN_OFFSET > D.OBJ_HALF_WIDTH
 
 
+def test_dodge_v2_is_v1_without_walls():
+    """Pre-registered v2: no side walls, everything else v1 — including the random draws."""
+    v1, v2 = make("dodge"), make("dodge_v2")
+    assert v1.x_limit == D.X_LIMIT and v2.x_limit == float("inf")
+    r1, r2 = v1.describe(), v2.describe()
+    assert r1["walls"] is True and r2["walls"] is False and r2["X_LIMIT"] is None
+    assert {k: v for k, v in r1.items() if k not in ("game", "walls", "X_LIMIT")} == \
+           {k: v for k, v in r2.items() if k not in ("game", "walls", "X_LIMIT")}
+    # identical frames for identical actions until the v1 player would reach a wall
+    f1, f2 = v1.reset(3), v2.reset(3)
+    for _ in range(3000):
+        assert np.array_equal(f1, f2)
+        f1, _, d1, _ = v1.step(int(Action.LEFT))
+        f2, _, d2, _ = v2.step(int(Action.LEFT))
+        if abs(v1.x) >= D.X_LIMIT or d1 or d2:
+            break
+    assert v2.x < -D.X_LIMIT or abs(v1.x) >= D.X_LIMIT        # v2 walks past where v1 stops
+    while not v2.done and v2.x > -3 * D.X_LIMIT:
+        v2.step(int(Action.LEFT))
+    assert v2.done or v2.x <= -3 * D.X_LIMIT
+
+
 @pytest.mark.parametrize("game", GAMES)
 def test_games_are_winnable_and_not_degenerate(game):
     """The state oracle (cheats) goes far; constant actions and random play do not."""
@@ -179,6 +201,13 @@ def test_games_are_winnable_and_not_degenerate(game):
     assert oracle["mean"] >= 20
     for a in Action:
         const = runner.run_many(game, lambda env, a=a: _Const(a), seeds)
+        if game == "dodge_v2" and a in (Action.LEFT, Action.RIGHT):
+            # Known property of v2 as pre-registered, pinned so it cannot change unnoticed: with
+            # no walls, moving one way all the time outruns every pillar while the approach takes
+            # longer than ~56 ticks (pillars spawn relative to where the player stands), so it
+            # scores ~28 before the speed-up catches it. In v1 the wall stopped this (score < 1).
+            assert 20 <= const["mean"] <= 35, (game, a.name, const)
+            continue
         assert const["mean"] < 3, (game, a.name, const)
     rnd = runner.run_many(game, lambda env: RandomAgent(), seeds)
     assert rnd["mean"] < 3
@@ -409,9 +438,23 @@ def test_png_and_apng_are_valid(tmp_path):
 def test_baseline_table_shape():
     r = json.loads((ROOT / "runs" / "m7b" / "baselines.json").read_text())
     assert r["train_seeds"] == list(range(10)) and r["eval_seeds"] == list(range(10, 20))
-    for game in GAMES:
+    for game in ("jump", "dodge"):
         row = r["games"][game]
         assert row["random"]["seeds"] == list(range(10, 20))
         assert row["threshold"]["eval"]["seeds"] == list(range(10, 20))
         assert all(set(g) >= {"theta", "mean"} for g in row["threshold"]["selection"]["grid"])
         assert row["threshold"]["theta"] == row["threshold"]["selection"]["chosen_theta"]
+
+
+PROV = ROOT / "data-provenance" / "m7b-baselines.json"
+
+
+@pytest.mark.skipif(not PROV.exists(), reason="committed baselines missing")
+def test_committed_baselines_cover_all_three_games():
+    r = json.loads(PROV.read_text())
+    assert set(r["games"]) >= {"jump", "dodge", "dodge_v2"}
+    v2 = r["games"]["dodge_v2"]
+    assert v2["rules"]["walls"] is False
+    assert v2["threshold"]["eval"]["seeds"] == list(range(10, 20))
+    assert v2["threshold"]["theta"] == v2["threshold"]["selection"]["chosen_theta"]
+    assert "generated" in v2 and "git_commit" in v2          # when the added game was produced

@@ -34,11 +34,12 @@ from . import media
 from .agents import Agent, RandomAgent, StateOracleAgent, ThresholdAgent
 from .base import GameEnv, make
 
-GAMES = ("jump", "dodge")
+GAMES = ("jump", "dodge", "dodge_v2")      # dodge = v1 (walls), dodge_v2 = no walls
 TRAIN_SEEDS = tuple(range(0, 10))
 EVAL_SEEDS = tuple(range(10, 20))
 THETA_GRID = tuple(float(x) for x in np.geomspace(1e-5, 1e-1, 41))   # 10 points per decade
 OUT_DIR = ROOT / "runs" / "m7b"
+PROVENANCE_JSON = ROOT / "data-provenance" / "m7b-baselines.json"
 RECORD_SEED = 10
 RECORD_MAX_TICKS = 1800          # 30 s of the recorded episode go into the animation
 RECORD_EVERY = 2                 # 60 ticks/s -> 30 fps animation
@@ -133,14 +134,32 @@ def git_commit() -> str | None:
         return None
 
 
+def merge_into_provenance(result: dict, path: Path = PROVENANCE_JSON) -> list[str]:
+    """Add the games of ``result`` to the committed baseline file. Games already recorded there
+    are left exactly as they are unless this run re-played them; each added game carries the
+    time and commit it was produced at."""
+    doc = json.loads(path.read_text()) if path.exists() else {k: v for k, v in result.items() if k != "games"} | {"games": {}}
+    for k in ("train_seeds", "eval_seeds", "theta_grid"):
+        if k in doc and doc[k] != result[k]:
+            raise ValueError(f"{k} differs from the committed baselines; refusing to mix protocols")
+    added = []
+    for game, row in result["games"].items():
+        doc["games"][game] = row | {"generated": result["generated"], "git_commit": result["git_commit"]}
+        added.append(game)
+    path.write_text(json.dumps(doc, indent=1) + "\n")
+    return added
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="M7b baseline table")
     ap.add_argument("--games", default=",".join(GAMES))
     ap.add_argument("--out", default=str(OUT_DIR))
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--no-media", action="store_true")
+    ap.add_argument("--provenance", action="store_true",
+                    help="also add these games to data-provenance/m7b-baselines.json")
     args = ap.parse_args(argv)
-    out_dir = Path(args.out)
+    out_dir = Path(args.out).resolve()
     out_dir.mkdir(parents=True, exist_ok=True)
     games = [g for g in args.games.split(",") if g]
     n_eps = len(games) * (len(THETA_GRID) * len(TRAIN_SEEDS) + 3 * len(EVAL_SEEDS))
@@ -173,6 +192,9 @@ def main(argv: list[str]) -> int:
     path = out_dir / "baselines.json"
     path.write_text(json.dumps(result, indent=1) + "\n")
     print(f"[m7b] done in {result['wall_s']} s -> {path.relative_to(ROOT)}")
+    if args.provenance:
+        added = merge_into_provenance(result)
+        print(f"[m7b] added {added} to {PROVENANCE_JSON.relative_to(ROOT)}")
     return 0
 
 

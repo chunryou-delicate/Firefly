@@ -155,14 +155,14 @@ class StateOracleAgent(Agent):
             # aim the barrier's pass through the middle of the high part of the jump
             lead = J.JUMP_TICKS / 2 - J.DEPTH / (2 * v)
             return int(Action.JUMP) if (env.dist - J.D_HIT) / v <= lead else int(Action.NOOP)
-        if env.name == "dodge":
+        if env.name in ("dodge", "dodge_v2"):
             from . import dodge as D
             if env.obj_x is None:
                 return int(Action.NOOP)
             need = D.OBJ_HALF_WIDTH + D.PLAYER_HALF_WIDTH + 0.05
             away = -1.0 if env.obj_x > env.x else 1.0
             target = env.obj_x + away * need
-            if abs(target) > D.X_LIMIT:                    # wall: pass on the other side
+            if abs(target) > env.x_limit:                  # wall (v1 only): pass on the other side
                 target = env.obj_x - away * need
             if abs(target - env.x) < D.PLAYER_SPEED / 2:
                 return int(Action.NOOP)
