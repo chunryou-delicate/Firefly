@@ -116,6 +116,15 @@ def test_ignition_readings():
     assert M.ignition(full, ctrl)["viewer_failure"] and M.ignition(full, ctrl)["window_runaway"]
 
 
+def test_bundle_events_keep_the_last_tick():
+    end = BR.tick_end_ms(9)                                    # a 10-tick game ends here
+    ev = [{"t_ms": 16.0, "type": "move_left"}, {"t_ms": float(end), "type": "crash"}]
+    assert M.bundle_events(ev, 10) == ev                       # the crash of the last tick is kept
+    assert M.bundle_events(ev, 9) == ev[:1]                    # a cut bundle drops ticks it lacks
+    assert M.bundle_events(ev, 0) == []
+    assert BR.tick_end_ms(M.BUNDLE_MAX_MS * 60 // 1000 - 1) == M.BUNDLE_MAX_MS
+
+
 # ---------------------------------------------------------------------------------------------
 # the brain itself (CUDA + graph cache)
 # ---------------------------------------------------------------------------------------------
@@ -188,6 +197,25 @@ def test_brain_agent_sees_what_the_brainless_bot_sees(brain_ctx):
         f, _, done, _ = env.step(a)
         if done:
             break
+
+
+def test_bundle_game_json_ends_with_the_crash(brain_ctx, tmp_path):
+    from flysim.apps.games.agents import BrainAgent
+    from flysim.probe.export import neuron_coords
+    from flysim.probe.sets import load_roi
+    g, _, es, b = brain_ctx
+    agent = BrainAgent(b, BR.make_decoder(), brain_reset=b.reset)
+    b.keep_spikes = True
+    try:
+        ep = M.play_fly("dodge_v2", agent, b, 10, detail=True, record=True)
+        ctx = {"escape": es, "coords": neuron_coords(g, load_roi(g))}
+        M.write_bundle("dodge_v2", b.k, ep, ctx, b, tmp_path)
+    finally:
+        b.keep_spikes, b.spikes_t, b.spikes_i = False, [], []
+    doc = json.loads((tmp_path / "game.json").read_text())
+    assert doc["crashed"] is True and doc["loss_cause"] == ep["loss_cause"] is not None
+    last = doc["events"][-1]
+    assert last["type"] == "crash" and last["t_ms"] == doc["duration_ms"] == doc["bundle_ms"]
 
 
 # ---------------------------------------------------------------------------------------------

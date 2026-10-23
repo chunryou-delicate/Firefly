@@ -1,6 +1,7 @@
 """M7c: the first match between the fly brain and the two bots (docs/m7c-brief.md).
 
-    python -m flysim.apps.games.m7c            # selection, evaluation, verdicts, replay bundles
+    python -m flysim.apps.games.m7c                  # selection, evaluation, verdicts, replay bundles
+    python -m flysim.apps.games.m7c --bundles-only   # only the replay bundles, k from the results file
 
 Everything that decides the outcome is fixed here before the first fly run (brief, plus the
 addendum of the brief, recorded in ``P99_FRAMES``, ``ONE_WAY_GAMES`` and ``CEILING_GAMES``):
@@ -319,11 +320,29 @@ def write_bundle(game: str, k: float, ep: dict, ctx: dict, brain: FlyBrain, out_
                 "duration_ms": int(brain.t_ms), "bundle_ms": dur,
                 "agent": {"kind": "fly brain", "k": k, "decoder": make_decoder().describe(),
                           "brain": brain.describe()},
-                "events": [e for e in rec["events"] if e["t_ms"] < dur],
+                "crashed": ep["crashed"], "loss_cause": ep.get("loss_cause"),
+                "events": bundle_events(rec["events"], len(rec["frames"])),
                 "rules": make(game).describe(), "tick_ms": "floor((k+1)*1000/60)"}
     (out_dir / "game.json").write_text(json.dumps(game_doc, indent=1) + "\n")
-    return {"dir": str(out_dir.relative_to(ROOT)), "frames": len(rec["frames"]), "bundle_ms": dur,
+    shown = out_dir.relative_to(ROOT) if out_dir.resolve().is_relative_to(ROOT) else out_dir
+    return {"dir": str(shown), "frames": len(rec["frames"]), "bundle_ms": dur,
             "game_ms": int(brain.t_ms), "spikes_in_bundle": int(len(t))}
+
+
+def bundle_events(events: list[dict], n_frames: int) -> list[dict]:
+    """The game events that belong in a bundle of ``n_frames`` recorded ticks.
+
+    An event is stamped with the *end* of the tick it happened in, so the crash of the last tick
+    sits exactly at the game's end (== ``bundle_ms`` when the bundle is not cut). Rule: an event
+    is kept when its tick's frame is in the bundle, i.e. ``t_ms <= tick_end_ms(n_frames - 1)``.
+    A game cut at ``BUNDLE_MAX_MS`` keeps the events of every recorded tick and drops the rest
+    (its crash then lies beyond the bundle; ``crashed``/``loss_cause`` in game.json still say how
+    the game ended).
+    """
+    if n_frames <= 0:
+        return []
+    t_cut = tick_end_ms(n_frames - 1)
+    return [e for e in events if e["t_ms"] <= t_cut]
 
 
 def _envelope(rec: dict, dur: int) -> np.ndarray:
@@ -334,6 +353,32 @@ def _envelope(rec: dict, dur: int) -> np.ndarray:
             env[a:min(dur, a + 17)] = max(l, r)
     m = env.max()
     return env / m if m > 0 else env
+
+
+def make_bundle(game: str, k: float, eval_score: int, agent: BrainAgent, brain: FlyBrain, ctx: dict) -> dict:
+    """Replay evaluation seed ``BUNDLE_SEED`` with spikes kept and write its bundle."""
+    brain.k = k
+    brain.keep_spikes = True
+    ep = play_fly(game, agent, brain, BUNDLE_SEED, detail=True, record=True)
+    brain.keep_spikes = False
+    if ep["score"] != eval_score:
+        raise RuntimeError("bundle replay differs from the evaluation run (determinism)")
+    out = write_bundle(game, k, ep, ctx, brain, BUNDLE_DIR / f"{game}-brain-seed{BUNDLE_SEED}")
+    brain.spikes_t, brain.spikes_i = [], []
+    return out
+
+
+def rebuild_bundles(games: list[str], agent: BrainAgent, brain: FlyBrain, ctx: dict) -> int:
+    """``--bundles-only``: the bundles again from the committed results, which must match."""
+    res = json.loads(RESULTS_JSON.read_text())
+    for game in games:
+        row = res["games"][game]
+        ep = next(e for e in row["fly"]["episodes"] if e["seed"] == BUNDLE_SEED)
+        b = make_bundle(game, row["k"], ep["score"], agent, brain, ctx)
+        if b != row["bundle"]:
+            raise RuntimeError(f"{game}: rebuilt bundle {b} differs from the results file {row['bundle']}")
+        log(f"{game}: bundle rebuilt -> {b['dir']} ({b['frames']} frames, {b['bundle_ms']} ms)")
+    return 0
 
 
 def git_commit() -> str | None:
@@ -348,6 +393,9 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--games", default=",".join(GAMES))
     ap.add_argument("--device", default="cuda")
     ap.add_argument("--no-bundle", action="store_true")
+    ap.add_argument("--bundles-only", action="store_true",
+                    help="rebuild the replay bundles from the committed results (k per game); "
+                         "selection, evaluation and the results file are not touched")
     args = ap.parse_args(argv)
     games = [g for g in args.games.split(",") if g]
     t_all = time.time()
@@ -358,6 +406,8 @@ def main(argv: list[str]) -> int:
     ctx = {"escape": escape, "coords": neuron_coords(graph, roi)}
     brain = FlyBrain(graph, escape, k=1.0, device=args.device, keep_spikes=False)
     agent = BrainAgent(brain, make_decoder(), brain_reset=brain.reset)
+    if args.bundles_only:
+        return rebuild_bundles(games, agent, brain, ctx)
 
     log("controls (no input, 5 s per seed) ...")
     controls = {s: control_run(brain, s) for s in TRAIN_SEEDS + EVAL_SEEDS}
@@ -424,13 +474,7 @@ def main(argv: list[str]) -> int:
         row["one_way"] = ow
         row["verdict"] = verdict(fly, rnd["scores"], thr["scores"], ow["scores"], game)
         if not args.no_bundle:
-            brain.keep_spikes = True
-            ep = play_fly(game, agent, brain, BUNDLE_SEED, detail=True, record=True)
-            brain.keep_spikes = False
-            if ep["score"] != fly[EVAL_SEEDS.index(BUNDLE_SEED)]:
-                raise RuntimeError("bundle replay differs from the evaluation run (determinism)")
-            row["bundle"] = write_bundle(game, k, ep, ctx, brain, BUNDLE_DIR / f"{game}-brain-seed{BUNDLE_SEED}")
-            brain.spikes_t, brain.spikes_i = [], []
+            row["bundle"] = make_bundle(game, k, fly[EVAL_SEEDS.index(BUNDLE_SEED)], agent, brain, ctx)
         result["games"][game] = row
         log(f"{game}: k={k:.4g} | fly {row['fly']['mean']:.2f} vs random {rnd['mean']:.2f}, one-way "
             f"{ow['mean']:.2f}, brainless {thr['mean']:.2f} -> beat random {row['verdict']['beat_random']}, "

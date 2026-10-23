@@ -152,7 +152,11 @@ v1도 같은 양상이다(같음 6판). 두 피하기 게임의 초파리 판은
 | `runs/m7c/dodge-brain-seed10/` | 0 | 3266 ms | 196 | 161,140 (1.0) | 4.0 MB |
 | `runs/m7c/dodge_v2-brain-seed10/` | 0 | 3266 ms | 196 | 161,770 (1.0) | 4.1 MB |
 
-- 각 묶음: `frames.npz`(frames, t_ms, actions, loom), `run.json`(`escape` 프로필 영역, 뷰어 계약, `sensory_mode` = `"rate"`, 메모: "game looming signal, not the JO adapter"), `game.json`(점수, 점프·이동·통과·충돌 사건과 t_ms, 에이전트, 시드).
+- 각 묶음: `frames.npz`(frames, t_ms, actions, loom), `run.json`(`escape` 프로필 영역, 뷰어 계약, `sensory_mode` = `"rate"`, 메모: "game looming signal, not the JO adapter"), `game.json`(점수, `crashed`, `loss_cause`(5.1절 분류), 점프·이동·통과·충돌 사건과 t_ms, 에이전트, 시드).
+- **정정:** 처음 커밋(2524640)의 `game.json`은 마지막 틱 사건을 `t_ms < bundle_ms`로 걸러 충돌 사건이 빠져 있었고 `crashed`·`loss_cause`도 없었다.
+  사건은 그 틱의 끝 시각으로 찍히므로 마지막 틱의 충돌은 정확히 `bundle_ms`에 있다. 지금 규칙: 그 틱의 프레임이 묶음에 있으면 사건을 넣는다(`m7c.bundle_events`).
+  `--bundles-only`로 다시 만들었고 `frames.npz`·`run.json`은 바이트 동일(sha256), `game.json`만 바뀌었다(충돌 사건 1개씩 + 두 필드).
+  결과 파일의 장애물·원인 집계는 이 필터를 거치지 않으므로(`play_fly`에서 바로 셈) 5.1절 원인 분류는 바뀌지 않는다.
 - 프레임당 스파이크가 상한보다 적어 샘플링 비율은 1.0이다(뛰어넘기 평균 1 ms당 약 48개).
 - 실행 중에 묶음을 다시 재생해 점수가 평가 점수와 같은지 확인했다.
 - 뛰어넘기 묶음의 판 전체 발화 뉴런 비율은 85.4 %(140,986 / 165,122)로 뷰어 경고(90 %) 아래다. 이것은 9.6 s 동안 배경 잡음이 쌓인 값이고 점화가 아니다(4절).
@@ -183,6 +187,7 @@ v1도 같은 양상이다(같음 6판). 두 피하기 게임의 초파리 판은
 
 ```
 .venv/bin/python -m flysim.apps.games.m7c          # 3게임 × (학습 21 × 10 + 평가 10) + 대조군 20 + 묶음 3, 약 3분
+.venv/bin/python -m flysim.apps.games.m7c --bundles-only   # 묶음 3개만, k는 결과 파일에서 (결과 파일과 다르면 예외)
 .venv/bin/python -m pytest tests/ -q               # 407 passed
 ```
 
