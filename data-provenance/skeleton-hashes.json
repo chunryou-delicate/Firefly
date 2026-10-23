@@ -1,4 +1,11 @@
 {
+ "10001.swc": {
+  "bytes": 102779,
+  "downloaded_at": "2026-10-23T22:34:38+0900",
+  "md5": "7954e730f325f8c14ca6daae0446a2a5",
+  "server_last_modified": "Tue, 05 May 2026 14:57:36 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/10001.swc"
+ },
  "100084.swc": {
   "bytes": 57504,
   "downloaded_at": "2026-09-18T19:03:40+0900",
@@ -6,12 +13,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:06:31 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/100084.swc"
  },
+ "10010.swc": {
+  "bytes": 115111,
+  "downloaded_at": "2026-10-23T22:34:38+0900",
+  "md5": "d3a8fc2d7a398ae003ddd8702bbfab31",
+  "server_last_modified": "Tue, 05 May 2026 14:57:36 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/10010.swc"
+ },
+ "100103.swc": {
+  "bytes": 65022,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "5c2c0cecb2fa5d785b0e9724a33bc233",
+  "server_last_modified": "Tue, 05 May 2026 15:06:31 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/100103.swc"
+ },
  "100253.swc": {
   "bytes": 36602,
   "downloaded_at": "2026-09-18T19:03:40+0900",
   "md5": "c81a16fbbab89a12162c208cb5c34e58",
   "server_last_modified": "Tue, 05 May 2026 14:57:36 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/100253.swc"
+ },
+ "100485.swc": {
+  "bytes": 34465,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "06b702bf654437ef4d01caeba44b3273",
+  "server_last_modified": "Tue, 05 May 2026 14:57:37 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/100485.swc"
  },
  "100918.swc": {
   "bytes": 54290,
@@ -202,6 +230,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:57:56 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/107100.swc"
  },
+ "107513.swc": {
+  "bytes": 120936,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "b99389ef97e3e47bc0b924a40cc951a5",
+  "server_last_modified": "Tue, 05 May 2026 14:57:57 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/107513.swc"
+ },
  "107969133.swc": {
   "bytes": 2525,
   "downloaded_at": "2026-09-18T19:02:00+0900",
@@ -314,6 +349,20 @@
   "server_last_modified": "Tue, 05 May 2026 14:58:07 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/111385.swc"
  },
+ "111787.swc": {
+  "bytes": 35850,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "0b0da6f97ee8f52e58807fdbb95ca8be",
+  "server_last_modified": "Tue, 05 May 2026 14:58:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/111787.swc"
+ },
+ "111903.swc": {
+  "bytes": 76314,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "f61ac54b9160bd26abb7967bd121b15e",
+  "server_last_modified": "Tue, 05 May 2026 14:58:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/111903.swc"
+ },
  "112103.swc": {
   "bytes": 45804,
   "downloaded_at": "2026-09-18T19:03:41+0900",
@@ -327,6 +376,13 @@
   "md5": "0fe32b79bbc3d91af640116d1e13d5c1",
   "server_last_modified": "Tue, 05 May 2026 14:58:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/112105.swc"
+ },
+ "112292.swc": {
+  "bytes": 62852,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "9c517dcf9c0c3e8b7fcc35246fc77770",
+  "server_last_modified": "Tue, 05 May 2026 14:58:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/112292.swc"
  },
  "11282.swc": {
   "bytes": 110668,
@@ -411,6 +467,13 @@
   "md5": "67db171ac9b36718b6f6cf5bd404975e",
   "server_last_modified": "Tue, 05 May 2026 14:58:16 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/114955.swc"
+ },
+ "11498.swc": {
+  "bytes": 70376,
+  "downloaded_at": "2026-10-23T22:34:18+0900",
+  "md5": "bcc638bce09126131923ca9fbd1afa17",
+  "server_last_modified": "Tue, 05 May 2026 14:58:16 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/11498.swc"
  },
  "115297.swc": {
   "bytes": 35983,
@@ -559,6 +622,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:58:27 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12012.swc"
  },
+ "12032.swc": {
+  "bytes": 41018,
+  "downloaded_at": "2026-10-23T22:34:06+0900",
+  "md5": "e8c3ee22d1e94faffd18430436bfc59b",
+  "server_last_modified": "Tue, 05 May 2026 14:58:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12032.swc"
+ },
  "12046.swc": {
   "bytes": 197209,
   "downloaded_at": "2026-09-18T19:02:51+0900",
@@ -671,6 +741,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:58:34 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/123422.swc"
  },
+ "12349.swc": {
+  "bytes": 45771,
+  "downloaded_at": "2026-10-23T22:34:06+0900",
+  "md5": "fedba3b0ca85fe2d461e3f6ad44d3ea7",
+  "server_last_modified": "Tue, 05 May 2026 14:58:34 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12349.swc"
+ },
  "12350.swc": {
   "bytes": 76156,
   "downloaded_at": "2026-09-18T19:02:52+0900",
@@ -712,6 +789,13 @@
   "md5": "b82569cbfa81a3eb4f0968c83167430b",
   "server_last_modified": "Tue, 05 May 2026 14:58:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12371.swc"
+ },
+ "12384.swc": {
+  "bytes": 78237,
+  "downloaded_at": "2026-10-23T22:34:18+0900",
+  "md5": "93ccd7a5aba1b2e1bd22f52b9c03ac87",
+  "server_last_modified": "Tue, 05 May 2026 14:58:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12384.swc"
  },
  "123883.swc": {
   "bytes": 73406,
@@ -881,6 +965,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:58:44 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12815.swc"
  },
+ "12824.swc": {
+  "bytes": 40036,
+  "downloaded_at": "2026-10-23T22:34:06+0900",
+  "md5": "1282ba3b9b694e516d2f658991b2a4e3",
+  "server_last_modified": "Tue, 05 May 2026 14:58:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12824.swc"
+ },
  "128514.swc": {
   "bytes": 38555,
   "downloaded_at": "2026-09-18T19:02:09+0900",
@@ -951,6 +1042,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:58:47 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/12965.swc"
  },
+ "129687.swc": {
+  "bytes": 58133,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "d9563ff0c551156b700c667079f99312",
+  "server_last_modified": "Tue, 05 May 2026 14:58:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/129687.swc"
+ },
  "130272750.swc": {
   "bytes": 5904,
   "downloaded_at": "2026-09-18T19:02:00+0900",
@@ -978,6 +1076,13 @@
   "md5": "a3117d7797dbc47f5c304c71648b645c",
   "server_last_modified": "Tue, 05 May 2026 14:58:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/13117.swc"
+ },
+ "13132.swc": {
+  "bytes": 74864,
+  "downloaded_at": "2026-10-23T22:34:18+0900",
+  "md5": "aa23e2a7c3bb2f71efc17e40004a91fc",
+  "server_last_modified": "Tue, 05 May 2026 14:58:50 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/13132.swc"
  },
  "13149.swc": {
   "bytes": 116360,
@@ -1055,6 +1160,13 @@
   "md5": "949029cb2e21ed7095145eaeb258a5fa",
   "server_last_modified": "Tue, 05 May 2026 14:58:56 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/13449.swc"
+ },
+ "134521.swc": {
+  "bytes": 58047,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "34492b7f82508e41ae94b42e070229c2",
+  "server_last_modified": "Tue, 05 May 2026 14:58:56 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/134521.swc"
  },
  "13495.swc": {
   "bytes": 173286,
@@ -1175,6 +1287,20 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:01 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/137240.swc"
  },
+ "13726.swc": {
+  "bytes": 75171,
+  "downloaded_at": "2026-10-23T22:34:18+0900",
+  "md5": "c33747bd76a43ba2cccc97dc58e6d3b3",
+  "server_last_modified": "Tue, 05 May 2026 14:59:01 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/13726.swc"
+ },
+ "13764.swc": {
+  "bytes": 75291,
+  "downloaded_at": "2026-10-23T22:34:18+0900",
+  "md5": "ffb2f2e07f56e28b49c7a89a8adba39b",
+  "server_last_modified": "Tue, 05 May 2026 14:59:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/13764.swc"
+ },
  "137685.swc": {
   "bytes": 46240,
   "downloaded_at": "2026-09-18T19:03:43+0900",
@@ -1273,12 +1399,26 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:05 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/13981.swc"
  },
+ "14030.swc": {
+  "bytes": 66715,
+  "downloaded_at": "2026-10-23T22:34:18+0900",
+  "md5": "0d95d3a14527c430990a4ae61f507ab9",
+  "server_last_modified": "Tue, 05 May 2026 14:59:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/14030.swc"
+ },
  "14047.swc": {
   "bytes": 192822,
   "downloaded_at": "2026-09-18T19:02:02+0900",
   "md5": "dfdc1fcacaab261375c972187fcfc361",
   "server_last_modified": "Tue, 05 May 2026 14:59:06 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/14047.swc"
+ },
+ "14102.swc": {
+  "bytes": 67389,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "2370b73634c69cc1cf29921b5f08bf6c",
+  "server_last_modified": "Tue, 05 May 2026 14:59:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/14102.swc"
  },
  "14115.swc": {
   "bytes": 202291,
@@ -1385,6 +1525,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:13 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/144112.swc"
  },
+ "14465.swc": {
+  "bytes": 81657,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "82c8c5cdcc682bdb48a9646a492945dc",
+  "server_last_modified": "Tue, 05 May 2026 14:59:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/14465.swc"
+ },
  "14469.swc": {
   "bytes": 204114,
   "downloaded_at": "2026-09-18T19:02:55+0900",
@@ -1483,6 +1630,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/148600.swc"
  },
+ "14888.swc": {
+  "bytes": 170569,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "58126901b1bab00b49e268f23bc3352f",
+  "server_last_modified": "Tue, 05 May 2026 14:59:20 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/14888.swc"
+ },
  "148895.swc": {
   "bytes": 51921,
   "downloaded_at": "2026-09-18T19:03:45+0900",
@@ -1538,6 +1692,13 @@
   "md5": "da9c4282c48ba4742440bf3f00d034d8",
   "server_last_modified": "Tue, 05 May 2026 14:59:22 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/149913.swc"
+ },
+ "15018.swc": {
+  "bytes": 38280,
+  "downloaded_at": "2026-10-23T22:34:06+0900",
+  "md5": "8eaa46bcc46f148ec82d1f567676f7bd",
+  "server_last_modified": "Tue, 05 May 2026 14:59:22 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/15018.swc"
  },
  "15032.swc": {
   "bytes": 138223,
@@ -1686,6 +1847,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:31 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/156865.swc"
  },
+ "15804.swc": {
+  "bytes": 71286,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "7656643485937ddc121bbe9a052792e0",
+  "server_last_modified": "Tue, 05 May 2026 14:59:33 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/15804.swc"
+ },
  "158227.swc": {
   "bytes": 51498,
   "downloaded_at": "2026-09-18T19:03:45+0900",
@@ -1776,6 +1944,20 @@
   "md5": "137bba078d4a294f1d53dceaa1749a9e",
   "server_last_modified": "Tue, 05 May 2026 14:59:36 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/16085.swc"
+ },
+ "16128.swc": {
+  "bytes": 58776,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "efe19edec8ae3d3c9d02a23c69011291",
+  "server_last_modified": "Tue, 05 May 2026 14:59:37 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/16128.swc"
+ },
+ "16138.swc": {
+  "bytes": 159390,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "4680ee9b23bfb6ff3c371d4a8009fb7e",
+  "server_last_modified": "Tue, 05 May 2026 14:59:37 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/16138.swc"
  },
  "16167.swc": {
   "bytes": 85584,
@@ -1882,6 +2064,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:42 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/166028.swc"
  },
+ "16628.swc": {
+  "bytes": 51030,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "2defe37d578a4314a93a04a8adabdcaf",
+  "server_last_modified": "Tue, 05 May 2026 14:59:42 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/16628.swc"
+ },
  "16644.swc": {
   "bytes": 84715,
   "downloaded_at": "2026-09-18T19:02:57+0900",
@@ -1938,6 +2127,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:44 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/168052.swc"
  },
+ "16809.swc": {
+  "bytes": 30746,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "45c2588f957b4290206b4839ff2171a4",
+  "server_last_modified": "Tue, 05 May 2026 14:59:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/16809.swc"
+ },
  "168652.swc": {
   "bytes": 31207,
   "downloaded_at": "2026-09-18T19:01:57+0900",
@@ -1958,6 +2154,13 @@
   "md5": "4f693339efb3a1faf7d230a30bcbaf34",
   "server_last_modified": "Tue, 05 May 2026 14:59:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/168751.swc"
+ },
+ "16917.swc": {
+  "bytes": 32708,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "4d34344276d25b95d6e4940b1ffff958",
+  "server_last_modified": "Tue, 05 May 2026 14:59:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/16917.swc"
  },
  "16936.swc": {
   "bytes": 133768,
@@ -1994,6 +2197,20 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:46 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17031.swc"
  },
+ "17054.swc": {
+  "bytes": 59103,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "6d9e2580f0b83ad79cd7e19f4c997156",
+  "server_last_modified": "Tue, 05 May 2026 14:59:46 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17054.swc"
+ },
+ "17059.swc": {
+  "bytes": 69554,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "38a79dfbb183364a2883b6223ef7d679",
+  "server_last_modified": "Tue, 05 May 2026 14:59:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17059.swc"
+ },
  "17076.swc": {
   "bytes": 107345,
   "downloaded_at": "2026-09-18T19:02:58+0900",
@@ -2022,12 +2239,40 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:48 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17234.swc"
  },
+ "17266.swc": {
+  "bytes": 48818,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "28aed948f7aaedc163795bf9d0673933",
+  "server_last_modified": "Tue, 05 May 2026 14:59:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17266.swc"
+ },
+ "17270.swc": {
+  "bytes": 144850,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "2fd8fee5aba297140282aacc6d1da5ce",
+  "server_last_modified": "Tue, 05 May 2026 14:59:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17270.swc"
+ },
+ "17340.swc": {
+  "bytes": 41220,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "eaf08b461a842e1be665e90436adba3e",
+  "server_last_modified": "Tue, 05 May 2026 14:59:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17340.swc"
+ },
  "17361.swc": {
   "bytes": 196583,
   "downloaded_at": "2026-09-18T19:02:58+0900",
   "md5": "e88235fa6a49bdf8dc70ab7fbebd22f8",
   "server_last_modified": "Tue, 05 May 2026 14:59:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17361.swc"
+ },
+ "17364.swc": {
+  "bytes": 55046,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "9b85d7839dfd37ca2964166acddcbfbc",
+  "server_last_modified": "Tue, 05 May 2026 14:59:50 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17364.swc"
  },
  "173862.swc": {
   "bytes": 31562,
@@ -2050,6 +2295,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17434.swc"
  },
+ "17478.swc": {
+  "bytes": 46707,
+  "downloaded_at": "2026-10-23T22:34:07+0900",
+  "md5": "71a9d2bf0d0d3f9423c01980f6eab50e",
+  "server_last_modified": "Tue, 05 May 2026 14:59:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17478.swc"
+ },
  "17494.swc": {
   "bytes": 116878,
   "downloaded_at": "2026-09-18T19:02:58+0900",
@@ -2064,12 +2316,40 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:51 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17508.swc"
  },
+ "17544.swc": {
+  "bytes": 63899,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "e2daf439e4ae1c0cdb8d2a774c8bb606",
+  "server_last_modified": "Tue, 05 May 2026 14:59:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17544.swc"
+ },
+ "17548.swc": {
+  "bytes": 51931,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "7df6c4a60a99858220594d683a3f3f68",
+  "server_last_modified": "Tue, 05 May 2026 14:59:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17548.swc"
+ },
+ "17551.swc": {
+  "bytes": 93840,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "9952f056bdc9d6a6f2c51fa3578151ed",
+  "server_last_modified": "Tue, 05 May 2026 14:59:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17551.swc"
+ },
  "17564.swc": {
   "bytes": 142472,
   "downloaded_at": "2026-09-18T19:02:24+0900",
   "md5": "f3b8edb18c515bff679047de22e132b3",
   "server_last_modified": "Tue, 05 May 2026 14:59:52 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17564.swc"
+ },
+ "17608.swc": {
+  "bytes": 38520,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "18a6fe4a3f4bad3aa18194d8d5f48ee8",
+  "server_last_modified": "Tue, 05 May 2026 14:59:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17608.swc"
  },
  "17629.swc": {
   "bytes": 69193,
@@ -2084,6 +2364,20 @@
   "md5": "53c923e5e548bbf5f43a310944b76876",
   "server_last_modified": "Tue, 05 May 2026 14:59:52 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17640.swc"
+ },
+ "17653.swc": {
+  "bytes": 52116,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "866f20722c617a6548759e71f2cf8523",
+  "server_last_modified": "Tue, 05 May 2026 14:59:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17653.swc"
+ },
+ "17668.swc": {
+  "bytes": 46024,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "80d3a37a20319aecf06c320df2a403cf",
+  "server_last_modified": "Tue, 05 May 2026 14:59:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17668.swc"
  },
  "17696.swc": {
   "bytes": 82083,
@@ -2105,6 +2399,20 @@
   "md5": "c6472fe7bd2cc02e9ba15b1d51248760",
   "server_last_modified": "Tue, 05 May 2026 14:59:53 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17773.swc"
+ },
+ "17774.swc": {
+  "bytes": 71639,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "4d3bb4a4de7908abe74daa7451338fc0",
+  "server_last_modified": "Tue, 05 May 2026 14:59:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17774.swc"
+ },
+ "17775.swc": {
+  "bytes": 66153,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "0ba3461979f40e46d74bc0a6996c6a60",
+  "server_last_modified": "Tue, 05 May 2026 14:59:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17775.swc"
  },
  "17788.swc": {
   "bytes": 190457,
@@ -2141,6 +2449,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:54 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17851.swc"
  },
+ "17860.swc": {
+  "bytes": 41227,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "0f4127d5ad7eba0f8488be1bb05a9fd0",
+  "server_last_modified": "Tue, 05 May 2026 14:59:54 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17860.swc"
+ },
  "17867.swc": {
   "bytes": 141171,
   "downloaded_at": "2026-09-18T19:02:24+0900",
@@ -2155,6 +2470,20 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:54 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17868.swc"
  },
+ "17880.swc": {
+  "bytes": 52645,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "97ec7696dd12b2458e290049d4abf9c2",
+  "server_last_modified": "Tue, 05 May 2026 14:59:54 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17880.swc"
+ },
+ "17926.swc": {
+  "bytes": 48973,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "79dc1009b7be45799a884038aa31632d",
+  "server_last_modified": "Tue, 05 May 2026 14:59:55 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17926.swc"
+ },
  "17956.swc": {
   "bytes": 70407,
   "downloaded_at": "2026-09-18T19:02:59+0900",
@@ -2168,6 +2497,20 @@
   "md5": "07add354d3e37926fbcbaeb7f432dee6",
   "server_last_modified": "Tue, 05 May 2026 14:59:55 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17972.swc"
+ },
+ "17987.swc": {
+  "bytes": 52020,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "d1c28fc5f6e216aba036c98c4ad08229",
+  "server_last_modified": "Tue, 05 May 2026 14:59:55 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17987.swc"
+ },
+ "17990.swc": {
+  "bytes": 66019,
+  "downloaded_at": "2026-10-23T22:34:19+0900",
+  "md5": "93d241c209042eaa76da99e5fdb0ff09",
+  "server_last_modified": "Tue, 05 May 2026 14:59:55 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/17990.swc"
  },
  "18017.swc": {
   "bytes": 143906,
@@ -2204,6 +2547,13 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:56 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18111.swc"
  },
+ "18127.swc": {
+  "bytes": 44228,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "9ceb65fede87476b3bb99f45a223521d",
+  "server_last_modified": "Tue, 05 May 2026 14:59:57 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18127.swc"
+ },
  "18141.swc": {
   "bytes": 67347,
   "downloaded_at": "2026-09-18T19:03:00+0900",
@@ -2217,6 +2567,13 @@
   "md5": "0da8c5d70b29968489f21907f9a7daa4",
   "server_last_modified": "Tue, 05 May 2026 14:59:57 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18173.swc"
+ },
+ "18189.swc": {
+  "bytes": 47532,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "c6786ccc53746628dd472873c1b7dc0f",
+  "server_last_modified": "Tue, 05 May 2026 14:59:57 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18189.swc"
  },
  "18211.swc": {
   "bytes": 80771,
@@ -2260,12 +2617,33 @@
   "server_last_modified": "Tue, 05 May 2026 14:59:58 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18320.swc"
  },
+ "18396.swc": {
+  "bytes": 32936,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "bbb0b6e4a7fee6b9aea9e2af0dc26e7e",
+  "server_last_modified": "Tue, 05 May 2026 14:59:59 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18396.swc"
+ },
  "18415.swc": {
   "bytes": 79759,
   "downloaded_at": "2026-09-18T19:03:00+0900",
   "md5": "05390c75f933e09ab1a853131af0a12f",
   "server_last_modified": "Tue, 05 May 2026 14:59:59 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18415.swc"
+ },
+ "18432.swc": {
+  "bytes": 33031,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "1bd58f007cc1e065cd5b98155b6e654d",
+  "server_last_modified": "Tue, 05 May 2026 14:59:59 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18432.swc"
+ },
+ "18478.swc": {
+  "bytes": 47804,
+  "downloaded_at": "2026-10-23T22:34:08+0900",
+  "md5": "64181a270e9768268eacfa5cf2272451",
+  "server_last_modified": "Tue, 05 May 2026 15:00:00 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18478.swc"
  },
  "184833.swc": {
   "bytes": 40065,
@@ -2316,6 +2694,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:01 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18665.swc"
  },
+ "18672.swc": {
+  "bytes": 90234,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "e7c003fb1eb1a4ad39c318b2692a6611",
+  "server_last_modified": "Tue, 05 May 2026 15:00:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18672.swc"
+ },
  "18716.swc": {
   "bytes": 91200,
   "downloaded_at": "2026-09-18T19:03:00+0900",
@@ -2351,6 +2736,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:03 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/188857.swc"
  },
+ "18900.swc": {
+  "bytes": 71827,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "f5e0a4311bcc398ec2f3539e0ea9332d",
+  "server_last_modified": "Tue, 05 May 2026 15:00:03 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18900.swc"
+ },
  "18913.swc": {
   "bytes": 133477,
   "downloaded_at": "2026-09-18T19:02:24+0900",
@@ -2358,12 +2750,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:04 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18913.swc"
  },
+ "18929.swc": {
+  "bytes": 86370,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "6d9a556daa5c49936d990e95e4449fae",
+  "server_last_modified": "Tue, 05 May 2026 15:00:04 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18929.swc"
+ },
  "18934.swc": {
   "bytes": 139105,
   "downloaded_at": "2026-09-18T19:02:25+0900",
   "md5": "b310243f79a8569649fb8f3e41b20c48",
   "server_last_modified": "Tue, 05 May 2026 15:00:04 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18934.swc"
+ },
+ "18936.swc": {
+  "bytes": 83049,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "c4aa985be45109d1dc49013f35a3c36c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:04 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18936.swc"
  },
  "18948.swc": {
   "bytes": 64998,
@@ -2400,6 +2806,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:04 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/18990.swc"
  },
+ "19034.swc": {
+  "bytes": 93637,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "bc522a02597a534f044b9ec79bdb0cda",
+  "server_last_modified": "Tue, 05 May 2026 15:00:05 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19034.swc"
+ },
  "19082.swc": {
   "bytes": 82391,
   "downloaded_at": "2026-09-18T19:03:01+0900",
@@ -2428,6 +2841,34 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:06 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19136.swc"
  },
+ "19146.swc": {
+  "bytes": 86476,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "75cd431d645d279b49cffec34521f8c5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19146.swc"
+ },
+ "19229.swc": {
+  "bytes": 317283,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "cb945da8a57010aaa594f82df2241c12",
+  "server_last_modified": "Tue, 05 May 2026 15:00:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19229.swc"
+ },
+ "19249.swc": {
+  "bytes": 95221,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "93cfee895c48532dcd4606a410b1ea8a",
+  "server_last_modified": "Tue, 05 May 2026 15:00:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19249.swc"
+ },
+ "19260.swc": {
+  "bytes": 44799,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "7ceea0e3c3a5beb59a0f9715a11567da",
+  "server_last_modified": "Tue, 05 May 2026 15:00:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19260.swc"
+ },
  "19356.swc": {
   "bytes": 486474,
   "downloaded_at": "2026-09-18T19:03:01+0900",
@@ -2449,6 +2890,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:08 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19419.swc"
  },
+ "19420.swc": {
+  "bytes": 44007,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "ba72b01266d33c8cd050b2399e8f4468",
+  "server_last_modified": "Tue, 05 May 2026 15:00:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19420.swc"
+ },
  "19496.swc": {
   "bytes": 71322,
   "downloaded_at": "2026-09-18T19:03:01+0900",
@@ -2463,12 +2911,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19505.swc"
  },
+ "19543.swc": {
+  "bytes": 42118,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "f3494910842894f4f23af558264b598e",
+  "server_last_modified": "Tue, 05 May 2026 15:00:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19543.swc"
+ },
  "195446.swc": {
   "bytes": 7729,
   "downloaded_at": "2026-09-18T19:01:57+0900",
   "md5": "3631451c7e9bb46d99cc0e6c47407373",
   "server_last_modified": "Tue, 05 May 2026 15:00:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/195446.swc"
+ },
+ "19549.swc": {
+  "bytes": 90774,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "3bacbc5765a1376ff7cdc5e8b152f3c5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19549.swc"
+ },
+ "19550.swc": {
+  "bytes": 49066,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "09a9b981074b78fe2002bc8314db5c5d",
+  "server_last_modified": "Tue, 05 May 2026 15:00:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19550.swc"
  },
  "195871166.swc": {
   "bytes": 5055,
@@ -2477,12 +2946,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:10 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/195871166.swc"
  },
+ "19589.swc": {
+  "bytes": 95373,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "e60edabc426211d4950a6f0c4c422f73",
+  "server_last_modified": "Tue, 05 May 2026 15:00:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19589.swc"
+ },
  "19590.swc": {
   "bytes": 61696,
   "downloaded_at": "2026-09-18T19:02:03+0900",
   "md5": "cb811bedd5d75a42793a77412c93d5a5",
   "server_last_modified": "Tue, 05 May 2026 15:00:10 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19590.swc"
+ },
+ "19608.swc": {
+  "bytes": 90502,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "4e6f218fdcfa66e59230ed62187b120a",
+  "server_last_modified": "Tue, 05 May 2026 15:00:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19608.swc"
+ },
+ "19634.swc": {
+  "bytes": 42585,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "53ff54353f1e964ea77b39937d2d5fde",
+  "server_last_modified": "Tue, 05 May 2026 15:00:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19634.swc"
  },
  "19650.swc": {
   "bytes": 144961,
@@ -2533,6 +3023,27 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:11 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/197318.swc"
  },
+ "19787.swc": {
+  "bytes": 61510,
+  "downloaded_at": "2026-10-23T22:34:20+0900",
+  "md5": "dc92cb3563c44b79618d9b77d67165e9",
+  "server_last_modified": "Tue, 05 May 2026 15:00:12 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19787.swc"
+ },
+ "19794.swc": {
+  "bytes": 46867,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "b3f583e313100182b62b4688f8c75261",
+  "server_last_modified": "Tue, 05 May 2026 15:00:12 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19794.swc"
+ },
+ "19830.swc": {
+  "bytes": 81441,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "bbfed4efa22690b8cfbb5788d2bd145e",
+  "server_last_modified": "Tue, 05 May 2026 15:00:12 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19830.swc"
+ },
  "19835.swc": {
   "bytes": 70816,
   "downloaded_at": "2026-09-18T19:02:03+0900",
@@ -2547,12 +3058,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:12 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19837.swc"
  },
+ "19842.swc": {
+  "bytes": 83804,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "2dc7eb388649bfeb93c61aa0e4d000ab",
+  "server_last_modified": "Tue, 05 May 2026 15:00:12 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19842.swc"
+ },
  "19894.swc": {
   "bytes": 119641,
   "downloaded_at": "2026-09-18T19:02:25+0900",
   "md5": "b1d830a392bbb54506a1bd82b969bce4",
   "server_last_modified": "Tue, 05 May 2026 15:00:12 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19894.swc"
+ },
+ "19911.swc": {
+  "bytes": 46664,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "b875c9a118ea3eb4292594955db4b410",
+  "server_last_modified": "Tue, 05 May 2026 15:00:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19911.swc"
  },
  "19913.swc": {
   "bytes": 74477,
@@ -2575,6 +3100,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:17 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19948.swc"
  },
+ "19954.swc": {
+  "bytes": 41261,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "d36d6915abd9246af8c457ce6a6597ee",
+  "server_last_modified": "Tue, 05 May 2026 15:00:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19954.swc"
+ },
  "19968.swc": {
   "bytes": 146275,
   "downloaded_at": "2026-09-18T19:02:25+0900",
@@ -2582,12 +3114,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:13 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/19968.swc"
  },
+ "20016.swc": {
+  "bytes": 42980,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "5dff2aa022a9d8563d2a9e849ab4038c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20016.swc"
+ },
  "20039.swc": {
   "bytes": 66823,
   "downloaded_at": "2026-09-18T19:02:03+0900",
   "md5": "2cef687276cb652b93a4bd4a2f86091b",
   "server_last_modified": "Tue, 05 May 2026 15:00:14 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20039.swc"
+ },
+ "20047.swc": {
+  "bytes": 83411,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "e0c0cc8d5bbd82b252ea048c1c73283c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20047.swc"
  },
  "20068.swc": {
   "bytes": 58923,
@@ -2603,12 +3149,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:14 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20080.swc"
  },
+ "20103.swc": {
+  "bytes": 83743,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "cd7bd47ceea66444cfe3fdc899d1d1c5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20103.swc"
+ },
  "20117.swc": {
   "bytes": 144132,
   "downloaded_at": "2026-09-18T19:02:26+0900",
   "md5": "bb3e9bdebd671a5ced4479bb8fbb9225",
   "server_last_modified": "Tue, 05 May 2026 15:00:15 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20117.swc"
+ },
+ "20162.swc": {
+  "bytes": 90204,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "0a6e78cf93024bdb23485aae02577299",
+  "server_last_modified": "Tue, 05 May 2026 15:00:15 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20162.swc"
+ },
+ "20182.swc": {
+  "bytes": 83921,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "c1fe181f9b5455fcc47e81f2d9364bb6",
+  "server_last_modified": "Tue, 05 May 2026 15:00:15 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20182.swc"
  },
  "20217.swc": {
   "bytes": 221631,
@@ -2617,12 +3184,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:15 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20217.swc"
  },
+ "20240.swc": {
+  "bytes": 72504,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "85885b88a0fa81e40954620fabbd7c9b",
+  "server_last_modified": "Tue, 05 May 2026 15:00:16 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20240.swc"
+ },
  "20255.swc": {
   "bytes": 125954,
   "downloaded_at": "2026-09-18T19:02:26+0900",
   "md5": "95e0c80cccaae83dc3a32bd8c5c12295",
   "server_last_modified": "Tue, 05 May 2026 15:00:16 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20255.swc"
+ },
+ "20269.swc": {
+  "bytes": 74250,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "9ddfd335b288297ff57eb3607407b9d0",
+  "server_last_modified": "Tue, 05 May 2026 15:00:16 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20269.swc"
+ },
+ "20282.swc": {
+  "bytes": 44192,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "46580d36c3de16e6cbdcc51cde8e68a4",
+  "server_last_modified": "Tue, 05 May 2026 15:00:16 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20282.swc"
  },
  "20307.swc": {
   "bytes": 75782,
@@ -2631,12 +3219,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:16 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20307.swc"
  },
+ "20329.swc": {
+  "bytes": 76135,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "0a51a11c196ec2cc60f5e1d6b35aeaa2",
+  "server_last_modified": "Tue, 05 May 2026 15:00:19 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20329.swc"
+ },
  "20332.swc": {
   "bytes": 64742,
   "downloaded_at": "2026-09-18T19:03:02+0900",
   "md5": "3dbff0d44182058e1a8a7962fe076341",
   "server_last_modified": "Tue, 05 May 2026 15:00:19 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20332.swc"
+ },
+ "20334.swc": {
+  "bytes": 89729,
+  "downloaded_at": "2026-10-23T22:34:21+0900",
+  "md5": "3acf5bffab8231f5be3a44bbb25ccea1",
+  "server_last_modified": "Tue, 05 May 2026 15:00:19 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20334.swc"
  },
  "20349.swc": {
   "bytes": 69647,
@@ -2652,6 +3254,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:19 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20392.swc"
  },
+ "20399.swc": {
+  "bytes": 41867,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "7265f4855cd76bcc88b0a743495c661d",
+  "server_last_modified": "Tue, 05 May 2026 15:00:19 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20399.swc"
+ },
  "20411.swc": {
   "bytes": 64444,
   "downloaded_at": "2026-09-18T19:03:02+0900",
@@ -2659,12 +3268,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20411.swc"
  },
+ "20440.swc": {
+  "bytes": 123191,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "0a2e85141ae3d2cdbd68e974838d21db",
+  "server_last_modified": "Tue, 05 May 2026 15:00:20 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20440.swc"
+ },
  "204491.swc": {
   "bytes": 49546,
   "downloaded_at": "2026-09-18T19:03:46+0900",
   "md5": "b4d998181e1ebc681dda7ade7fd29c38",
   "server_last_modified": "Tue, 05 May 2026 15:00:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/204491.swc"
+ },
+ "20471.swc": {
+  "bytes": 297961,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "dfb6e0b04ad0d31f6e352574eda2deda",
+  "server_last_modified": "Tue, 05 May 2026 15:00:20 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20471.swc"
  },
  "20495.swc": {
   "bytes": 87114,
@@ -2680,12 +3303,47 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20497.swc"
  },
+ "20535.swc": {
+  "bytes": 74859,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "0fa371aa3b4868fda4b2a2ef4716752c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:22 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20535.swc"
+ },
+ "20542.swc": {
+  "bytes": 43285,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "588bc1022c3b1047cd408602b324af7e",
+  "server_last_modified": "Tue, 05 May 2026 15:00:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20542.swc"
+ },
+ "20572.swc": {
+  "bytes": 39309,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "3ee5cf232727e7b6970d5dc641882965",
+  "server_last_modified": "Tue, 05 May 2026 15:00:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20572.swc"
+ },
  "20580.swc": {
   "bytes": 124837,
   "downloaded_at": "2026-09-18T19:02:26+0900",
   "md5": "769de0c86f2b83d59d5e16e75ff2af70",
   "server_last_modified": "Tue, 05 May 2026 15:00:21 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20580.swc"
+ },
+ "20584.swc": {
+  "bytes": 89151,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "ea64c0d723fca23db32bdb8887133a01",
+  "server_last_modified": "Tue, 05 May 2026 15:00:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20584.swc"
+ },
+ "20588.swc": {
+  "bytes": 41575,
+  "downloaded_at": "2026-10-23T22:34:09+0900",
+  "md5": "bba431fc721c661a0fef5b242cdb5b1b",
+  "server_last_modified": "Tue, 05 May 2026 15:00:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20588.swc"
  },
  "20591.swc": {
   "bytes": 77190,
@@ -2708,12 +3366,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:21 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/205974.swc"
  },
+ "20673.swc": {
+  "bytes": 171839,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "0859f2b8655dc43ce6e1a9a0cd5ebce8",
+  "server_last_modified": "Tue, 05 May 2026 15:00:22 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20673.swc"
+ },
+ "20694.swc": {
+  "bytes": 82511,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "209307588c871be42dbe496f9f565ecb",
+  "server_last_modified": "Tue, 05 May 2026 15:00:22 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20694.swc"
+ },
  "20747.swc": {
   "bytes": 93122,
   "downloaded_at": "2026-09-18T19:03:02+0900",
   "md5": "df125a376ed2a17f93b88a860c2728ac",
   "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20747.swc"
+ },
+ "20749.swc": {
+  "bytes": 78811,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "dc8c99258cfdd74d6f420fc699b063df",
+  "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20749.swc"
  },
  "20750.swc": {
   "bytes": 77160,
@@ -2743,6 +3422,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20780.swc"
  },
+ "20799.swc": {
+  "bytes": 66549,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "bfcb7108f4574144fe38b3b89d504a3c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20799.swc"
+ },
  "20803.swc": {
   "bytes": 134098,
   "downloaded_at": "2026-09-18T19:02:26+0900",
@@ -2750,12 +3436,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20803.swc"
  },
+ "20808.swc": {
+  "bytes": 37611,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "02a12a2d28a233d009881fe9d3336fc6",
+  "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20808.swc"
+ },
  "20844.swc": {
   "bytes": 95521,
   "downloaded_at": "2026-09-18T19:03:02+0900",
   "md5": "a2fb87bff3c594b70ed13dbc95d91e52",
   "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20844.swc"
+ },
+ "20859.swc": {
+  "bytes": 46322,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "193af6e760203c0f55d031fc8aa8d652",
+  "server_last_modified": "Tue, 05 May 2026 15:00:23 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20859.swc"
  },
  "20877.swc": {
   "bytes": 71152,
@@ -2778,6 +3478,27 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:24 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20907.swc"
  },
+ "20917.swc": {
+  "bytes": 48456,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "80fc02d0289ad1eddf88c2d0846528d1",
+  "server_last_modified": "Tue, 05 May 2026 15:00:24 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20917.swc"
+ },
+ "20967.swc": {
+  "bytes": 162314,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "77a3de51f9924f5d6dab2eaae9442a2c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:24 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20967.swc"
+ },
+ "20976.swc": {
+  "bytes": 32638,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "325223974ff4ab0863dd537c431f11c5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:24 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/20976.swc"
+ },
  "20996.swc": {
   "bytes": 84823,
   "downloaded_at": "2026-09-18T19:02:04+0900",
@@ -2799,6 +3520,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:25 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/210416.swc"
  },
+ "21045.swc": {
+  "bytes": 72737,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "cc821a80e7c9b88340a724ef8ec0a120",
+  "server_last_modified": "Tue, 05 May 2026 15:00:25 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21045.swc"
+ },
  "21058.swc": {
   "bytes": 102197,
   "downloaded_at": "2026-09-18T19:03:03+0900",
@@ -2812,6 +3540,27 @@
   "md5": "add027a6bc8061c1f38216a1fdf64454",
   "server_last_modified": "Tue, 05 May 2026 15:00:25 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21089.swc"
+ },
+ "21151.swc": {
+  "bytes": 40656,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "4e7040fbcc0d05505880aff6e4c71bdf",
+  "server_last_modified": "Tue, 05 May 2026 15:00:26 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21151.swc"
+ },
+ "21165.swc": {
+  "bytes": 38974,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "fbb9938407a102b823744ee9ac83bed2",
+  "server_last_modified": "Tue, 05 May 2026 15:00:26 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21165.swc"
+ },
+ "21225.swc": {
+  "bytes": 46683,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "274aba23a8f86c3feb49c02f2c5c82b8",
+  "server_last_modified": "Tue, 05 May 2026 15:00:26 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21225.swc"
  },
  "21235.swc": {
   "bytes": 69027,
@@ -2827,6 +3576,34 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/212826.swc"
  },
+ "21287.swc": {
+  "bytes": 39227,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "f093e25df3b8e2902603cf9ff36ac7d5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21287.swc"
+ },
+ "21299.swc": {
+  "bytes": 72879,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "e1abfd7f42741592bbf6a16b1f29af95",
+  "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21299.swc"
+ },
+ "21313.swc": {
+  "bytes": 40109,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "8ea6a479234317be3810f100de838ee7",
+  "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21313.swc"
+ },
+ "21318.swc": {
+  "bytes": 81299,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "aaae87cb258b0dd6870747b7c5cb276f",
+  "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21318.swc"
+ },
  "21324.swc": {
   "bytes": 64492,
   "downloaded_at": "2026-09-18T19:03:03+0900",
@@ -2834,12 +3611,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21324.swc"
  },
+ "21336.swc": {
+  "bytes": 38151,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "4e69e802acde0498cbaf1f52e82d5653",
+  "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21336.swc"
+ },
  "21349.swc": {
   "bytes": 62501,
   "downloaded_at": "2026-09-18T19:03:03+0900",
   "md5": "66277f019d772fa7eadee21c11beb932",
   "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21349.swc"
+ },
+ "21361.swc": {
+  "bytes": 70652,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "cb0a78cd7843569d2bd3a842269f4967",
+  "server_last_modified": "Tue, 05 May 2026 15:00:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21361.swc"
  },
  "213985.swc": {
   "bytes": 6942,
@@ -2883,6 +3674,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:29 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21538.swc"
  },
+ "21562.swc": {
+  "bytes": 75116,
+  "downloaded_at": "2026-10-23T22:34:22+0900",
+  "md5": "19e82a18c7c65d0cc784a8ff6cfa4720",
+  "server_last_modified": "Tue, 05 May 2026 15:00:29 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21562.swc"
+ },
  "216034.swc": {
   "bytes": 40711,
   "downloaded_at": "2026-09-18T19:03:46+0900",
@@ -2904,6 +3702,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:32 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21671.swc"
  },
+ "21703.swc": {
+  "bytes": 83838,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "426c9c8d6e7b9678903f98ffd6900067",
+  "server_last_modified": "Tue, 05 May 2026 15:00:30 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21703.swc"
+ },
  "21713.swc": {
   "bytes": 85395,
   "downloaded_at": "2026-09-18T19:02:04+0900",
@@ -2911,12 +3716,54 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:30 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21713.swc"
  },
+ "21721.swc": {
+  "bytes": 35595,
+  "downloaded_at": "2026-10-23T22:34:10+0900",
+  "md5": "83c7a0e0d3a54c919655af409cd087c5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:30 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21721.swc"
+ },
+ "21769.swc": {
+  "bytes": 101138,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "6d3cd6e32ef8580901147b0a77946b66",
+  "server_last_modified": "Tue, 05 May 2026 15:00:31 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21769.swc"
+ },
+ "21804.swc": {
+  "bytes": 163889,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "d8e5cadcae109cf62ad7e7452240ce23",
+  "server_last_modified": "Tue, 05 May 2026 15:00:31 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21804.swc"
+ },
+ "21808.swc": {
+  "bytes": 77000,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "884d0250a1d6b0fb38a4af002340202f",
+  "server_last_modified": "Tue, 05 May 2026 15:00:31 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21808.swc"
+ },
+ "21862.swc": {
+  "bytes": 84136,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "f085c43aeb035617696811176373fee9",
+  "server_last_modified": "Tue, 05 May 2026 15:00:32 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21862.swc"
+ },
  "21863.swc": {
   "bytes": 109444,
   "downloaded_at": "2026-09-18T19:03:03+0900",
   "md5": "f481f6ac7186b2f8dde4215a8be24992",
   "server_last_modified": "Tue, 05 May 2026 15:00:32 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21863.swc"
+ },
+ "21899.swc": {
+  "bytes": 82016,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "505da4676eb770489311ca7825ebab6a",
+  "server_last_modified": "Tue, 05 May 2026 15:00:32 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/21899.swc"
  },
  "21966.swc": {
   "bytes": 38976,
@@ -2960,6 +3807,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:33 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/220200.swc"
  },
+ "22034.swc": {
+  "bytes": 38020,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "ced9185064ffced75644c520edabbb42",
+  "server_last_modified": "Tue, 05 May 2026 15:00:33 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22034.swc"
+ },
  "22093.swc": {
   "bytes": 136591,
   "downloaded_at": "2026-09-18T19:02:26+0900",
@@ -2988,12 +3842,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:34 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22187.swc"
  },
+ "22194.swc": {
+  "bytes": 39596,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "f83ae2396cb7be27f23b4dcd59e9b947",
+  "server_last_modified": "Tue, 05 May 2026 15:00:34 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22194.swc"
+ },
  "22201.swc": {
   "bytes": 57952,
   "downloaded_at": "2026-09-18T19:02:04+0900",
   "md5": "9b9ed8ffa434c9b5d4611e238e6331e9",
   "server_last_modified": "Tue, 05 May 2026 15:00:34 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22201.swc"
+ },
+ "22218.swc": {
+  "bytes": 88520,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "24ca3b4bccaee5641525bc5d77bfe1cc",
+  "server_last_modified": "Tue, 05 May 2026 15:00:34 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22218.swc"
  },
  "22251.swc": {
   "bytes": 106318,
@@ -3002,12 +3870,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22251.swc"
  },
+ "22253.swc": {
+  "bytes": 72442,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "39e69f150c6a87c050a7c3016e511867",
+  "server_last_modified": "Tue, 05 May 2026 15:00:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22253.swc"
+ },
+ "22261.swc": {
+  "bytes": 88149,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "736eff987be54146e8abbc3b2d218938",
+  "server_last_modified": "Tue, 05 May 2026 15:00:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22261.swc"
+ },
  "22270.swc": {
   "bytes": 63145,
   "downloaded_at": "2026-09-18T19:03:04+0900",
   "md5": "2a98b3d401da20e9d13d2e18b7852825",
   "server_last_modified": "Tue, 05 May 2026 15:00:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22270.swc"
+ },
+ "22328.swc": {
+  "bytes": 39295,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "201db08b707d5058d13a435e06f859e1",
+  "server_last_modified": "Tue, 05 May 2026 15:00:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22328.swc"
  },
  "22452.swc": {
   "bytes": 94917,
@@ -3023,12 +3912,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:37 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22519.swc"
  },
+ "22557.swc": {
+  "bytes": 60434,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "ad176535163e594f26448a8da88b20b3",
+  "server_last_modified": "Tue, 05 May 2026 15:00:37 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22557.swc"
+ },
+ "22677.swc": {
+  "bytes": 90052,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "2605d777b31127809c1719ed2b6398ee",
+  "server_last_modified": "Tue, 05 May 2026 15:00:38 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22677.swc"
+ },
  "227318.swc": {
   "bytes": 6672,
   "downloaded_at": "2026-09-18T19:01:57+0900",
   "md5": "7e2c6c3c3b1f0cde87a7fa38ba0d5349",
   "server_last_modified": "Tue, 05 May 2026 15:00:38 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/227318.swc"
+ },
+ "22772.swc": {
+  "bytes": 35614,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "5e3e24dc2b9cbf5cf6f1c9f8bbaa6687",
+  "server_last_modified": "Tue, 05 May 2026 15:00:38 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22772.swc"
  },
  "22799.swc": {
   "bytes": 81299,
@@ -3044,12 +3954,40 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:39 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22818.swc"
  },
+ "22847.swc": {
+  "bytes": 42990,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "523dfeee03e6b407f4bdaf381258199f",
+  "server_last_modified": "Tue, 05 May 2026 15:00:39 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22847.swc"
+ },
  "22908.swc": {
   "bytes": 63780,
   "downloaded_at": "2026-09-18T19:03:04+0900",
   "md5": "d54db61dea81287f7cb9daa9ddabc975",
   "server_last_modified": "Tue, 05 May 2026 15:00:39 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22908.swc"
+ },
+ "22922.swc": {
+  "bytes": 35694,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "7d88562e5f8527a8d30efd4e6b07f2b0",
+  "server_last_modified": "Tue, 05 May 2026 15:00:39 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22922.swc"
+ },
+ "22966.swc": {
+  "bytes": 41967,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "8f1c201ed4e67563618d09e2878da587",
+  "server_last_modified": "Tue, 05 May 2026 15:00:40 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22966.swc"
+ },
+ "22975.swc": {
+  "bytes": 191817,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "a4b32bf71f2c4bf6c4e1026142fba4b0",
+  "server_last_modified": "Tue, 05 May 2026 15:00:40 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/22975.swc"
  },
  "22982.swc": {
   "bytes": 126800,
@@ -3072,6 +4010,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:40 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23046.swc"
  },
+ "23098.swc": {
+  "bytes": 44133,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "ffd7a4ea224be329901fdab7267ddacb",
+  "server_last_modified": "Tue, 05 May 2026 15:00:40 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23098.swc"
+ },
  "23153.swc": {
   "bytes": 87580,
   "downloaded_at": "2026-09-18T19:03:04+0900",
@@ -3085,6 +4030,27 @@
   "md5": "6460325fbc6daa1603f80b2a252c4989",
   "server_last_modified": "Tue, 05 May 2026 15:00:41 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23157.swc"
+ },
+ "23202.swc": {
+  "bytes": 36502,
+  "downloaded_at": "2026-10-23T22:34:11+0900",
+  "md5": "1e13d597c2f5216bbca658780f1aca79",
+  "server_last_modified": "Tue, 05 May 2026 15:00:41 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23202.swc"
+ },
+ "23226.swc": {
+  "bytes": 127587,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "063244455ea8c7bf60c68721bf852df3",
+  "server_last_modified": "Tue, 05 May 2026 15:00:41 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23226.swc"
+ },
+ "23247.swc": {
+  "bytes": 66765,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "ae78c0a4adeb0401d21890b09a126299",
+  "server_last_modified": "Tue, 05 May 2026 15:00:41 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23247.swc"
  },
  "232880.swc": {
   "bytes": 6658,
@@ -3121,12 +4087,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:42 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/233170.swc"
  },
+ "23349.swc": {
+  "bytes": 75638,
+  "downloaded_at": "2026-10-23T22:34:23+0900",
+  "md5": "59470ed4715298ca756e55020d865555",
+  "server_last_modified": "Tue, 05 May 2026 15:00:42 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23349.swc"
+ },
  "23387.swc": {
   "bytes": 81057,
   "downloaded_at": "2026-09-18T19:03:04+0900",
   "md5": "02866cb44282754e71a8677a175aea17",
   "server_last_modified": "Tue, 05 May 2026 15:00:42 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23387.swc"
+ },
+ "23392.swc": {
+  "bytes": 41220,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "157756a89a85e12930a02324e086a533",
+  "server_last_modified": "Tue, 05 May 2026 15:00:42 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23392.swc"
  },
  "23416.swc": {
   "bytes": 97520,
@@ -3142,6 +4122,27 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:43 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23483.swc"
  },
+ "23497.swc": {
+  "bytes": 349905,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "344db91bd494b24cb710bda4ccd0716b",
+  "server_last_modified": "Tue, 05 May 2026 15:00:43 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23497.swc"
+ },
+ "23550.swc": {
+  "bytes": 51417,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "68d95e3d1edf0ee3b82c1f115bca20d9",
+  "server_last_modified": "Tue, 05 May 2026 15:00:43 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23550.swc"
+ },
+ "23590.swc": {
+  "bytes": 284804,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "d986920a0b3b160f264aa11cc3acb2c5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:43 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23590.swc"
+ },
  "23651.swc": {
   "bytes": 111124,
   "downloaded_at": "2026-09-18T19:02:26+0900",
@@ -3155,6 +4156,13 @@
   "md5": "cb764770ce577173f07adf398198d647",
   "server_last_modified": "Tue, 05 May 2026 15:00:44 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23661.swc"
+ },
+ "23665.swc": {
+  "bytes": 57552,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "b7c1d826fa9061ae28de128eb2ea9732",
+  "server_last_modified": "Tue, 05 May 2026 15:00:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23665.swc"
  },
  "23682.swc": {
   "bytes": 78055,
@@ -3205,6 +4213,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:44 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23789.swc"
  },
+ "23792.swc": {
+  "bytes": 39883,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "618b570914182e37822f33e1affc93ce",
+  "server_last_modified": "Tue, 05 May 2026 15:00:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23792.swc"
+ },
  "23799.swc": {
   "bytes": 95251,
   "downloaded_at": "2026-09-18T19:03:05+0900",
@@ -3233,6 +4248,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23870.swc"
  },
+ "23878.swc": {
+  "bytes": 73266,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "ba47533ebe0fe3a08716c852e92404e0",
+  "server_last_modified": "Tue, 05 May 2026 15:00:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23878.swc"
+ },
  "23904.swc": {
   "bytes": 71923,
   "downloaded_at": "2026-09-18T19:03:05+0900",
@@ -3240,12 +4262,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23904.swc"
  },
+ "23919.swc": {
+  "bytes": 52692,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "0c7ea03b92973deb8e1f27fed1137aeb",
+  "server_last_modified": "Tue, 05 May 2026 15:00:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23919.swc"
+ },
  "23924.swc": {
   "bytes": 145911,
   "downloaded_at": "2026-09-18T19:02:27+0900",
   "md5": "eb3ca5e056a9be87bf185040ccc0b3cb",
   "server_last_modified": "Tue, 05 May 2026 15:00:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23924.swc"
+ },
+ "23929.swc": {
+  "bytes": 40461,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "d5a88bdd812a3c3811e4d5a708a3a6f2",
+  "server_last_modified": "Tue, 05 May 2026 15:00:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/23929.swc"
  },
  "23952.swc": {
   "bytes": 132361,
@@ -3282,6 +4318,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:46 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/241016.swc"
  },
+ "24118.swc": {
+  "bytes": 72982,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "87b365ea6fe960d510aebc67d93e43c1",
+  "server_last_modified": "Tue, 05 May 2026 15:00:46 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24118.swc"
+ },
  "24155.swc": {
   "bytes": 126175,
   "downloaded_at": "2026-09-18T19:03:06+0900",
@@ -3296,6 +4339,41 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:47 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24185.swc"
  },
+ "24187.swc": {
+  "bytes": 64046,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "c9cfc1f9cf5b7d784440f3c58bf5ebd9",
+  "server_last_modified": "Tue, 05 May 2026 15:00:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24187.swc"
+ },
+ "24268.swc": {
+  "bytes": 69791,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "a626eab692df85af0924d384996e5fca",
+  "server_last_modified": "Tue, 05 May 2026 15:00:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24268.swc"
+ },
+ "24308.swc": {
+  "bytes": 64219,
+  "downloaded_at": "2026-10-23T22:34:24+0900",
+  "md5": "bd5d5c5e1eeef6e54138a6ffa9e0e127",
+  "server_last_modified": "Tue, 05 May 2026 15:00:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24308.swc"
+ },
+ "24338.swc": {
+  "bytes": 183393,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "4cce80189f0f198e930fdc57105c6e7b",
+  "server_last_modified": "Tue, 05 May 2026 15:00:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24338.swc"
+ },
+ "24401.swc": {
+  "bytes": 250516,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "d3b2b8a5f32a3b51f1810fd8e5ebf5ce",
+  "server_last_modified": "Tue, 05 May 2026 15:00:48 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24401.swc"
+ },
  "24435.swc": {
   "bytes": 206863,
   "downloaded_at": "2026-09-18T19:03:06+0900",
@@ -3303,12 +4381,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:48 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24435.swc"
  },
+ "24523.swc": {
+  "bytes": 43216,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "23df22a4e5ccb81ea5c2e977aa35c060",
+  "server_last_modified": "Tue, 05 May 2026 15:00:48 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24523.swc"
+ },
  "24544.swc": {
   "bytes": 74034,
   "downloaded_at": "2026-09-18T19:03:06+0900",
   "md5": "43f30f4b020573df2d1ef7de6fa73fff",
   "server_last_modified": "Tue, 05 May 2026 15:00:48 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24544.swc"
+ },
+ "24568.swc": {
+  "bytes": 62941,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "6331f0a35715d957b16b3279d81f8f7d",
+  "server_last_modified": "Tue, 05 May 2026 15:00:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24568.swc"
  },
  "24572.swc": {
   "bytes": 75266,
@@ -3330,6 +4422,13 @@
   "md5": "b012bcc6c73cf6ca98ae155f7aaa3075",
   "server_last_modified": "Tue, 05 May 2026 15:00:49 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24596.swc"
+ },
+ "24605.swc": {
+  "bytes": 68662,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "03e6d91cd61a3df9c7493602bd429629",
+  "server_last_modified": "Tue, 05 May 2026 15:00:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24605.swc"
  },
  "24623.swc": {
   "bytes": 106885,
@@ -3373,6 +4472,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24785.swc"
  },
+ "24800.swc": {
+  "bytes": 69814,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "0dd0053c3e9eb60d2b9ba1d8f93e53d8",
+  "server_last_modified": "Tue, 05 May 2026 15:00:50 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24800.swc"
+ },
  "24817.swc": {
   "bytes": 100789,
   "downloaded_at": "2026-09-18T19:03:06+0900",
@@ -3386,6 +4492,13 @@
   "md5": "b5829441d05a5af68af5c7bf627693a4",
   "server_last_modified": "Tue, 05 May 2026 15:00:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24834.swc"
+ },
+ "24840.swc": {
+  "bytes": 64460,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "2bb8cd32c3b449e6bbe865fb30146790",
+  "server_last_modified": "Tue, 05 May 2026 15:00:50 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24840.swc"
  },
  "248488.swc": {
   "bytes": 7660,
@@ -3422,6 +4535,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/24965.swc"
  },
+ "25027.swc": {
+  "bytes": 49697,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "0d3a1248aa3db171ba8156898763d89c",
+  "server_last_modified": "Tue, 05 May 2026 15:00:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25027.swc"
+ },
  "25107.swc": {
   "bytes": 115239,
   "downloaded_at": "2026-09-18T19:03:07+0900",
@@ -3436,12 +4556,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:51 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25108.swc"
  },
+ "25136.swc": {
+  "bytes": 51980,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "0ba59475d9deef0412d571c6f3baeb80",
+  "server_last_modified": "Tue, 05 May 2026 15:00:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25136.swc"
+ },
  "25204.swc": {
   "bytes": 129555,
   "downloaded_at": "2026-09-18T19:02:27+0900",
   "md5": "536845e12e9d75b93e3d040d71a462a0",
   "server_last_modified": "Tue, 05 May 2026 15:00:51 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25204.swc"
+ },
+ "25209.swc": {
+  "bytes": 51695,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "7a03a9774746a26d2a2b60c7db3ae2bc",
+  "server_last_modified": "Tue, 05 May 2026 15:00:51 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25209.swc"
  },
  "25231.swc": {
   "bytes": 57978,
@@ -3450,12 +4584,40 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:51 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25231.swc"
  },
+ "25253.swc": {
+  "bytes": 256894,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "25a9520cb8328a250bf75677627f4644",
+  "server_last_modified": "Tue, 05 May 2026 15:00:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25253.swc"
+ },
+ "25267.swc": {
+  "bytes": 69633,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "680ba61c6ca281fa2ac13e1ef96cbd76",
+  "server_last_modified": "Tue, 05 May 2026 15:00:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25267.swc"
+ },
  "25274.swc": {
   "bytes": 71485,
   "downloaded_at": "2026-09-18T19:03:07+0900",
   "md5": "129a831e199756eeff011183ba753408",
   "server_last_modified": "Tue, 05 May 2026 15:00:52 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25274.swc"
+ },
+ "25286.swc": {
+  "bytes": 65958,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "6dea2ec0ba49a4377b0ebb4fe8907d5d",
+  "server_last_modified": "Tue, 05 May 2026 15:00:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25286.swc"
+ },
+ "25316.swc": {
+  "bytes": 71980,
+  "downloaded_at": "2026-10-23T22:34:25+0900",
+  "md5": "4d57d8299f2265aa31d3ddbf3504e687",
+  "server_last_modified": "Tue, 05 May 2026 15:00:52 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25316.swc"
  },
  "25345.swc": {
   "bytes": 167330,
@@ -3471,6 +4633,20 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:52 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25366.swc"
  },
+ "25497.swc": {
+  "bytes": 66707,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "d3aa553b2d9d30a8f2188fd6fc69b387",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25497.swc"
+ },
+ "25511.swc": {
+  "bytes": 75116,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "afbf76513d4ba75cbe35e63922880bc5",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25511.swc"
+ },
  "25521.swc": {
   "bytes": 101682,
   "downloaded_at": "2026-09-18T19:02:27+0900",
@@ -3478,12 +4654,40 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25521.swc"
  },
+ "25524.swc": {
+  "bytes": 48900,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "67537a6056483175aa8221b5077d7e48",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25524.swc"
+ },
  "25542.swc": {
   "bytes": 142193,
   "downloaded_at": "2026-09-18T19:02:27+0900",
   "md5": "82518e8b373d63eeedcea610dd1e6e3e",
   "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25542.swc"
+ },
+ "25572.swc": {
+  "bytes": 52816,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "960e94ea5f716954df78f8280fa4b3ee",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25572.swc"
+ },
+ "25575.swc": {
+  "bytes": 52416,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "e70b5821eef4559661735a07feb88558",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25575.swc"
+ },
+ "25584.swc": {
+  "bytes": 38153,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "42f558b99fbfa51be68d6f2d2c7174fe",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25584.swc"
  },
  "25591.swc": {
   "bytes": 213242,
@@ -3498,6 +4702,13 @@
   "md5": "0ee3780f3255512df49d19f7e29b8461",
   "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25614.swc"
+ },
+ "25636.swc": {
+  "bytes": 74028,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "a20529a7f33696214b4f6ed54f86fc4d",
+  "server_last_modified": "Tue, 05 May 2026 15:00:53 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25636.swc"
  },
  "25662.swc": {
   "bytes": 53453,
@@ -3555,6 +4766,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:54 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/258426.swc"
  },
+ "25854.swc": {
+  "bytes": 50934,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "ccfce19f495d835c09b2d7c032409839",
+  "server_last_modified": "Tue, 05 May 2026 15:00:54 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/25854.swc"
+ },
  "25859.swc": {
   "bytes": 61564,
   "downloaded_at": "2026-09-18T19:03:07+0900",
@@ -3597,12 +4815,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:55 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26051.swc"
  },
+ "26112.swc": {
+  "bytes": 133620,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "47fe7f98ff2a8fecc53c5ef17cd4ad53",
+  "server_last_modified": "Tue, 05 May 2026 15:00:55 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26112.swc"
+ },
  "26126.swc": {
   "bytes": 71818,
   "downloaded_at": "2026-09-18T19:02:05+0900",
   "md5": "cb28db89abe34281acdec3074859c68e",
   "server_last_modified": "Tue, 05 May 2026 15:00:55 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26126.swc"
+ },
+ "26147.swc": {
+  "bytes": 68954,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "1de986c7732a311f59cd8102a0e5b093",
+  "server_last_modified": "Tue, 05 May 2026 15:00:55 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26147.swc"
  },
  "26153.swc": {
   "bytes": 138194,
@@ -3632,12 +4864,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:56 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26325.swc"
  },
+ "26393.swc": {
+  "bytes": 63685,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "c9449b515c2f5363ef90a4537caa50ee",
+  "server_last_modified": "Tue, 05 May 2026 15:00:56 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26393.swc"
+ },
  "26402.swc": {
   "bytes": 68778,
   "downloaded_at": "2026-09-18T19:03:08+0900",
   "md5": "a9323da61caa05307d480df5b910ac22",
   "server_last_modified": "Tue, 05 May 2026 15:00:57 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26402.swc"
+ },
+ "26416.swc": {
+  "bytes": 55200,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "01eb3e8c0ea08269222a82415c3b4951",
+  "server_last_modified": "Tue, 05 May 2026 15:00:57 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26416.swc"
  },
  "26422.swc": {
   "bytes": 87392,
@@ -3659,6 +4905,13 @@
   "md5": "0847b3af6bde2c153377aef62805191b",
   "server_last_modified": "Tue, 05 May 2026 15:00:57 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26525.swc"
+ },
+ "26528.swc": {
+  "bytes": 56784,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "751246215471cbc468df4545db2c11b0",
+  "server_last_modified": "Tue, 05 May 2026 15:00:57 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26528.swc"
  },
  "26543.swc": {
   "bytes": 95267,
@@ -3716,6 +4969,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:58 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26705.swc"
  },
+ "26730.swc": {
+  "bytes": 76992,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "d19a35ca957eb429076338416cb66f54",
+  "server_last_modified": "Tue, 05 May 2026 15:00:58 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26730.swc"
+ },
  "26731.swc": {
   "bytes": 57382,
   "downloaded_at": "2026-09-18T19:03:08+0900",
@@ -3765,6 +5025,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:00:58 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26833.swc"
  },
+ "26915.swc": {
+  "bytes": 63345,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "b72ee0cfe5287d4fb6db7d757bbf52f8",
+  "server_last_modified": "Tue, 05 May 2026 15:00:58 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/26915.swc"
+ },
  "26923.swc": {
   "bytes": 65698,
   "downloaded_at": "2026-09-18T19:02:05+0900",
@@ -3799,6 +5066,13 @@
   "md5": "c3c9b0690576c8f256d7cf09d7843d5a",
   "server_last_modified": "Tue, 05 May 2026 15:00:59 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27021.swc"
+ },
+ "27023.swc": {
+  "bytes": 55041,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "fab8e0de1f9a6e8f3c2622a3795c42e4",
+  "server_last_modified": "Tue, 05 May 2026 15:00:59 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27023.swc"
  },
  "270708.swc": {
   "bytes": 8240,
@@ -3835,6 +5109,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:00 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27330.swc"
  },
+ "27355.swc": {
+  "bytes": 53305,
+  "downloaded_at": "2026-10-23T22:34:26+0900",
+  "md5": "34e866a20b2301f6c521eb248622515b",
+  "server_last_modified": "Tue, 05 May 2026 15:01:00 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27355.swc"
+ },
  "27368.swc": {
   "bytes": 192548,
   "downloaded_at": "2026-09-18T19:03:09+0900",
@@ -3849,12 +5130,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:00 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27369.swc"
  },
+ "27399.swc": {
+  "bytes": 59460,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "cb5d69900c404d3d539259fa503bbb55",
+  "server_last_modified": "Tue, 05 May 2026 15:01:00 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27399.swc"
+ },
  "274169.swc": {
   "bytes": 6661,
   "downloaded_at": "2026-09-18T19:01:58+0900",
   "md5": "6be3ae7bcb63762036c5ee9adbcb687a",
   "server_last_modified": "Tue, 05 May 2026 15:01:00 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/274169.swc"
+ },
+ "27471.swc": {
+  "bytes": 65761,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "cf898d3319f9b43adf48b5a4387334dc",
+  "server_last_modified": "Tue, 05 May 2026 15:01:05 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27471.swc"
  },
  "27517.swc": {
   "bytes": 50629,
@@ -3870,12 +5165,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:01 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27547.swc"
  },
+ "27566.swc": {
+  "bytes": 60375,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "9a779a6d8fc59a05fcc2e1eabaa9510d",
+  "server_last_modified": "Tue, 05 May 2026 15:01:01 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27566.swc"
+ },
  "27597.swc": {
   "bytes": 129927,
   "downloaded_at": "2026-09-18T19:03:09+0900",
   "md5": "77cf072391a620c11683b60d951e99fa",
   "server_last_modified": "Tue, 05 May 2026 15:01:01 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27597.swc"
+ },
+ "27624.swc": {
+  "bytes": 39274,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "f1a6504c36b0213cd6cae0fdd6d8bec1",
+  "server_last_modified": "Tue, 05 May 2026 15:01:01 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27624.swc"
  },
  "27649.swc": {
   "bytes": 79577,
@@ -3884,12 +5193,40 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:01 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27649.swc"
  },
+ "27716.swc": {
+  "bytes": 58323,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "74e7fc06d56d323f385ab0e65759698c",
+  "server_last_modified": "Tue, 05 May 2026 15:01:01 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27716.swc"
+ },
+ "27750.swc": {
+  "bytes": 163024,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "70db9966a96f616bc8e708a37759d66d",
+  "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27750.swc"
+ },
  "27790.swc": {
   "bytes": 78596,
   "downloaded_at": "2026-09-18T19:03:09+0900",
   "md5": "ba0d2198053093c08f18d68f78850fa1",
   "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27790.swc"
+ },
+ "27796.swc": {
+  "bytes": 55060,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "1d38fb1a8cb0aba8e3739f3f2fc2dbcc",
+  "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27796.swc"
+ },
+ "27829.swc": {
+  "bytes": 37214,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "773df8c2a18d4c1490ada74e676dbd77",
+  "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27829.swc"
  },
  "27841.swc": {
   "bytes": 61765,
@@ -3933,6 +5270,34 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/27950.swc"
  },
+ "28003.swc": {
+  "bytes": 67774,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "9f002cf607003d9cf69777a35de5dd2b",
+  "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28003.swc"
+ },
+ "28011.swc": {
+  "bytes": 51022,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "334b0d529553736ca5bfe105accea9eb",
+  "server_last_modified": "Tue, 05 May 2026 15:01:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28011.swc"
+ },
+ "28044.swc": {
+  "bytes": 76229,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "22e9ad541aced5941e4523a17a78bbdc",
+  "server_last_modified": "Tue, 05 May 2026 15:01:03 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28044.swc"
+ },
+ "28188.swc": {
+  "bytes": 48929,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "2eac30e71cb63980b26326c1b050afcd",
+  "server_last_modified": "Tue, 05 May 2026 15:01:03 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28188.swc"
+ },
  "28313.swc": {
   "bytes": 66707,
   "downloaded_at": "2026-09-18T19:03:10+0900",
@@ -3961,6 +5326,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:04 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28557.swc"
  },
+ "28741.swc": {
+  "bytes": 62006,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "83f5663c8f4a4e7a024ecf858f0c2538",
+  "server_last_modified": "Tue, 05 May 2026 15:01:05 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28741.swc"
+ },
  "28758.swc": {
   "bytes": 60651,
   "downloaded_at": "2026-09-18T19:03:10+0900",
@@ -3981,6 +5353,13 @@
   "md5": "bcf6eb51348d20e72401808611f3db3e",
   "server_last_modified": "Tue, 05 May 2026 15:01:05 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28789.swc"
+ },
+ "28871.swc": {
+  "bytes": 66158,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "b4d1f0b5dd036d0673f48a92e2921798",
+  "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28871.swc"
  },
  "28893.swc": {
   "bytes": 71441,
@@ -4003,6 +5382,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28938.swc"
  },
+ "28945.swc": {
+  "bytes": 38888,
+  "downloaded_at": "2026-10-23T22:34:12+0900",
+  "md5": "2c9dc169aaedead4653e3d2d0d558bc6",
+  "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28945.swc"
+ },
  "28972.swc": {
   "bytes": 131493,
   "downloaded_at": "2026-09-18T19:02:28+0900",
@@ -4010,12 +5396,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28972.swc"
  },
+ "28980.swc": {
+  "bytes": 37157,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "6efd0c4e6cea75eb63785e5bba4cabff",
+  "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28980.swc"
+ },
  "28993.swc": {
   "bytes": 73425,
   "downloaded_at": "2026-09-18T19:03:10+0900",
   "md5": "cf0b3c0de2fadcd71cc3fe724fb1a4fb",
   "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/28993.swc"
+ },
+ "29014.swc": {
+  "bytes": 70258,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "44f26b1badbc4124a3c518a867d61010",
+  "server_last_modified": "Tue, 05 May 2026 15:01:06 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29014.swc"
  },
  "29043.swc": {
   "bytes": 126495,
@@ -4045,12 +5445,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29143.swc"
  },
+ "29183.swc": {
+  "bytes": 56900,
+  "downloaded_at": "2026-10-23T22:34:27+0900",
+  "md5": "33ba86fc828691d1de2094d9a2964865",
+  "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29183.swc"
+ },
  "29214.swc": {
   "bytes": 80782,
   "downloaded_at": "2026-09-18T19:02:28+0900",
   "md5": "5e6e9532e3ce203739e5286096f09cb8",
   "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29214.swc"
+ },
+ "29216.swc": {
+  "bytes": 64141,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "6a60c9a8c9e719dc0ef0775147f4f0da",
+  "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29216.swc"
  },
  "29280.swc": {
   "bytes": 134021,
@@ -4059,6 +5473,20 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29280.swc"
  },
+ "29287.swc": {
+  "bytes": 54644,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "c3a8d79eba70421ff082624866e95680",
+  "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29287.swc"
+ },
+ "29319.swc": {
+  "bytes": 57866,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "6a893e7e1cebaf35b0bd9a1e934abd81",
+  "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29319.swc"
+ },
  "29388.swc": {
   "bytes": 141042,
   "downloaded_at": "2026-09-18T19:02:29+0900",
@@ -4066,12 +5494,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29388.swc"
  },
+ "29391.swc": {
+  "bytes": 56157,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "12529496082dd14ed4fa7a29808b7fd7",
+  "server_last_modified": "Tue, 05 May 2026 15:01:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29391.swc"
+ },
  "29408.swc": {
   "bytes": 63474,
   "downloaded_at": "2026-09-18T19:02:05+0900",
   "md5": "a1b2c15f99240fada8d8cd0c161388c1",
   "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29408.swc"
+ },
+ "29417.swc": {
+  "bytes": 34911,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "660079e781074d90e358cfa023e420ab",
+  "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29417.swc"
  },
  "29434.swc": {
   "bytes": 62280,
@@ -4087,6 +5529,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29440.swc"
  },
+ "29469.swc": {
+  "bytes": 35870,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "6157651175a8142828cdd5b159e2add1",
+  "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29469.swc"
+ },
  "29478.swc": {
   "bytes": 57087,
   "downloaded_at": "2026-09-18T19:03:16+0900",
@@ -4100,6 +5549,13 @@
   "md5": "5c5d4274b6488108b0c27739783eac41",
   "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29483.swc"
+ },
+ "29514.swc": {
+  "bytes": 31246,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "2dfe6d1662d294b6ab6a4d154b0c2b89",
+  "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29514.swc"
  },
  "29535.swc": {
   "bytes": 75097,
@@ -4122,6 +5578,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29561.swc"
  },
+ "29563.swc": {
+  "bytes": 37009,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "ba74cbd20ec77df3ff22ad828b68f40a",
+  "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29563.swc"
+ },
  "29570.swc": {
   "bytes": 70090,
   "downloaded_at": "2026-09-18T19:02:05+0900",
@@ -4135,6 +5598,13 @@
   "md5": "e2a65f1939ad07612e537288a0c73721",
   "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29589.swc"
+ },
+ "29598.swc": {
+  "bytes": 65737,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "3a54777f89f6b1488198f1d77dfc5ab0",
+  "server_last_modified": "Tue, 05 May 2026 15:01:08 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29598.swc"
  },
  "29617.swc": {
   "bytes": 47215,
@@ -4164,12 +5634,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/296920599.swc"
  },
+ "29702.swc": {
+  "bytes": 59587,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "e28070865c9a634248d9f6aa484f669f",
+  "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29702.swc"
+ },
+ "29753.swc": {
+  "bytes": 47654,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "d2ea879411a454934c28f99577b98e5e",
+  "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29753.swc"
+ },
  "29805.swc": {
   "bytes": 61224,
   "downloaded_at": "2026-09-18T19:02:06+0900",
   "md5": "8f8657f54ea5c0ba71d712298a086c5e",
   "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29805.swc"
+ },
+ "29815.swc": {
+  "bytes": 52832,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "9261da894b39db970ebea7051d0d2d48",
+  "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29815.swc"
  },
  "29852.swc": {
   "bytes": 48909,
@@ -4185,6 +5676,27 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29859.swc"
  },
+ "29873.swc": {
+  "bytes": 63225,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "b743a46edd00b7763f5ea40d7a719f4c",
+  "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29873.swc"
+ },
+ "29955.swc": {
+  "bytes": 205573,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "1b21553a0c258534378eaa9013e369ca",
+  "server_last_modified": "Tue, 05 May 2026 15:01:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29955.swc"
+ },
+ "29986.swc": {
+  "bytes": 58778,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "c143c2e65d5d914611e6ef4293367f47",
+  "server_last_modified": "Tue, 05 May 2026 15:01:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/29986.swc"
+ },
  "30026.swc": {
   "bytes": 73528,
   "downloaded_at": "2026-09-18T19:03:11+0900",
@@ -4192,12 +5704,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:10 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30026.swc"
  },
+ "30041.swc": {
+  "bytes": 59784,
+  "downloaded_at": "2026-10-23T22:34:28+0900",
+  "md5": "f7f98ebf9374f8ef7e78526b63ea17c8",
+  "server_last_modified": "Tue, 05 May 2026 15:01:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30041.swc"
+ },
+ "30087.swc": {
+  "bytes": 30225,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "9661385ea7b8dbd8c96b7a88041d1a8e",
+  "server_last_modified": "Tue, 05 May 2026 15:01:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30087.swc"
+ },
  "30153.swc": {
   "bytes": 61971,
   "downloaded_at": "2026-09-18T19:02:06+0900",
   "md5": "99dcd127d3e3d33c49de67d798b21726",
   "server_last_modified": "Tue, 05 May 2026 15:01:10 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30153.swc"
+ },
+ "30207.swc": {
+  "bytes": 57470,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "94d30357f97cb50e3152060026a436bd",
+  "server_last_modified": "Tue, 05 May 2026 15:01:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30207.swc"
  },
  "30316.swc": {
   "bytes": 84734,
@@ -4255,6 +5788,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:11 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30451.swc"
  },
+ "30480.swc": {
+  "bytes": 43931,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "db0b55ba774601b3b8810353934a9e0b",
+  "server_last_modified": "Tue, 05 May 2026 15:01:11 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30480.swc"
+ },
  "30498.swc": {
   "bytes": 116768,
   "downloaded_at": "2026-09-18T19:03:11+0900",
@@ -4268,6 +5808,13 @@
   "md5": "f0c19e2ac744d64999bde88b9a01b4fc",
   "server_last_modified": "Tue, 05 May 2026 15:01:11 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30508.swc"
+ },
+ "30512.swc": {
+  "bytes": 46109,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "06353a440fa836d623054a58016303ac",
+  "server_last_modified": "Tue, 05 May 2026 15:01:11 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30512.swc"
  },
  "30536.swc": {
   "bytes": 64044,
@@ -4339,6 +5886,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:12 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30738.swc"
  },
+ "30803.swc": {
+  "bytes": 43463,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "1f6ca897d9294681b2228cf88b65ec49",
+  "server_last_modified": "Tue, 05 May 2026 15:01:12 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30803.swc"
+ },
  "308087.swc": {
   "bytes": 5468,
   "downloaded_at": "2026-09-18T19:01:58+0900",
@@ -4346,12 +5900,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:12 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/308087.swc"
  },
+ "30893.swc": {
+  "bytes": 53453,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "3a8ddee8b091c10c9e58fdcbc045b8fe",
+  "server_last_modified": "Tue, 05 May 2026 15:01:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30893.swc"
+ },
+ "30895.swc": {
+  "bytes": 47258,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "e7be5c63eafa4b0166922c50da704404",
+  "server_last_modified": "Tue, 05 May 2026 15:01:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30895.swc"
+ },
  "30904.swc": {
   "bytes": 191712,
   "downloaded_at": "2026-09-18T19:03:12+0900",
   "md5": "ee41cb26400cc9b10102c2573005c64a",
   "server_last_modified": "Tue, 05 May 2026 15:01:13 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30904.swc"
+ },
+ "30938.swc": {
+  "bytes": 56591,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "4bb77f2ac38cf274b3601b7f8326e283",
+  "server_last_modified": "Tue, 05 May 2026 15:01:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/30938.swc"
  },
  "30994.swc": {
   "bytes": 59672,
@@ -4366,6 +5941,13 @@
   "md5": "b2a0dca98d702294140ac82c58cbf0c0",
   "server_last_modified": "Tue, 05 May 2026 15:01:13 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31100.swc"
+ },
+ "31105.swc": {
+  "bytes": 44204,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "53040b1fb2dcde26b19397e5673748d7",
+  "server_last_modified": "Tue, 05 May 2026 15:01:13 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31105.swc"
  },
  "31113.swc": {
   "bytes": 62586,
@@ -4388,6 +5970,34 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31192.swc"
  },
+ "31257.swc": {
+  "bytes": 61073,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "24ab3241d0b67d2125dbd93b4bc95bc3",
+  "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31257.swc"
+ },
+ "31262.swc": {
+  "bytes": 36885,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "71d012f32ef7a77c23b10e3a06c97e5b",
+  "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31262.swc"
+ },
+ "31301.swc": {
+  "bytes": 30960,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "f96f9a782cdca567006d51de789372d5",
+  "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31301.swc"
+ },
+ "31308.swc": {
+  "bytes": 111647,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "93e019940f9d664ad22ec98c25835d6d",
+  "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31308.swc"
+ },
  "31309.swc": {
   "bytes": 108886,
   "downloaded_at": "2026-09-18T19:02:29+0900",
@@ -4409,6 +6019,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31350.swc"
  },
+ "31429.swc": {
+  "bytes": 33286,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "2fc7e688619bb1676c2c86dd585bfd8b",
+  "server_last_modified": "Tue, 05 May 2026 15:01:14 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31429.swc"
+ },
  "31474.swc": {
   "bytes": 146906,
   "downloaded_at": "2026-09-18T19:03:13+0900",
@@ -4422,6 +6039,13 @@
   "md5": "d0114df0e35b9329b8983c08a45e22a3",
   "server_last_modified": "Tue, 05 May 2026 15:01:15 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31531.swc"
+ },
+ "31563.swc": {
+  "bytes": 54533,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "2588b7f168016ba8d4eeb16efafa2ea1",
+  "server_last_modified": "Tue, 05 May 2026 15:01:15 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31563.swc"
  },
  "31674.swc": {
   "bytes": 80174,
@@ -4458,6 +6082,20 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:16 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31875.swc"
  },
+ "31964.swc": {
+  "bytes": 65025,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "32e879cff81821b76dce4e7a55adf87d",
+  "server_last_modified": "Tue, 05 May 2026 15:01:16 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31964.swc"
+ },
+ "31988.swc": {
+  "bytes": 58266,
+  "downloaded_at": "2026-10-23T22:34:29+0900",
+  "md5": "7dbabdcd292ca1495f7f14da3b9b9080",
+  "server_last_modified": "Tue, 05 May 2026 15:01:16 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/31988.swc"
+ },
  "32020.swc": {
   "bytes": 62105,
   "downloaded_at": "2026-09-18T19:03:13+0900",
@@ -4492,6 +6130,20 @@
   "md5": "a990e3dabb7a27648ee5787c93f14f50",
   "server_last_modified": "Tue, 05 May 2026 15:01:17 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32206.swc"
+ },
+ "32223.swc": {
+  "bytes": 49515,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "0972fcfa2ab56eaf2cb8aff973ec725d",
+  "server_last_modified": "Tue, 05 May 2026 15:01:17 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32223.swc"
+ },
+ "32237.swc": {
+  "bytes": 52493,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "d310b07e08fc416b2f87c115c9bff6e8",
+  "server_last_modified": "Tue, 05 May 2026 15:01:17 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32237.swc"
  },
  "32262.swc": {
   "bytes": 54282,
@@ -4556,6 +6208,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:18 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32465.swc"
  },
+ "32507.swc": {
+  "bytes": 55358,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "47d37ae6a8e34dc0e13caf3b3dd683d7",
+  "server_last_modified": "Tue, 05 May 2026 15:01:18 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32507.swc"
+ },
  "32554.swc": {
   "bytes": 58295,
   "downloaded_at": "2026-09-18T19:03:14+0900",
@@ -4569,6 +6228,13 @@
   "md5": "e8bd1a5a7fbe95d372dbe02add64cbd0",
   "server_last_modified": "Tue, 05 May 2026 15:01:18 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32556.swc"
+ },
+ "32597.swc": {
+  "bytes": 31842,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "f753549d6e398abd5eefc912b421ec31",
+  "server_last_modified": "Tue, 05 May 2026 15:01:18 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32597.swc"
  },
  "32609.swc": {
   "bytes": 238538,
@@ -4590,6 +6256,13 @@
   "md5": "631c4601ac4c84e1300471ee06adeb51",
   "server_last_modified": "Tue, 05 May 2026 15:01:19 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32728.swc"
+ },
+ "32737.swc": {
+  "bytes": 63596,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "ce86cf5ff4c18d80e3a50e42f09d392c",
+  "server_last_modified": "Tue, 05 May 2026 15:01:19 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/32737.swc"
  },
  "32788.swc": {
   "bytes": 218528,
@@ -4696,6 +6369,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33133.swc"
  },
+ "33137.swc": {
+  "bytes": 34944,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "ed6e08616d750e2d8f3d92cc98644e5f",
+  "server_last_modified": "Tue, 05 May 2026 15:01:20 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33137.swc"
+ },
  "33168.swc": {
   "bytes": 49876,
   "downloaded_at": "2026-09-18T19:03:15+0900",
@@ -4703,12 +6383,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33168.swc"
  },
+ "33185.swc": {
+  "bytes": 56443,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "b99b568b599ff536bd8b1878232b7a75",
+  "server_last_modified": "Tue, 05 May 2026 15:01:20 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33185.swc"
+ },
  "33299.swc": {
   "bytes": 78225,
   "downloaded_at": "2026-09-18T19:03:15+0900",
   "md5": "f12391c289990fbdbca38073aded8837",
   "server_last_modified": "Tue, 05 May 2026 15:01:20 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33299.swc"
+ },
+ "33303.swc": {
+  "bytes": 62431,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "7e89fd2330e0b5faac896bcc31b9eff8",
+  "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33303.swc"
  },
  "33365.swc": {
   "bytes": 74363,
@@ -4724,6 +6418,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33380.swc"
  },
+ "33396.swc": {
+  "bytes": 52972,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "a369ff251dfb67dbf1ffe90b6b437225",
+  "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33396.swc"
+ },
  "33401.swc": {
   "bytes": 45018,
   "downloaded_at": "2026-09-18T19:03:15+0900",
@@ -4738,12 +6439,40 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33402.swc"
  },
+ "33406.swc": {
+  "bytes": 44062,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "781b80b659d0fce4d63318e869bb36b2",
+  "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33406.swc"
+ },
+ "33439.swc": {
+  "bytes": 220716,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "67b179500461a7d834d76cc953bcaa22",
+  "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33439.swc"
+ },
  "33553.swc": {
   "bytes": 74284,
   "downloaded_at": "2026-09-18T19:02:29+0900",
   "md5": "dfc32472e44801df7696f3d7049903aa",
   "server_last_modified": "Tue, 05 May 2026 15:01:21 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33553.swc"
+ },
+ "33694.swc": {
+  "bytes": 50446,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "9bf55cf1d060ac3482b6bb1ee8b2aebd",
+  "server_last_modified": "Tue, 05 May 2026 15:01:22 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33694.swc"
+ },
+ "33965.swc": {
+  "bytes": 47750,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "59379dd459eb74deff0e314b9856d37c",
+  "server_last_modified": "Tue, 05 May 2026 15:01:22 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/33965.swc"
  },
  "33992.swc": {
   "bytes": 73259,
@@ -4766,6 +6495,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:23 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34046.swc"
  },
+ "34051.swc": {
+  "bytes": 46490,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "24520e00805e794c06931d4cad309162",
+  "server_last_modified": "Tue, 05 May 2026 15:01:23 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34051.swc"
+ },
  "34093.swc": {
   "bytes": 51409,
   "downloaded_at": "2026-09-18T19:02:06+0900",
@@ -4779,6 +6515,13 @@
   "md5": "a668cfa380b98c0f266981b297f73202",
   "server_last_modified": "Tue, 05 May 2026 15:01:23 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34098.swc"
+ },
+ "34110.swc": {
+  "bytes": 53199,
+  "downloaded_at": "2026-10-23T22:34:30+0900",
+  "md5": "991c5ece0ba07e4df648a92e41b715eb",
+  "server_last_modified": "Tue, 05 May 2026 15:01:23 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34110.swc"
  },
  "34117.swc": {
   "bytes": 51644,
@@ -4822,12 +6565,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:24 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34367.swc"
  },
+ "34372.swc": {
+  "bytes": 50511,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "04748a78b83e37dfc2be682dc8cecfa5",
+  "server_last_modified": "Tue, 05 May 2026 15:01:24 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34372.swc"
+ },
  "34402.swc": {
   "bytes": 172293,
   "downloaded_at": "2026-09-18T19:03:16+0900",
   "md5": "c90d221045741e3f70fc3e0c4a142e93",
   "server_last_modified": "Tue, 05 May 2026 15:01:24 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34402.swc"
+ },
+ "34407.swc": {
+  "bytes": 54839,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "e1c1d1da684c8b8772922bff3e9cb9a0",
+  "server_last_modified": "Tue, 05 May 2026 15:01:24 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34407.swc"
  },
  "34434.swc": {
   "bytes": 58043,
@@ -4864,6 +6621,20 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:24 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34625.swc"
  },
+ "34655.swc": {
+  "bytes": 52530,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "a7d5a5569df4bdb1cf469bf911a6af25",
+  "server_last_modified": "Tue, 05 May 2026 15:01:32 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34655.swc"
+ },
+ "34681.swc": {
+  "bytes": 51453,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "60723bf714cfe9a65ca9d1dd4f60a501",
+  "server_last_modified": "Tue, 05 May 2026 15:01:25 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34681.swc"
+ },
  "34710.swc": {
   "bytes": 53266,
   "downloaded_at": "2026-09-18T19:03:16+0900",
@@ -4877,6 +6648,13 @@
   "md5": "3226be594adff816b8b9a5301fb6f6b2",
   "server_last_modified": "Tue, 05 May 2026 15:01:25 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34727.swc"
+ },
+ "34845.swc": {
+  "bytes": 31857,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "ee4749843e4654f71cbc99d4fb84ce28",
+  "server_last_modified": "Tue, 05 May 2026 15:01:25 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/34845.swc"
  },
  "34966.swc": {
   "bytes": 119959,
@@ -4927,6 +6705,20 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:26 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35238.swc"
  },
+ "35262.swc": {
+  "bytes": 32432,
+  "downloaded_at": "2026-10-23T22:34:13+0900",
+  "md5": "dd8e5633500f9b03d67aa8bba3610bdd",
+  "server_last_modified": "Tue, 05 May 2026 15:01:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35262.swc"
+ },
+ "35294.swc": {
+  "bytes": 47865,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "d32d5187febeeeac51538b07686de7c4",
+  "server_last_modified": "Tue, 05 May 2026 15:01:27 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35294.swc"
+ },
  "35351.swc": {
   "bytes": 44913,
   "downloaded_at": "2026-09-18T19:01:56+0900",
@@ -4955,12 +6747,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:27 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35560.swc"
  },
+ "35616.swc": {
+  "bytes": 34685,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "1613cae07cdcdab4191d0a8d918897bc",
+  "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35616.swc"
+ },
  "35625.swc": {
   "bytes": 141923,
   "downloaded_at": "2026-09-18T19:02:06+0900",
   "md5": "c826f18176964560a6722d38ea66ad1c",
   "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35625.swc"
+ },
+ "35632.swc": {
+  "bytes": 67700,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "d5ee191cd89a5e10674cd442384dfe39",
+  "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35632.swc"
+ },
+ "35680.swc": {
+  "bytes": 54405,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "ec5c36c468aa5aae26b796f4bb5408f5",
+  "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35680.swc"
  },
  "35748.swc": {
   "bytes": 118417,
@@ -4969,12 +6782,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35748.swc"
  },
+ "35838.swc": {
+  "bytes": 53054,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "c314955cde6492085f103628cbfa507a",
+  "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35838.swc"
+ },
  "35887.swc": {
   "bytes": 69072,
   "downloaded_at": "2026-09-18T19:03:17+0900",
   "md5": "a42171c5187db8192a6b0bf2fc73ea0b",
   "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35887.swc"
+ },
+ "35889.swc": {
+  "bytes": 78787,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "3238d212797cae111c328e8bf0f3b1a1",
+  "server_last_modified": "Tue, 05 May 2026 15:01:28 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/35889.swc"
  },
  "35919.swc": {
   "bytes": 67413,
@@ -5158,6 +6985,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:33 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37426.swc"
  },
+ "37431.swc": {
+  "bytes": 58851,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "58142c83ec7cd978e2bf32bee77dfcb6",
+  "server_last_modified": "Tue, 05 May 2026 15:01:33 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37431.swc"
+ },
  "37517.swc": {
   "bytes": 43294,
   "downloaded_at": "2026-09-18T19:03:18+0900",
@@ -5186,6 +7020,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:33 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37553.swc"
  },
+ "37587.swc": {
+  "bytes": 37065,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "7d4968e16a444513313185fa7276fbd1",
+  "server_last_modified": "Tue, 05 May 2026 15:01:34 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37587.swc"
+ },
  "37593.swc": {
   "bytes": 54771,
   "downloaded_at": "2026-09-18T19:03:19+0900",
@@ -5206,6 +7047,13 @@
   "md5": "06ff7f3c4897c887a2432adb806b5904",
   "server_last_modified": "Tue, 05 May 2026 15:01:34 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37606.swc"
+ },
+ "37613.swc": {
+  "bytes": 52256,
+  "downloaded_at": "2026-10-23T22:34:31+0900",
+  "md5": "b150615f232da5310c79675de64537ca",
+  "server_last_modified": "Tue, 05 May 2026 15:01:34 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37613.swc"
  },
  "37654.swc": {
   "bytes": 63329,
@@ -5235,12 +7083,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37912.swc"
  },
+ "37925.swc": {
+  "bytes": 53019,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "b0249edeccde4582c914a99d8760b831",
+  "server_last_modified": "Tue, 05 May 2026 15:01:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37925.swc"
+ },
  "37955.swc": {
   "bytes": 53047,
   "downloaded_at": "2026-09-18T19:03:19+0900",
   "md5": "132da2e0efb596d94cf41ae7e66c4098",
   "server_last_modified": "Tue, 05 May 2026 15:01:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/37955.swc"
+ },
+ "38065.swc": {
+  "bytes": 34504,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "aada09a07c55546a33c171b06ed7caf1",
+  "server_last_modified": "Tue, 05 May 2026 15:01:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/38065.swc"
  },
  "38093.swc": {
   "bytes": 56724,
@@ -5311,6 +7173,13 @@
   "md5": "72f5e09aed8c93f559a20e4c588e738a",
   "server_last_modified": "Tue, 05 May 2026 15:01:36 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/38473.swc"
+ },
+ "38542.swc": {
+  "bytes": 46104,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "65acd8c6ccd933900b57f03a37b27bd9",
+  "server_last_modified": "Tue, 05 May 2026 15:01:36 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/38542.swc"
  },
  "38593.swc": {
   "bytes": 58383,
@@ -5459,6 +7328,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:39 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/39562.swc"
  },
+ "39620.swc": {
+  "bytes": 58429,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "233e22269d9408a3b3b27c4923464118",
+  "server_last_modified": "Tue, 05 May 2026 15:01:40 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/39620.swc"
+ },
  "39640.swc": {
   "bytes": 81027,
   "downloaded_at": "2026-09-18T19:03:21+0900",
@@ -5564,6 +7440,20 @@
   "server_last_modified": "Tue, 05 May 2026 15:01:43 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/40792.swc"
  },
+ "40811.swc": {
+  "bytes": 49552,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "12f5869924a408834a1fa7b8aa56ae64",
+  "server_last_modified": "Tue, 05 May 2026 15:01:43 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/40811.swc"
+ },
+ "40841.swc": {
+  "bytes": 46635,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "5c61b050a364dc511c8e058c16ed9a7c",
+  "server_last_modified": "Tue, 05 May 2026 15:01:43 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/40841.swc"
+ },
  "40955.swc": {
   "bytes": 71909,
   "downloaded_at": "2026-09-18T19:03:21+0900",
@@ -5577,6 +7467,13 @@
   "md5": "c57b17877aca309180eab59f4ead2c84",
   "server_last_modified": "Tue, 05 May 2026 15:01:44 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/41090.swc"
+ },
+ "41097.swc": {
+  "bytes": 46667,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "026fcf8b640eebfac0c516840d7bec80",
+  "server_last_modified": "Tue, 05 May 2026 15:01:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/41097.swc"
  },
  "41218.swc": {
   "bytes": 60339,
@@ -6264,6 +8161,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:10 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/49947.swc"
  },
+ "50287.swc": {
+  "bytes": 49667,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "cf43327d4ec291cd751a35c1a36e5e59",
+  "server_last_modified": "Tue, 05 May 2026 15:02:17 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/50287.swc"
+ },
  "50338.swc": {
   "bytes": 66219,
   "downloaded_at": "2026-09-18T19:03:27+0900",
@@ -6306,6 +8210,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/511829.swc"
  },
+ "511914.swc": {
+  "bytes": 37623,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "f40144e24a8d89ab8aff310cbea8449e",
+  "server_last_modified": "Tue, 05 May 2026 15:02:35 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/511914.swc"
+ },
  "511925.swc": {
   "bytes": 38149,
   "downloaded_at": "2026-09-18T19:03:46+0900",
@@ -6341,6 +8252,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:35 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/512236.swc"
  },
+ "512366.swc": {
+  "bytes": 34834,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "48fa37c3c57b70d44dc48fb25302ab9e",
+  "server_last_modified": "Tue, 05 May 2026 15:02:36 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/512366.swc"
+ },
  "512543.swc": {
   "bytes": 70143,
   "downloaded_at": "2026-09-18T19:03:47+0900",
@@ -6375,6 +8293,13 @@
   "md5": "f920d98741845107c172d584cac9488e",
   "server_last_modified": "Tue, 05 May 2026 15:02:36 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/512638.swc"
+ },
+ "512705.swc": {
+  "bytes": 32973,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "e9339157956fa1fd704f28eeecd36df7",
+  "server_last_modified": "Tue, 05 May 2026 15:02:36 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/512705.swc"
  },
  "512782.swc": {
   "bytes": 183362,
@@ -6530,6 +8455,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:39 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/514421.swc"
  },
+ "514508.swc": {
+  "bytes": 33006,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "341301ddb0854196ab829c0359202eea",
+  "server_last_modified": "Tue, 05 May 2026 15:02:39 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/514508.swc"
+ },
  "51451.swc": {
   "bytes": 41393,
   "downloaded_at": "2026-09-18T19:03:27+0900",
@@ -6544,6 +8476,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:39 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/514566.swc"
  },
+ "514670.swc": {
+  "bytes": 96713,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "15e739d7cb3c61009d7903552c3655c4",
+  "server_last_modified": "Tue, 05 May 2026 15:02:39 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/514670.swc"
+ },
  "514857.swc": {
   "bytes": 56075,
   "downloaded_at": "2026-09-18T19:02:10+0900",
@@ -6557,6 +8496,13 @@
   "md5": "3015bf00ed602a22deb375670fe9658e",
   "server_last_modified": "Tue, 05 May 2026 15:02:40 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/514925.swc"
+ },
+ "514956.swc": {
+  "bytes": 31803,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "ad5662a0ddcb829bdccd106ad0edf9fe",
+  "server_last_modified": "Tue, 05 May 2026 15:02:40 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/514956.swc"
  },
  "514957.swc": {
   "bytes": 73299,
@@ -6592,6 +8538,13 @@
   "md5": "8147e30e9f4dd8d2f7f4b2c89caad276",
   "server_last_modified": "Tue, 05 May 2026 15:02:41 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/515420.swc"
+ },
+ "515476.swc": {
+  "bytes": 33869,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "3bdcd7bdb134d1ca719f2400d386fd11",
+  "server_last_modified": "Tue, 05 May 2026 15:02:41 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/515476.swc"
  },
  "515559.swc": {
   "bytes": 54749,
@@ -6641,6 +8594,20 @@
   "md5": "b1c11801e732a0ba01d9ed6e91a4b4fe",
   "server_last_modified": "Tue, 05 May 2026 15:02:41 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/515805.swc"
+ },
+ "515900.swc": {
+  "bytes": 50393,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "0ac02e1adcbd88bf9eba5a737a407b39",
+  "server_last_modified": "Tue, 05 May 2026 15:02:42 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/515900.swc"
+ },
+ "515971.swc": {
+  "bytes": 65427,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "5fa2e88d72b46e13a42ee8f82aeeb6d7",
+  "server_last_modified": "Tue, 05 May 2026 15:02:42 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/515971.swc"
  },
  "515977.swc": {
   "bytes": 137653,
@@ -6705,6 +8672,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:43 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/516899.swc"
  },
+ "516909.swc": {
+  "bytes": 151969,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "f93924c75189d289659b253ea6e4642a",
+  "server_last_modified": "Tue, 05 May 2026 15:02:43 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/516909.swc"
+ },
  "516953.swc": {
   "bytes": 86322,
   "downloaded_at": "2026-09-18T19:03:49+0900",
@@ -6718,6 +8692,20 @@
   "md5": "2d98a5864e0dbd5e364d078adabd9aad",
   "server_last_modified": "Tue, 05 May 2026 15:02:43 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/516960.swc"
+ },
+ "517078.swc": {
+  "bytes": 76113,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "bde541344f3746f423be01e4e406f4eb",
+  "server_last_modified": "Tue, 05 May 2026 15:02:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517078.swc"
+ },
+ "517079.swc": {
+  "bytes": 60614,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "5530934842b6147ddb1abf2aab28cd12",
+  "server_last_modified": "Tue, 05 May 2026 15:02:44 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517079.swc"
  },
  "517183.swc": {
   "bytes": 60484,
@@ -6796,6 +8784,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517735.swc"
  },
+ "517752.swc": {
+  "bytes": 30397,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "0dcd1ce01f4e8773706217b2f2dee313",
+  "server_last_modified": "Tue, 05 May 2026 15:02:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517752.swc"
+ },
  "517777.swc": {
   "bytes": 49263,
   "downloaded_at": "2026-09-18T19:03:49+0900",
@@ -6810,12 +8805,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517778.swc"
  },
+ "517819.swc": {
+  "bytes": 61748,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "4a1340ce47e97ab555482623d39c0e18",
+  "server_last_modified": "Tue, 05 May 2026 15:02:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517819.swc"
+ },
  "517833.swc": {
   "bytes": 68689,
   "downloaded_at": "2026-09-18T19:03:49+0900",
   "md5": "9b2c2335ed3082068deacd1e9ef675a8",
   "server_last_modified": "Tue, 05 May 2026 15:02:45 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/517833.swc"
+ },
+ "518016.swc": {
+  "bytes": 31590,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "6a913a0cbb671140382950337d6e364a",
+  "server_last_modified": "Tue, 05 May 2026 15:02:45 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518016.swc"
  },
  "518038.swc": {
   "bytes": 59917,
@@ -6845,12 +8854,26 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518379.swc"
  },
+ "518439.swc": {
+  "bytes": 151368,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "76e37ef7117fae7d277cd38d6ee70b61",
+  "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518439.swc"
+ },
  "518464.swc": {
   "bytes": 57098,
   "downloaded_at": "2026-09-18T19:03:49+0900",
   "md5": "901d9114643987ba222f608d814f4659",
   "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518464.swc"
+ },
+ "518544.swc": {
+  "bytes": 26608,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "7d7998e57942de125dd8112fbc936ea7",
+  "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518544.swc"
  },
  "518589.swc": {
   "bytes": 123101,
@@ -6866,12 +8889,33 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518695.swc"
  },
+ "518730.swc": {
+  "bytes": 33825,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "e258a61d6c5c12b293eb3353b83d1cad",
+  "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518730.swc"
+ },
+ "518731.swc": {
+  "bytes": 61770,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "a15fc8cf18f96355c9f68d1a6c64adcf",
+  "server_last_modified": "Tue, 05 May 2026 15:02:46 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518731.swc"
+ },
  "518847.swc": {
   "bytes": 63640,
   "downloaded_at": "2026-09-18T19:02:11+0900",
   "md5": "abc944eeb118cd3bb86f31050224ca96",
   "server_last_modified": "Tue, 05 May 2026 15:02:47 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518847.swc"
+ },
+ "518983.swc": {
+  "bytes": 37247,
+  "downloaded_at": "2026-10-23T22:34:15+0900",
+  "md5": "6bb0f4026be041ec76185ed6e88cabcb",
+  "server_last_modified": "Tue, 05 May 2026 15:02:47 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/518983.swc"
  },
  "519043.swc": {
   "bytes": 66188,
@@ -6929,6 +8973,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:48 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/519636.swc"
  },
+ "519650.swc": {
+  "bytes": 124434,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "81ba6e159860353a3e2c23f7e2bfbf1e",
+  "server_last_modified": "Tue, 05 May 2026 15:02:48 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/519650.swc"
+ },
  "519792.swc": {
   "bytes": 106839,
   "downloaded_at": "2026-09-18T19:03:50+0900",
@@ -6949,6 +9000,13 @@
   "md5": "27ba12c2761300bf7e29b57c8d9c5b4a",
   "server_last_modified": "Tue, 05 May 2026 15:02:48 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/519914.swc"
+ },
+ "519931.swc": {
+  "bytes": 33359,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "ad6ef35405bfbc7f09a8f69f28f5fff4",
+  "server_last_modified": "Tue, 05 May 2026 15:02:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/519931.swc"
  },
  "519940.swc": {
   "bytes": 145331,
@@ -6999,6 +9057,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:49 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/520364.swc"
  },
+ "520449.swc": {
+  "bytes": 38016,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "1115f759d0f8aa6ce0cb50eec1d51410",
+  "server_last_modified": "Tue, 05 May 2026 15:02:49 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/520449.swc"
+ },
  "520642.swc": {
   "bytes": 119246,
   "downloaded_at": "2026-09-18T19:03:50+0900",
@@ -7040,6 +9105,13 @@
   "md5": "f8fffa9c7f31078a948309feecf14426",
   "server_last_modified": "Tue, 05 May 2026 15:02:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/520709.swc"
+ },
+ "520764.swc": {
+  "bytes": 53041,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "1e5430777a938906d68e63dc969f03ee",
+  "server_last_modified": "Tue, 05 May 2026 15:02:50 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/520764.swc"
  },
  "520791.swc": {
   "bytes": 87917,
@@ -7103,6 +9175,13 @@
   "md5": "a41e326bf4d289085763dc1909cf90b5",
   "server_last_modified": "Tue, 05 May 2026 15:02:50 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/521112.swc"
+ },
+ "521115.swc": {
+  "bytes": 52514,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "49683cc127ae980dac273fb765cde27e",
+  "server_last_modified": "Tue, 05 May 2026 15:02:50 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/521115.swc"
  },
  "521122.swc": {
   "bytes": 96541,
@@ -7300,6 +9379,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:54 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/524306.swc"
  },
+ "524366.swc": {
+  "bytes": 47840,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "66a5c491f3191368e708b6ff6a5431b5",
+  "server_last_modified": "Tue, 05 May 2026 15:02:54 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/524366.swc"
+ },
  "524415.swc": {
   "bytes": 199939,
   "downloaded_at": "2026-09-18T19:03:52+0900",
@@ -7349,6 +9435,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:55 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/524847.swc"
  },
+ "524899.swc": {
+  "bytes": 39256,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "14841be12dbd1c7993de375b7d02292a",
+  "server_last_modified": "Tue, 05 May 2026 15:02:55 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/524899.swc"
+ },
  "525143.swc": {
   "bytes": 52683,
   "downloaded_at": "2026-09-18T19:02:11+0900",
@@ -7377,6 +9470,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:02:56 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/525483.swc"
  },
+ "525844.swc": {
+  "bytes": 55002,
+  "downloaded_at": "2026-10-23T22:34:33+0900",
+  "md5": "2a9ce17940d23e9c54e3f5cc4d9dedd6",
+  "server_last_modified": "Tue, 05 May 2026 15:02:56 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/525844.swc"
+ },
  "526001.swc": {
   "bytes": 92536,
   "downloaded_at": "2026-09-18T19:03:53+0900",
@@ -7390,6 +9490,13 @@
   "md5": "15cf407b13a906ad32a3f393fffea032",
   "server_last_modified": "Tue, 05 May 2026 15:02:57 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/526066.swc"
+ },
+ "526286.swc": {
+  "bytes": 33715,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "0e660283afee52b0edf91e13f25f79d5",
+  "server_last_modified": "Tue, 05 May 2026 15:02:57 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/526286.swc"
  },
  "526299.swc": {
   "bytes": 53442,
@@ -7425,6 +9532,13 @@
   "md5": "e78801e55812d125f1d59787050697c5",
   "server_last_modified": "Tue, 05 May 2026 15:02:58 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/526918.swc"
+ },
+ "527408.swc": {
+  "bytes": 38308,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "88e71567f71bb5cfab5f19eabdaf0c08",
+  "server_last_modified": "Tue, 05 May 2026 15:02:58 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/527408.swc"
  },
  "527585.swc": {
   "bytes": 87710,
@@ -7531,6 +9645,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:03:01 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/529975.swc"
  },
+ "530029.swc": {
+  "bytes": 34765,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "1b971e560328f843cabaf86ebb2215c5",
+  "server_last_modified": "Tue, 05 May 2026 15:03:01 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/530029.swc"
+ },
  "530083.swc": {
   "bytes": 51926,
   "downloaded_at": "2026-09-18T19:03:54+0900",
@@ -7572,6 +9693,13 @@
   "md5": "76186435b836c3005527696bb3f3b3e1",
   "server_last_modified": "Tue, 05 May 2026 15:03:02 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/530914.swc"
+ },
+ "531014.swc": {
+  "bytes": 50279,
+  "downloaded_at": "2026-10-23T22:34:34+0900",
+  "md5": "3950883ec73b974462c2d23bf4ffbf9f",
+  "server_last_modified": "Tue, 05 May 2026 15:03:02 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/531014.swc"
  },
  "531453.swc": {
   "bytes": 198854,
@@ -7615,6 +9743,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:03:04 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/532199.swc"
  },
+ "532254.swc": {
+  "bytes": 131413,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "836b2462be9cfac06e2749bfbc473601",
+  "server_last_modified": "Tue, 05 May 2026 15:03:04 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/532254.swc"
+ },
  "532560.swc": {
   "bytes": 58706,
   "downloaded_at": "2026-09-18T19:02:12+0900",
@@ -7643,6 +9778,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:03:05 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/532750.swc"
  },
+ "533129.swc": {
+  "bytes": 42000,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "5a23b442e94fbacfea29d83772621fbf",
+  "server_last_modified": "Tue, 05 May 2026 15:03:05 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/533129.swc"
+ },
  "533308.swc": {
   "bytes": 55961,
   "downloaded_at": "2026-09-18T19:03:55+0900",
@@ -7656,6 +9798,13 @@
   "md5": "7632fbab2bc4c34b22320227224f8e9b",
   "server_last_modified": "Tue, 05 May 2026 15:03:06 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/53355.swc"
+ },
+ "533895.swc": {
+  "bytes": 246803,
+  "downloaded_at": "2026-10-23T22:34:34+0900",
+  "md5": "ee082ba6b4edc4eb04d180a8ad57edd4",
+  "server_last_modified": "Tue, 05 May 2026 15:03:07 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/533895.swc"
  },
  "534090.swc": {
   "bytes": 60902,
@@ -7698,6 +9847,13 @@
   "md5": "bc98f76afdf1d233f846677050b73b37",
   "server_last_modified": "Tue, 05 May 2026 15:03:09 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/535209.swc"
+ },
+ "535341.swc": {
+  "bytes": 29247,
+  "downloaded_at": "2026-10-23T22:34:16+0900",
+  "md5": "19cdc5abcc571ae647fd47e0996787d0",
+  "server_last_modified": "Tue, 05 May 2026 15:03:09 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/535341.swc"
  },
  "53540.swc": {
   "bytes": 45782,
@@ -7761,6 +9917,13 @@
   "md5": "0acebce79f8681dcc091758da6f1df72",
   "server_last_modified": "Tue, 05 May 2026 15:03:10 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/53639.swc"
+ },
+ "536444.swc": {
+  "bytes": 54681,
+  "downloaded_at": "2026-10-23T22:34:34+0900",
+  "md5": "f6fe4c98a1c1c31fc705953d10fe219d",
+  "server_last_modified": "Tue, 05 May 2026 15:03:10 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/536444.swc"
  },
  "536501.swc": {
   "bytes": 113240,
@@ -8125,6 +10288,13 @@
   "md5": "f093176e9df3e09461e6c0f8016679dc",
   "server_last_modified": "Tue, 05 May 2026 15:03:30 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/555966.swc"
+ },
+ "55627.swc": {
+  "bytes": 46633,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "3d26cee749594808e44e7bf2cc97a8d5",
+  "server_last_modified": "Tue, 05 May 2026 15:03:30 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/55627.swc"
  },
  "556587.swc": {
   "bytes": 73388,
@@ -9141,6 +11311,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:04:31 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/77456.swc"
  },
+ "77614.swc": {
+  "bytes": 37612,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "6a155cfa405b1768f139b2f5e00466be",
+  "server_last_modified": "Tue, 05 May 2026 15:04:32 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/77614.swc"
+ },
  "77750.swc": {
   "bytes": 44120,
   "downloaded_at": "2026-09-18T19:03:36+0900",
@@ -9232,6 +11409,13 @@
   "server_last_modified": "Tue, 05 May 2026 15:04:36 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/79855.swc"
  },
+ "800146.swc": {
+  "bytes": 54365,
+  "downloaded_at": "2026-10-23T22:34:38+0900",
+  "md5": "d20b53e22966dc156afa427e63c7cdf9",
+  "server_last_modified": "Tue, 05 May 2026 15:04:38 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/800146.swc"
+ },
  "80066.swc": {
   "bytes": 60249,
   "downloaded_at": "2026-09-18T19:03:36+0900",
@@ -9245,6 +11429,13 @@
   "md5": "2b55dcb4dd35976fbbcea570baab784b",
   "server_last_modified": "Tue, 05 May 2026 15:04:47 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/80426.swc"
+ },
+ "804642.swc": {
+  "bytes": 40837,
+  "downloaded_at": "2026-10-23T22:34:38+0900",
+  "md5": "0c2e2b57fe810b1470f47478b00b84d4",
+  "server_last_modified": "Tue, 05 May 2026 15:04:48 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/804642.swc"
  },
  "80498.swc": {
   "bytes": 135482,
@@ -9266,6 +11457,13 @@
   "md5": "87e4406073df986259cce113ffd180f5",
   "server_last_modified": "Tue, 05 May 2026 15:04:53 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/80677.swc"
+ },
+ "81112.swc": {
+  "bytes": 43219,
+  "downloaded_at": "2026-10-23T22:34:14+0900",
+  "md5": "96ca1d677356c2db9a1c1ccfb8a97c4b",
+  "server_last_modified": "Tue, 05 May 2026 15:05:04 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/81112.swc"
  },
  "81161.swc": {
   "bytes": 64723,
@@ -9700,6 +11898,13 @@
   "md5": "98e3e48ba05df5b2200af2fe83d81268",
   "server_last_modified": "Tue, 05 May 2026 15:06:12 GMT",
   "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/95203.swc"
+ },
+ "95241.swc": {
+  "bytes": 68861,
+  "downloaded_at": "2026-10-23T22:34:32+0900",
+  "md5": "6e8e875c2c67e20d852273f34b8fc75d",
+  "server_last_modified": "Tue, 05 May 2026 15:06:12 GMT",
+  "url": "https://storage.googleapis.com/flyem-male-cns/v1.0/segmentation/skeletons-malecns/skeletons-swc/95241.swc"
  },
  "95256.swc": {
   "bytes": 44867,

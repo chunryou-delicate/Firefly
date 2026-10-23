@@ -365,3 +365,47 @@ def test_server_md5_header_parsing():
         def get_all(self, k):
             return ["crc32c=av9IGg=="]
     assert sk._server_md5(NoMd5()) is None
+
+
+# ---------------------------------------------------------------------------
+# M7: --profile (docs/m7-profiles-brief.md)
+# ---------------------------------------------------------------------------
+class _EscapePS:
+    names = ["LC4_L", "LC4_R", "LPLC2_L", "LPLC2_R", "DNp01_L", "DNp01_R", "TTMn_L", "TTMn_R", "rest"]
+    members = {"LC4_L": np.array([0, 1]), "LC4_R": np.array([2]), "LPLC2_L": np.array([3]),
+               "LPLC2_R": np.array([4, 5]), "DNp01_L": np.array([6]), "DNp01_R": np.array([7]),
+               "TTMn_L": np.array([8]), "TTMn_R": np.array([9]), "rest": np.array([10])}
+
+
+def test_profile_base_names_merge_sides_and_drop_rest():
+    assert sk.profile_base_names(_EscapePS()) == ["LC4", "LPLC2", "DNp01", "TTMn"]
+
+    class Aud:
+        names = ["JO_AB_L", "JO_AB_R", "JO_post_L", "JO_post_R", "JO_post_unk", "pC1_L", "rest"]
+    assert sk.profile_base_names(Aud()) == ["JO_AB", "JO_post", "pC1"]
+
+
+def test_escape_bases_resolve_without_prefix_collisions():
+    """LC4 must not pick up LPLC2 (and vice versa); sides are merged."""
+    g = StubGraph(list(range(100, 111)))
+    assert sk.probe_set_body_ids(g, "LC4", ps=_EscapePS()).tolist() == [100, 101, 102]
+    assert sk.probe_set_body_ids(g, "LPLC2", ps=_EscapePS()).tolist() == [103, 104, 105]
+    assert sk.probe_set_body_ids(g, "DNp01", ps=_EscapePS()).tolist() == [106, 107]
+    with pytest.raises(LookupError, match="unknown probe set"):
+        sk.probe_set_body_ids(g, "JO_AB", ps=_EscapePS())       # not in this profile
+
+
+def test_cli_still_requires_a_set_without_a_profile():
+    with pytest.raises(SystemExit) as e:
+        sk.main([])
+    assert e.value.code == 2                                    # argparse usage error, as before
+
+
+def test_load_probe_sets_passes_the_profile_through(monkeypatch):
+    import flysim.probe.sets as S
+    seen = {}
+    monkeypatch.setattr(S, "load_roi", lambda graph: "ROI")
+    monkeypatch.setattr(S, "build_probe_sets",
+                        lambda graph, roi, profile="auditory": seen.update(roi=roi, profile=profile) or "PS")
+    assert sk.load_probe_sets(object(), "escape") == "PS" and seen == {"roi": "ROI", "profile": "escape"}
+    assert sk.load_probe_sets(object()) == "PS" and seen["profile"] == "auditory"   # default unchanged

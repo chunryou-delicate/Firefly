@@ -10,6 +10,14 @@ Identifiers used here are verified in docs/annotations-observed.md,
 data-provenance/roi-observed.md and docs/m3-brief.md:
     type patterns  ^JO-[AB]  ^AMMC  ^pC1
     ROI labels     SAD  WED(L)  WED(R)
+
+M7 (docs/m7-profiles-brief.md): the set definition is a named **profile**.
+    auditory  the 15 sets above. The default, so every existing call is unchanged and its
+              output is bit-identical to the pre-profile code (tests/test_probe.py pins the
+              index arrays by hash, taken from the code before the change).
+    escape    LC4, LPLC2, DNp01, TTMn by side, + rest - the escape circuit of M7a. Types
+              verified in the data (docs/m7a-report.md §1): LC4 71/55, LPLC2 94/91,
+              DNp01 1/1, TTMn 1/1, side from Graph.side (somaSide, then instance suffix).
 """
 from __future__ import annotations
 
@@ -33,6 +41,13 @@ REST = "rest"
 # Precedence for disjointness (first wins). Names with _L/_R/_unk are expanded in this order.
 ORDER = ["JO_AB", "JO_post", "pC1", "AMMCtype", "SAD", "WED"]
 
+# M7 escape profile: exact `type` values (verified in the data, docs/m7a-report.md §1),
+# also the precedence order. The four types do not overlap, so precedence removes nothing.
+ESCAPE_TYPES = ["LC4", "LPLC2", "DNp01", "TTMn"]
+
+PROFILES = ("auditory", "escape")
+DEFAULT_PROFILE = "auditory"
+
 
 def load_roi(graph) -> pd.DataFrame:
     if not ROI_CACHE.exists():
@@ -49,6 +64,7 @@ class ProbeSets:
     members: dict[str, np.ndarray]         # name -> sorted neuron indices (disjoint)
     region_of: np.ndarray                  # [N] int16 index into names
     log: dict = field(default_factory=dict)
+    profile: str = DEFAULT_PROFILE         # M7: which profile built these sets
 
     @property
     def n_regions(self) -> int:
@@ -67,7 +83,21 @@ def _split_side(graph, idx: np.ndarray) -> dict[str, np.ndarray]:
     return out
 
 
-def build_probe_sets(graph, roi: pd.DataFrame, k_min: int = K_MIN_DEFAULT) -> ProbeSets:
+def build_probe_sets(graph, roi: pd.DataFrame, k_min: int = K_MIN_DEFAULT,
+                     profile: str = DEFAULT_PROFILE) -> ProbeSets:
+    """Probe sets for ``profile`` (``"auditory"``, the default, or ``"escape"``).
+
+    ``roi`` and ``k_min`` are used by the auditory profile only; the escape profile is
+    built from cell types alone and records that in its log.
+    """
+    if profile == "auditory":
+        return _build_auditory(graph, roi, k_min)
+    if profile == "escape":
+        return _build_escape(graph)
+    raise ValueError(f"unknown probe profile {profile!r}; known: {PROFILES}")
+
+
+def _build_auditory(graph, roi: pd.DataFrame, k_min: int) -> ProbeSets:
     q = graph.query
     n_sites = roi["n_sites"].to_numpy()
     primary = roi["primary_roi"].astype(object).to_numpy()
@@ -114,8 +144,28 @@ def build_probe_sets(graph, roi: pd.DataFrame, k_min: int = K_MIN_DEFAULT) -> Pr
             raise LookupError(f"no neuron with primary_roi == {lab!r}")
         raw[f"WED_{s}"] = idx
 
+    return _assemble(graph, raw, ORDER, log, profile="auditory")
+
+
+def _build_escape(graph) -> ProbeSets:
+    q = graph.query
+    raw: dict[str, np.ndarray] = {}
+    log: dict = {"profile": "escape", "types": list(ESCAPE_TYPES),
+                 "note": "built from cell types only; roi and k_min are not used"}
+    for t in ESCAPE_TYPES:
+        idx = q.by_type(t)                          # LookupError on 0 hits (CLAUDE.md §3.1)
+        # side-unknown cells would become their own `_unk` set rather than be dropped;
+        # none exist for these four types today
+        for s, v in _split_side(graph, idx).items():
+            raw[f"{t}_{s}"] = v
+    return _assemble(graph, raw, ESCAPE_TYPES, log, profile="escape")
+
+
+def _assemble(graph, raw: dict[str, np.ndarray], order: list[str], log: dict,
+              profile: str) -> ProbeSets:
+    """Make ``raw`` disjoint by precedence (``order``, first wins), then add rest."""
     # disjoint by precedence
-    names = [k for base in ORDER for k in raw if k == f"{base}_L" or k == f"{base}_R" or k == f"{base}_unk"]
+    names = [k for base in order for k in raw if k == f"{base}_L" or k == f"{base}_R" or k == f"{base}_unk"]
     assert set(names) == set(raw), (set(raw) - set(names))
     region_of = np.full(graph.n, -1, dtype=np.int16)
     members: dict[str, np.ndarray] = {}
@@ -134,5 +184,5 @@ def build_probe_sets(graph, roi: pd.DataFrame, k_min: int = K_MIN_DEFAULT) -> Pr
     members[REST] = rest
     log["raw_sizes"] = {k: int(len(v)) for k, v in raw.items()}
     log["removed_by_precedence"] = removed
-    log["precedence"] = ORDER
-    return ProbeSets(names, members, region_of, log)
+    log["precedence"] = order
+    return ProbeSets(names, members, region_of, log, profile=profile)

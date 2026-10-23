@@ -5,6 +5,7 @@ name, ``data/cache/skel-<name>.bin`` (float32 line segments, x1 y1 z1 x2 y2 z2
 repeated) plus ``data/cache/skel-<name>.json`` (per-neuron ranges into it).
 
     python -m flysim.data.skeletons --set JO_AB --set pC1 --set WED --set AMMCtype
+    python -m flysim.data.skeletons --profile escape     # LC4, LPLC2, DNp01, TTMn (M7)
 
 Coordinates are MaleCNS source voxels (1 voxel = 8 nm) and are written through
 unchanged: no re-centering, no unit conversion (contract, "금지").
@@ -486,10 +487,24 @@ def build_bundle(body_ids, name: str, tolerance_voxels: float = TOLERANCE_VOXELS
 # ---------------------------------------------------------------------------
 # probe-set resolution and CLI
 # ---------------------------------------------------------------------------
-def load_probe_sets(graph):
-    """Probe sets from flysim.probe.sets, used unchanged (that module is not ours)."""
+def load_probe_sets(graph, profile: str = "auditory"):
+    """Probe sets from flysim.probe.sets for ``profile`` (M7: "auditory" or "escape")."""
     from ..probe.sets import build_probe_sets, load_roi
-    return build_probe_sets(graph, load_roi(graph))
+    return build_probe_sets(graph, load_roi(graph), profile=profile)
+
+
+def profile_base_names(ps) -> list[str]:
+    """Base set names of a profile in its own order, sides merged, ``rest`` excluded
+    (LC4_L, LC4_R, LPLC2_L, ... -> LC4, LPLC2, ...)."""
+    out: list[str] = []
+    for k in ps.names:
+        if k == "rest":
+            continue
+        head, _, tail = k.rpartition("_")
+        base = head if tail in ("L", "R", "unk") and head else k
+        if base not in out:
+            out.append(base)
+    return out
 
 
 def probe_set_body_ids(graph, name: str, ps=None) -> np.ndarray:
@@ -513,8 +528,13 @@ def probe_set_body_ids(graph, name: str, ps=None) -> np.ndarray:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--set", dest="sets", action="append", required=True,
-                    help="probe set base name (repeatable), e.g. --set JO_AB --set pC1")
+    ap.add_argument("--set", dest="sets", action="append", default=None,
+                    help="probe set base name (repeatable), e.g. --set JO_AB --set pC1. "
+                         "Required unless --profile is given")
+    ap.add_argument("--profile", default=None,
+                    help="probe profile the set names resolve against (default auditory). "
+                         "Without --set, every set of the profile except rest is built, "
+                         "e.g. --profile escape -> LC4, LPLC2, DNp01, TTMn")
     ap.add_argument("--tolerance", type=float, default=None,
                     help=f"RDP tolerance in voxels (default {TOLERANCE_VOXELS:g}, "
                          f"{TOLERANCE_BY_SET} per contract v1.1; 1 voxel = 8 nm)")
@@ -524,12 +544,17 @@ def main(argv=None) -> int:
     ap.add_argument("--threads", type=int, default=DOWNLOAD_THREADS)
     ap.add_argument("--force", action="store_true", help="re-download even if the cached MD5 matches")
     a = ap.parse_args(argv)
+    if not a.sets and a.profile is None:
+        ap.error("--set is required unless --profile is given")
+    profile = a.profile or "auditory"
 
     from ..graph import Graph
     graph = Graph.load()
-    ps = load_probe_sets(graph)
+    ps = load_probe_sets(graph, profile)
+    names = a.sets or profile_base_names(ps)
+    print(f"[profile] {profile}: {names}", flush=True)
     rc = 0
-    for name in a.sets:
+    for name in names:
         body_ids = probe_set_body_ids(graph, name, ps)
         tol = a.tolerance if a.tolerance is not None else TOLERANCE_BY_SET.get(name, TOLERANCE_VOXELS)
         print(f"[set] {name}: {len(body_ids):,} neurons in the retained graph, "
