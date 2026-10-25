@@ -117,3 +117,58 @@ class GiantFibreDecoder:
     def describe(self) -> dict:
         return {"decoder": "GiantFibreDecoder", "window_ms": self.window_ms,
                 "rule": "both GF -> JUMP; left GF only -> RIGHT; right GF only -> LEFT; none -> NOOP"}
+
+
+class CountWindowDecoder:
+    """M7c2's read-out family (docs/m7c2-brief.md 1.1), fixed before any calibration run.
+
+    At the end of a tick (``now_ms``), count the giant-fibre spikes of the last ``window_ms`` per
+    side — ``c_L``, ``c_R`` over ``now_ms - window_ms <= t < now_ms`` — and compare each with
+    ``min_spikes``:
+
+        c_L >= n and c_R >= n   -> JUMP
+        c_L >= n only           -> RIGHT   (move away from the side that fired)
+        c_R >= n only           -> LEFT
+        neither                 -> NOOP
+
+    The window is applied here, so ``events`` may be the whole ``(t_ms, side)`` history. With
+    ``window_ms`` 50 and ``min_spikes`` 1 this is ``GiantFibreDecoder`` on the 50-ms window M7c's
+    brain glue cut (tested). The action repeats on every tick the condition holds; there is no
+    separate hold time. No cell-type name is written here: the caller labels the sides.
+    """
+
+    def __init__(self, window_ms: float, min_spikes: int):
+        if window_ms <= 0:
+            raise ValueError("window_ms must be > 0")
+        if int(min_spikes) != min_spikes or min_spikes < 1:
+            raise ValueError("min_spikes must be an integer >= 1")
+        self.window_ms = float(window_ms)
+        self.min_spikes = int(min_spikes)
+
+    def counts(self, events, now_ms: float) -> tuple[int, int]:
+        lo = float(now_ms) - self.window_ms
+        c = {"L": 0, "R": 0}
+        for ev in events:
+            t, side = ev[0], ev[1]
+            if side not in c:
+                raise ValueError(f"side must be 'L' or 'R', got {side!r}")
+            if lo <= t < now_ms:
+                c[side] += 1
+        return c["L"], c["R"]
+
+    def decode(self, events, now_ms: float) -> str:
+        c_l, c_r = self.counts(events, now_ms)
+        left, right = c_l >= self.min_spikes, c_r >= self.min_spikes
+        if left and right:
+            return "JUMP"
+        if left:
+            return "RIGHT"
+        if right:
+            return "LEFT"
+        return DEFAULT_ACTION
+
+    def describe(self) -> dict:
+        return {"decoder": "CountWindowDecoder", "window_ms": self.window_ms,
+                "min_spikes": self.min_spikes,
+                "rule": "count GF spikes per side in [now - window_ms, now); both >= n -> JUMP; "
+                        "left only -> RIGHT; right only -> LEFT; neither -> NOOP"}
