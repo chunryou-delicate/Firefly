@@ -485,8 +485,13 @@ GAMES_M7C = ROOT / "flysim" / "apps" / "games" / "m7c.py"
 MOTOR = ROOT / "flysim" / "probe" / "motor.py"
 SETS_PY = ROOT / "flysim" / "probe" / "sets.py"
 BUNDLE_DIR = ROOT / "runs" / "m7c"
+REMATCH_DIR = ROOT / "runs" / "m7c2"              # M7e2: rematch bundles (warm-up, CountWindowDecoder)
 BUNDLES = sorted(BUNDLE_DIR.glob("*-brain-seed10")) if BUNDLE_DIR.exists() else []
+REMATCH_BUNDLES = sorted(REMATCH_DIR.glob("*-brain-seed10")) if REMATCH_DIR.exists() else []
+ALL_BUNDLES = BUNDLES + REMATCH_BUNDLES
 needs_bundles = pytest.mark.skipif(not BUNDLES, reason="M7c replay bundles not present (runs/ is gitignored)")
+needs_rematch = pytest.mark.skipif(not REMATCH_BUNDLES, reason="M7c2 replay bundles not present (runs/ is gitignored)")
+_bundle_id = lambda p: f"{p.parent.name}/{p.name}"
 
 
 def _js_list(script, name):
@@ -519,8 +524,8 @@ def test_bundle_files_and_arrays(script):
         assert f in loader
 
 
-@needs_bundles
-@pytest.mark.parametrize("bundle", BUNDLES, ids=lambda p: p.name)
+@pytest.mark.skipif(not ALL_BUNDLES, reason="no replay bundles present (runs/ is gitignored)")
+@pytest.mark.parametrize("bundle", ALL_BUNDLES, ids=_bundle_id)
 def test_real_bundles_fit_the_browser_parser(script, bundle):
     """The JS parser handles stored/deflate zip entries without zip64 and the dtypes listed
     in NPY_DTYPES. If the producer's npz ever changes shape, this fails before the browser does."""
@@ -558,20 +563,128 @@ def test_every_event_type_the_harness_emits_is_known(script):
 
 
 def test_decoder_window_and_rule_match_the_harness(script):
-    win = re.search(r"DECODER_WINDOW_MS\s*=\s*([\d.]+)", GAMES_BRAIN.read_text(encoding="utf-8")).group(1)
-    assert f"const GAME_DECODER_MS = {int(float(win))};" in script
+    """M7e2: the decoder spec comes from the bundle (game.json agent.decoder), not a constant.
+    The names the replay knows are the names motor.py's describe() writes, and the rule is the
+    count rule of CountWindowDecoder (GiantFibreDecoder = the n = 1 case)."""
+    assert "GAME_DECODER_MS" not in script, "no hard-coded decoder window any more"
     motor = MOTOR.read_text(encoding="utf-8")
-    assert "left side only          -> RIGHT" in motor and "right side only         -> LEFT" in motor
+    emitted = set(re.findall(r'"decoder": "(\w+)"', motor))
+    known = set(_js_list(script, "GAME_DECODERS"))
+    assert known == {"GiantFibreDecoder", "CountWindowDecoder"} and known <= emitted
+    cw = re.search(r"class CountWindowDecoder:(.*?)\n\n\nclass |class CountWindowDecoder:(.*)", motor, re.S)
+    cw = cw.group(1) or cw.group(2)
+    assert '"window_ms": self.window_ms' in cw and '"min_spikes": self.min_spikes' in cw
+    assert "c_L >= n only           -> RIGHT" in cw and "c_R >= n only           -> LEFT" in cw
+    assert "lo <= t < now_ms" in cw, "window is [now - W, now)"
+    gfd = re.search(r"class GiantFibreDecoder:(.*?)\n\n\nclass ", motor, re.S).group(1)
+    assert "left side only          -> RIGHT" in gfd and "right side only         -> LEFT" in gfd
     # JUMP=1, LEFT=2, RIGHT=3: both -> JUMP, left only -> RIGHT, right only -> LEFT
-    assert "const a = wl.length && wr.length ? 1 : wl.length ? 3 : wr.length ? 2 : 0;" in script
+    assert "const fl = wl.length >= spec.n, fr = wr.length >= spec.n;" in script
+    assert "const a = fl && fr ? 1 : fl ? 3 : fr ? 2 : 0;" in script
+    assert "const lo = tEnd[k] - win, hi = tEnd[k];" in script and "ms >= lo && ms < hi" in script
 
 
-@needs_bundles
-@pytest.mark.parametrize("bundle", BUNDLES, ids=lambda p: p.name)
+def _node_eval(script, fn_names, expr):
+    """Run the named top-level functions of the page in node and return JSON of ``expr``."""
+    import json as _json
+    import shutil
+    import subprocess
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+    src = []
+    for name in fn_names:
+        src.append(re.search(rf"\nfunction {name}\(.*?\n\}}", script, re.S).group(0))
+    src.append(f"process.stdout.write(JSON.stringify({expr}));")
+    out = subprocess.run([node, "-e", "\n".join(src)], capture_output=True, text=True, timeout=30)
+    assert out.returncode == 0, out.stderr
+    return _json.loads(out.stdout)
+
+
+def test_both_decoder_specs_are_read_and_unknown_ones_switch_the_check_off(script):
+    import json as _json
+    cases = {
+        "m7c": {"decoder": "GiantFibreDecoder", "window_ms": 50.0,
+                "rule": "both GF -> JUMP; left GF only -> RIGHT; right GF only -> LEFT; none -> NOOP"},
+        "m7c2": {"decoder": "CountWindowDecoder", "window_ms": 300.0, "min_spikes": 2},
+        "motor": {"decoder": "MotorDecoder", "window_ms": 50.0, "min_rate_hz": 10.0},
+        "no_n": {"decoder": "CountWindowDecoder", "window_ms": 300.0},
+        "gf_n2": {"decoder": "GiantFibreDecoder", "window_ms": 50.0, "min_spikes": 2},
+        "n_frac": {"decoder": "CountWindowDecoder", "window_ms": 300.0, "min_spikes": 1.5},
+        "no_w": {"decoder": "CountWindowDecoder", "min_spikes": 2},
+        "none": None,
+    }
+    got = _node_eval(script, ["decoderSpec", "decoderLine"],
+                     "Object.fromEntries(Object.entries(" + _json.dumps(cases) + ").map(([k, d]) => "
+                     "{ const s = decoderSpec(d); return [k, {...s, line: decoderLine(s, k.toUpperCase())}]; }))")
+    assert got["m7c"] == {"known": True, "name": "GiantFibreDecoder", "W": 50, "n": 1, "line": "50 ms 안 한 발 (M7C)"}
+    assert got["m7c2"] == {"known": True, "name": "CountWindowDecoder", "W": 300, "n": 2,
+                           "line": "300 ms 안 같은 쪽 2발 (M7C2)"}
+    for k in ("motor", "no_n", "gf_n2", "n_frac", "no_w", "none"):
+        assert got[k]["known"] is False, k
+        assert got[k]["line"].startswith("해독기 규격을 모름"), k
+    assert got["motor"]["W"] == 50 and got["no_w"]["W"] is None and got["none"]["W"] is None
+    # an unknown spec turns the recomputation off instead of guessing
+    assert "const decoded = spec.known ? new Int8Array(T) : null;" in script
+    stats = re.search(r"function fillGameStats\((.*?)\n\}", script, re.S).group(1)
+    assert "해독기 규격을 모름 — 검사 끔" in stats
+
+
+@pytest.mark.skipif(not ALL_BUNDLES, reason="no replay bundles present (runs/ is gitignored)")
+def test_real_bundle_specs_tags_and_warmup(script):
+    import json as _json
+    rows = []
+    for b in ALL_BUNDLES:
+        game = _json.loads((b / "game.json").read_text())
+        meta = _json.loads((b / "run.json").read_text())["meta"]
+        meta = {k: meta.get(k) for k in ("run_id", "warmup_steps", "dt_ms", "engine_params")}
+        rows.append({"dir": b.parent.name, "decoder": game["agent"]["decoder"], "meta": meta})
+    got = _node_eval(script, ["decoderSpec", "decoderLine", "runTag", "warmupMs"],
+                     _json.dumps(rows) + ".map(r => { const s = decoderSpec(r.decoder); "
+                     "return {dir: r.dir, line: decoderLine(s, runTag(r.meta)), warm: warmupMs(r.meta)}; })")
+    for r in got:
+        if r["dir"] == "m7c":
+            assert r["line"] == "50 ms 안 한 발 (M7c)" and r["warm"] == 0
+        else:
+            assert r["line"] == "300 ms 안 같은 쪽 2발 (M7c2)" and r["warm"] == 5000
+    edge = _node_eval(script, ["warmupMs"], "[warmupMs({warmup_steps: 5000}), warmupMs({warmup_steps: 1500, dt_ms: 1}), "
+                                            "warmupMs({warmup_steps: 0, dt_ms: 1}), warmupMs({})]")
+    assert edge == [None, 1500, 0, 0], "steps without dt -> unknown length (band stays), never a guess"
+
+
+def test_warmed_up_bundles_draw_no_transient_band(script, html):
+    """M7e2: a bundle recorded after >= 2 s of warm-up has no post-reset transient on its clock."""
+    assert "const RESET_TRANSIENT_MS = 2000;" in script
+    assert "transient: !(warmMs >= RESET_TRANSIENT_MS)," in script
+    tl = re.search(r"function renderTimelineStatic\((.*?)\n\}", script, re.S).group(1)
+    i_skip, i_band = tl.index("if(!g.transient){"), tl.index("}else if(t0 < RESET_TRANSIENT_MS){")
+    assert i_skip < i_band, "the band is drawn only in the transient branch"
+    assert 'el("legendTransient").hidden = !S.game.transient;' in script
+    assert 'id="legendTransient"' in html and 'id="legendWarmup"' in html
+    note = re.search(r"function fillGameStats\((.*?)\n\}", script, re.S).group(1)
+    assert "뒤부터 기록돼 리셋 직후 과도 구간(M7a2)의 발화는 들어 있지 않다" in note
+    assert "묶음에 예열이 없어" in note, "the M7c wording stays for bundles without warm-up"
+    info = re.search(r"function fillGameInfo\((.*?)\n\}", script, re.S).group(1)
+    assert 'el("decoderLine")' in info and "M7c2 리포트 §4" in info
+
+
+def test_classification_window_is_the_decoder_window(script, html):
+    """Orange/violet uses the decoder's own window (W), so 50 ms is no longer written anywhere."""
+    assert "const win = spec.W;" in script
+    assert "50 ms" not in re.sub(r"<script.*?</script>", "", html, flags=re.S), "the static page still says 50 ms"
+    stats = re.search(r"function fillGameStats\((.*?)\n\}", script, re.S).group(1)
+    assert '"\\"입력 동반\\" = 스파이크 직전 " + g.win + " ms(해독기 창)' in stats
+    assert '"램프는 해독기가 보는 창(직전 " + g.win + " ms)' in stats
+
+
+@pytest.mark.skipif(not ALL_BUNDLES, reason="no replay bundles present (runs/ is gitignored)")
+@pytest.mark.parametrize("bundle", ALL_BUNDLES, ids=_bundle_id)
 def test_time_alignment_reproduces_the_recorded_actions(bundle):
     """The replay's alignment rule, re-implemented here: tick k is decided at the end of the tick
-    from the giant-fibre spikes in [end - 50 ms, end). The giant-fibre spikes come from the
-    one-neuron escape regions of run.json. Every recorded action must come out the same."""
+    from the giant-fibre spikes in [end - W, end), both sides >= n -> JUMP, one side -> away from
+    it. W and n come from game.json agent.decoder (M7c: 50 ms, 1; M7c2: 300 ms, 2). The spikes come
+    from the one-neuron escape regions of run.json. Every recorded action must come out the same
+    (M7c 574/574 and 196/196, M7c2 196/196)."""
     import json as _json
     import numpy as np
     run = _json.loads((bundle / "run.json").read_text())
@@ -587,11 +700,13 @@ def test_time_alignment_reproduces_the_recorded_actions(bundle):
         rate = np.asarray(run["frames"]["rates"][r])
         count = np.rint(rate * meta["rate_norm_hz"] * meta["region_sizes"][f"DNp01_{side}"] * meta["bin_ms"] / 1000)
         gf[side] = np.repeat(np.arange(len(rate)) * meta["bin_ms"], count.astype(int))
-    win = game["agent"]["decoder"]["window_ms"]
+    dec = game["agent"]["decoder"]
+    assert dec["decoder"] in ("GiantFibreDecoder", "CountWindowDecoder"), dec
+    win, n = dec["window_ms"], dec.get("min_spikes", 1)
     got = []
     for e in t_end:
-        l = ((gf["L"] >= e - win) & (gf["L"] < e)).any()
-        r = ((gf["R"] >= e - win) & (gf["R"] < e)).any()
+        l = ((gf["L"] >= e - win) & (gf["L"] < e)).sum() >= n
+        r = ((gf["R"] >= e - win) & (gf["R"] < e)).sum() >= n
         got.append(1 if l and r else 3 if l else 2 if r else 0)
     assert np.array_equal(np.asarray(got), actions), "replay timing does not reproduce the harness"
 

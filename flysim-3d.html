@@ -131,6 +131,8 @@ body.game-mode #app{
 #shortcutBanner b{color:var(--warm-hi);font-weight:600}
 #shortcutBanner .runwide{font-family:var(--mono);font-size:11px;color:var(--ink-dim)}
 #shortcutBanner .runwide.caution{color:var(--warm-hi)}
+#shortcutBanner .decoder{font-family:var(--mono);font-size:11px;color:var(--ink)}
+#shortcutBanner .decoder.caution{color:var(--warm-hi)}
 body.game-mode #shortcutBanner{display:flex}
 
 #gamePane{
@@ -231,6 +233,7 @@ header{
 .kv dt{color:var(--ink-faint)}
 .kv dd{color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .kv dd.big{font-size:13px;color:var(--warm-hi)}
+.kv dd.caution{color:var(--warm-hi)}
 #gameStats dd,#gameInfo dd{white-space:normal;overflow:visible}
 
 button{
@@ -441,6 +444,7 @@ body.dragging #drop{display:flex}
   <div id="shortcutBanner">
     <span><b>지름길</b> 감지기는 직접 짠 것이고, 감지기부터 거대 신경섬유까지만 배선도다.
       화면 픽셀 → "다가옴" 신호는 사람이 짠 계산이며, LC4·LPLC2에 넣는 순간부터 MaleCNS 연결로 흐른다.</span>
+    <span class="decoder" id="decoderLine">—</span>
     <span class="runwide" id="runWide">—</span>
   </div>
 
@@ -453,7 +457,7 @@ body.dragging #drop{display:flex}
       <div class="game-action" id="gameAction">행동 —</div>
     </div>
     <div class="loom-row">감지기 L <span class="meter"><i id="loomL"></i></span> R <span class="meter"><i id="loomR"></i></span></div>
-    <p class="note">램프는 해독기가 보는 창(직전 50 ms)에 그 쪽 거대 신경섬유 스파이크가 있으면 켜진다. 주황 = 같은 쪽 감지기 입력이 있던 때, 보라 = 입력이 없던 때(자발).</p>
+    <p class="note" id="lampNote">램프는 해독기가 보는 창(직전 W ms)에 그 쪽 거대 신경섬유 스파이크가 한 발이라도 있으면 켜진다. 주황 = 같은 쪽 감지기 입력이 있던 때, 보라 = 입력이 없던 때(자발).</p>
     <dl class="kv" id="gameInfo"><dt>—</dt><dd>재생 묶음을 불러오지 않았다</dd></dl>
   </section>
 
@@ -501,10 +505,12 @@ body.dragging #drop{display:flex}
           <span><i style="background:#E8A13A"></i>GF 입력 동반</span>
           <span><i style="background:#B79BE0"></i>GF 입력 없음(자발)</span>
           <span><i style="background:#E5484D"></i>TTMn</span>
-          <span><i style="background:rgba(183,155,224,0.35);border-radius:1px"></i>리셋 직후 과도 구간 ~2 s (M7a2)</span>
+          <span id="legendTransient"><i style="background:rgba(183,155,224,0.35);border-radius:1px"></i>리셋 직후 과도 구간 ~2 s (M7a2)</span>
+          <span id="legendWarmup" hidden></span>
+          <span id="legendUnclassified" hidden><i style="background:#93A2B2"></i>GF 분류 안 함(창 모름)</span>
         </div>
         <dl class="kv" id="gameStats"></dl>
-        <p class="note" id="gameStatsNote" hidden>분류는 기술 통계이고 판정이 아니다. "입력 동반" = 스파이크 직전 50 ms(해독기 창) 안에 같은 쪽 감지기 출력이 0보다 컸다는 뜻이고, 입력이 그 스파이크를 일으켰다는 뜻이 아니다. 입력이 영향을 줬다면 "입력 있을 때"의 발화율이 "없을 때"보다 높아야 한다. 발화율은 판 전체로 셌고, 묶음에 예열이 없어 리셋 직후 과도 구간(M7a2, 약 2 s)의 발화도 들어 있다.</p>
+        <p class="note" id="gameStatsNote" hidden>분류는 기술 통계이고 판정이 아니다. "입력 동반" = 스파이크 직전 W ms(해독기 창) 안에 같은 쪽 감지기 출력이 0보다 컸다는 뜻이고, 입력이 그 스파이크를 일으켰다는 뜻이 아니다. 입력이 영향을 줬다면 "입력 있을 때"의 발화율이 "없을 때"보다 높아야 한다.</p>
       </div>
     </section>
 
@@ -2122,18 +2128,56 @@ function setPlaying(v){
 //  하네스(flysim/apps/games/brain.py)의 시각 규칙을 그대로 따른다:
 //    틱 k의 프레임은 t_ms[k]에 보이고, 감지기 출력 loom[k] × k가 틱 k 동안
 //    같은 쪽 LC4·LPLC2 전부에 들어간다. 틱이 끝나는 시각 e_k에서 해독기가
-//    [e_k − 50 ms, e_k)의 거대 신경섬유 스파이크로 actions[k]를 정한다.
+//    [e_k − W, e_k)의 거대 신경섬유 스파이크로 actions[k]를 정한다.
 //  이 규칙으로 해독기를 다시 돌려 기록된 행동과 맞는지 대조한다(정렬 검증).
+//  해독기 규격(W, n)과 예열은 묶음에서 읽는다(M7e2): game.json agent.decoder,
+//  run.json meta.warmup_steps. 게임 시계 0은 예열이 끝난 시각이다.
 // ═══════════════════════════════════════════════════════
 const GAME_ACTIONS = ["NOOP", "JUMP", "LEFT", "RIGHT"];   // flysim/apps/games/base.py Action 순서
 const GAME_ACTION_KO = {NOOP: "가만히", JUMP: "점프", LEFT: "← 왼쪽", RIGHT: "오른쪽 →"};
 const GAME_EVENT_TYPES = ["jump", "move_left", "move_right", "pass", "crash"];
 const GAME_EVENT_KO = {jump: "점프", move_left: "← 이동", move_right: "이동 →", pass: "통과", crash: "충돌"};
-const GAME_DECODER_MS = 50;           // brain.py DECODER_WINDOW_MS (game.json의 값을 우선한다)
 const GAME_NPZ_ARRAYS = ["frames", "t_ms", "actions", "loom"];
 const C_GF_INPUT = [0xE8, 0xA1, 0x3A];
 const C_GF_SPONT = [0xB7, 0x9B, 0xE0];
+const C_GF_UNCLASSIFIED = [0x93, 0xA2, 0xB2];   // 창을 몰라 입력 동반 여부를 나누지 않은 스파이크
 const C_TTMN = [0xE5, 0x48, 0x4D];
+
+// 해독기 규격: game.json agent.decoder = flysim/probe/motor.py describe()의 출력. 아는 것은 둘뿐이다.
+//   GiantFibreDecoder  {window_ms}              창 안 한 발   (= CountWindowDecoder(window_ms, 1))
+//   CountWindowDecoder {window_ms, min_spikes}  창 안 같은 쪽 n발
+// 그 밖의 값이면 known=false — 행동 재계산 검사를 끄고 "해독기 규격을 모름"이라고 띄운다.
+// 추측하지 않는다. 창 길이(window_ms)만 적혀 있으면 입력 동반 분류에는 그 창을 쓴다.
+const GAME_DECODERS = ["GiantFibreDecoder", "CountWindowDecoder"];
+function decoderSpec(d){
+  if(!d || typeof d !== "object") return {known: false, name: "없음", W: null, n: null};
+  const name = typeof d.decoder === "string" ? d.decoder : "?";
+  const W = typeof d.window_ms === "number" && d.window_ms > 0 ? d.window_ms : null;
+  const n = d.min_spikes;
+  if(W != null && name === "GiantFibreDecoder" && (n === undefined || n === 1)) return {known: true, name, W, n: 1};
+  if(W != null && name === "CountWindowDecoder" && Number.isInteger(n) && n >= 1) return {known: true, name, W, n};
+  return {known: false, name, W, n: null};
+}
+
+// 한 줄 설명. 예: "300 ms 안 같은 쪽 2발 (M7c2)" / "50 ms 안 한 발 (M7c)"
+function decoderLine(spec, tag){
+  if(!spec.known) return "해독기 규격을 모름 (" + spec.name + ") — 행동 재계산 검사 끔";
+  return spec.W + " ms 안 " + (spec.n === 1 ? "한 발" : "같은 쪽 " + spec.n + "발") + (tag ? " (" + tag + ")" : "");
+}
+
+// run_id 머리("m7c-…", "m7c2-main-…")에서 단계 이름을 읽는다. 없으면 붙이지 않는다.
+function runTag(meta){
+  const m = /^(m\d+[a-z]*\d*)-/i.exec(String(meta.run_id || ""));
+  return m ? "M" + m[1].slice(1) : "";
+}
+
+// 예열(ms) = meta.warmup_steps × dt. 키가 없으면 0(예열 없음). 스텝은 있는데 dt를 모르면 null.
+function warmupMs(meta){
+  const steps = meta.warmup_steps;
+  if(typeof steps !== "number" || !(steps > 0)) return 0;
+  const dt = typeof meta.dt_ms === "number" ? meta.dt_ms : meta.engine_params && meta.engine_params.dt;
+  return typeof dt === "number" && dt > 0 ? steps * dt : null;
+}
 
 // ── frames.npz: zip 해석 + deflate 풀기 + .npy 머리 해석 ──────────────
 async function inflateRaw(bytes){
@@ -2243,7 +2287,9 @@ async function loadBundle({npz, run, game, label}){
   const t = Float64Array.from(arr.t_ms.data);
   const tEnd = new Float64Array(T);                    // 틱이 끝나는 시각 (해독 시각)
   for(let k = 0; k < T; k++) tEnd[k] = k + 1 < T ? t[k + 1] : dur;
-  const win = (game.agent && game.agent.decoder && game.agent.decoder.window_ms) || GAME_DECODER_MS;
+  const spec = decoderSpec(game.agent && game.agent.decoder);
+  const win = spec.W;                                  // 입력 동반 분류 창 = 해독기 창 (모르면 null)
+  const warmMs = warmupMs(meta);
 
   // 1개짜리 영역의 발화율이 곧 스파이크다 (프로필 영역 — 표본 상한과 무관, 결정 3)
   const regionSize = name => {
@@ -2296,11 +2342,12 @@ async function loadBundle({npz, run, game, label}){
     for(let k = tickAt(ms); k >= 0 && tEnd[k] > ms - win; k--) if(loom[k * 2 + col] > 0) return true;
     return false;
   };
-  const gfKind = {L: gfT.L.map(ms => inputBefore("L", ms) ? "input" : "spont"),
-                  R: gfT.R.map(ms => inputBefore("R", ms) ? "input" : "spont")};
+  const kindOf = side => ms => win == null ? "unclassified" : inputBefore(side, ms) ? "input" : "spont";
+  const gfKind = {L: gfT.L.map(kindOf("L")), R: gfT.R.map(kindOf("R"))};
 
   // 입력 없던 시간(같은 쪽 감지기가 창 안에서 0) 동안의 GF 발화율
   const quietRate = side => {
+    if(win == null) return {n: null, quietMs: null, hz: null, nIn: null, busyMs: null, hzIn: null};
     let quietMs = 0, n = 0;
     const col = side === "L" ? 0 : 1;
     const busy = new Uint8Array(Math.ceil(dur) + 1);
@@ -2316,17 +2363,23 @@ async function loadBundle({npz, run, game, label}){
             nIn, busyMs, hzIn: busyMs > 0 ? nIn / (busyMs / 1000) : null};
   };
 
-  // 해독기 재현과 행동 귀속
-  const decoded = new Int8Array(T);
-  let match = 0;
-  const onsets = {input: 0, spont: 0, total: 0};
-  for(let k = 0; k < T; k++){
+  // 해독기 재현과 행동 귀속. 틱 끝 e마다 [e − W, e) 창의 좌우 스파이크 수 c_L, c_R:
+  // 둘 다 ≥ n → 점프, 왼쪽만 → 오른쪽, 오른쪽만 → 왼쪽, 둘 다 아님 → 없음 (motor.py CountWindowDecoder).
+  // 예열 스파이크는 해독기에 가지 않으므로(M7c2) 창이 0 앞으로 나가도 빠진 스파이크는 없다.
+  // 규격을 모르면 재계산하지 않는다(decoded = null).
+  const decoded = spec.known ? new Int8Array(T) : null;
+  let match = spec.known ? 0 : null;
+  const onsets = win == null ? null : {input: 0, spont: 0, total: 0};
+  for(let k = 0; k < T && win != null; k++){
     const lo = tEnd[k] - win, hi = tEnd[k];
     const inWin = side => gfT[side].map((ms, j) => [ms, gfKind[side][j]]).filter(([ms]) => ms >= lo && ms < hi);
     const wl = inWin("L"), wr = inWin("R");
-    const a = wl.length && wr.length ? 1 : wl.length ? 3 : wr.length ? 2 : 0;   // JUMP / RIGHT / LEFT / NOOP
-    decoded[k] = a;
-    if(a === arr.actions.data[k]) match++;
+    if(spec.known){
+      const fl = wl.length >= spec.n, fr = wr.length >= spec.n;
+      const a = fl && fr ? 1 : fl ? 3 : fr ? 2 : 0;   // JUMP / RIGHT / LEFT / NOOP
+      decoded[k] = a;
+      if(a === arr.actions.data[k]) match++;
+    }
     const rec = arr.actions.data[k];
     if(rec !== 0 && (k === 0 || arr.actions.data[k - 1] !== rec)){
       onsets.total++;
@@ -2339,17 +2392,23 @@ async function loadBundle({npz, run, game, label}){
   const unknownEv = [...new Set(events.map(e => e.type).filter(x => !GAME_EVENT_TYPES.includes(x)))];
   S.game = {
     label, T, H, W, frames: fr.data, t, tEnd, actions: arr.actions.data, loom, decoded, match,
-    events, unknownEv, doc: game, meta, dur, win, gfT, gfKind, ttT, gfIdx, ttIdx, fromList,
+    events, unknownEv, doc: game, meta, dur, win, spec, tag: runTag(meta), warmMs,
+    transient: !(warmMs >= RESET_TRANSIENT_MS),      // 예열 2 s 이상이면 과도 구간은 기록 밖
+    gfT, gfKind, ttT, gfIdx, ttIdx, fromList,
     quiet: {L: quietRate("L"), R: quietRate("R")}, onsets, zoom: false,
     image: new ImageData(W, H), lastShown: -1, tlCache: null,
   };
   S.game.gfSide = new Map([...gfIdx.L.map(i => [i, "L"]), ...gfIdx.R.map(i => [i, "R"])]);
   S.game.ttSide = new Map([...ttIdx.L.map(i => [i, "L"]), ...ttIdx.R.map(i => [i, "R"])]);
-  S.game.gfSpont = {L: new Set(gfT.L.filter((_, j) => gfKind.L[j] === "spont")),
-                    R: new Set(gfT.R.filter((_, j) => gfKind.R[j] === "spont"))};
+  S.game.gfKindAt = {L: new Map(gfT.L.map((ms, j) => [ms, gfKind.L[j]])),
+                     R: new Map(gfT.R.map((ms, j) => [ms, gfKind.R[j]]))};
 
   document.body.classList.add("game-mode");
   el("gameLegend").hidden = false;
+  el("legendTransient").hidden = !S.game.transient;
+  el("legendWarmup").hidden = S.game.transient;
+  el("legendWarmup").textContent = warmMs > 0 ? "예열 " + fmtSec(warmMs) + " 뒤부터 기록 — 과도 구간 없음" : "";
+  el("legendUnclassified").hidden = win != null;
   el("gameStatsNote").hidden = false;
   el("bundleZoomBtn").disabled = false;
 
@@ -2365,7 +2424,8 @@ async function loadBundle({npz, run, game, label}){
   fitView();
   seekTo(0);
   el("bundleNote").textContent = "재생 묶음: " + label;
-  log("재생 묶음 적재: " + label + " — " + T + "틱, " + dur + " ms, 해독기 재현 " + match + "/" + T);
+  log("재생 묶음 적재: " + label + " — " + T + "틱, " + dur + " ms, " +
+      (spec.known ? "해독기 재현 " + match + "/" + T : "해독기 규격을 모름(" + spec.name + ") — 재현 검사 끔"));
 }
 
 // 골격만 더 읽는다 (점구름은 이미 있다)
@@ -2390,7 +2450,10 @@ function gameSpikeKind(i, f){
   const g = S.game;
   if(!g) return "spike";
   const side = g.gfSide.get(i);
-  if(side) return g.gfSpont[side].has(f * S.run.binMs) ? "spont" : "input";
+  if(side){
+    const k = g.gfKindAt[side].get(f * S.run.binMs);
+    return k === "input" || k === "spont" ? k : "spike";     // 나누지 않은 스파이크는 집합 색
+  }
   if(g.ttSide.has(i)) return "ttmn";
   return "spike";
 }
@@ -2445,6 +2508,15 @@ function drawSkeletonGlow(mvp){
 
 // ── 머리·통계 ─────────────────────────────────────────────────────────
 const fmtNum = v => v == null ? "—" : Math.abs(v) >= 1e4 || (Math.abs(v) < 1e-2 && v !== 0) ? Number(v).toExponential(3) : String(+Number(v).toPrecision(4));
+const fmtSec = ms => String(+(ms / 1000).toPrecision(3)) + " s";
+
+// 예열 한 줄. 묶음마다 다르므로 머리말·통계·타임라인이 같은 문구를 쓴다.
+function warmupLine(g){
+  if(g.warmMs == null) return "예열 " + g.meta.warmup_steps + " 스텝 — dt를 몰라 길이 미상, 과도 구간 띠를 그대로 칠함";
+  if(g.warmMs >= RESET_TRANSIENT_MS) return "예열 " + fmtSec(g.warmMs) + " 뒤부터 기록";
+  if(g.warmMs > 0) return "예열 " + fmtSec(g.warmMs) + " (2 s 미만) — 과도 구간 띠를 칠함";
+  return "예열 없음 — 리셋 직후부터 기록";
+}
 
 function endingText(g){
   const crashEv = g.events.find(e => e.type === "crash");
@@ -2464,12 +2536,20 @@ function fillGameInfo(){
     ["k", fmtNum(a.k), ""],
     ["동작점", "g " + fmtNum(pr.g) + " · σ " + fmtNum(pr.noise_sigma) + (pr.adapt_g ? " · 적응 g_b " + fmtNum(pr.adapt_g_b) : ""), ""],
     ["프로필", g.meta.probe_profile || "?", ""],
-    ["해독기", "직전 " + g.win + " ms GF: 양쪽→점프, 왼쪽만→오른쪽, 오른쪽만→왼쪽", ""],
+    ["해독기", g.spec.known
+      ? g.spec.name + " — 직전 " + g.spec.W + " ms GF " + (g.spec.n === 1 ? "한 발" : "같은 쪽 " + g.spec.n + "발") +
+        ": 양쪽→점프, 왼쪽만→오른쪽, 오른쪽만→왼쪽"
+      : decoderLine(g.spec), g.spec.known ? "" : "caution"],
+    ["예열", warmupLine(g), ""],
     ["길이", g.dur + " ms · " + g.T + "틱", ""],
     ["판 끝", endingText(g), ""],
     ["감각 모드", (g.meta.sensory_mode || "?") + (g.meta.sensory_mode_note ? " (" + g.meta.sensory_mode_note + ")" : ""), ""],
   ];
   el("gameInfo").innerHTML = rows.map(([k, v, c]) => "<dt>" + esc(k) + "</dt><dd class=\"" + c + "\" title=\"" + esc(v) + "\">" + esc(v) + "</dd>").join("");
+
+  // 머리말 한 줄: 해독기와 예열
+  el("decoderLine").textContent = (g.spec.known ? "해독기: " : "") + decoderLine(g.spec, g.tag) + " · " + warmupLine(g);
+  el("decoderLine").classList.toggle("caution", !g.spec.known);
 
   // 판 전체 발화 비율 — 경고선에 가까우므로 설명과 함께 띄운다
   const act = g.meta.active_neurons, n = g.meta.n_neurons || S.cloud.n;
@@ -2478,7 +2558,9 @@ function fillGameInfo(){
     const f = act / n;
     rw.textContent = (f > 0.90 ? WARN_RUNAWAY + " · " : "") +
       "판 전체에서 한 번이라도 발화한 뉴런 " + (100 * f).toFixed(1) + " % (뷰어 경고선 90 %). " +
-      (g.dur / 1000).toFixed(1) + " s 동안 배경 잡음이 쌓인 값이다 — 입력 없는 대조군도 5 s에 약 66 % (M7c 리포트 §4·§5.3).";
+      (g.dur / 1000).toFixed(1) + " s 동안 배경 잡음이 쌓인 값이다 — " +
+      (g.transient ? "입력 없는 대조군도 5 s에 약 66 % (M7c 리포트 §4·§5.3)."
+                   : "입력 없는 대조군(예열 뒤 5 s)도 65.6~66.2 % (M7c2 리포트 §4).");
     rw.classList.toggle("caution", f >= 0.75);
   }else{
     rw.textContent = "판 전체 발화 비율이 run.json에 없다";
@@ -2489,6 +2571,7 @@ function fillGameStats(){
   const g = S.game;
   const cnt = side => {
     const k = g.gfKind[side];
+    if(g.win == null) return g.gfT[side].length + "개 (해독기 창을 몰라 분류 안 함)";
     return g.gfT[side].length + "개 (입력 동반 " + k.filter(x => x === "input").length +
            " · 입력 없음 " + k.filter(x => x === "spont").length + ")";
   };
@@ -2507,14 +2590,30 @@ function fillGameStats(){
     ["입력 없을 때 L", q("L")],
     ["입력 있을 때 R", qi("R")],
     ["입력 없을 때 R", q("R")],
-    ["대조군", "한쪽당 약 1.9 Hz (M7c §5.2)"],
-    ["행동 시작", g.onsets.total + "번 — 입력 동반 GF " + g.onsets.input + " · 자발 GF만 " + g.onsets.spont],
-    ["해독기 재현", g.match + " / " + g.T + "틱 일치" + (g.match === g.T ? "" : " — 정렬 확인 필요")],
+    ["대조군", g.transient ? "한쪽당 약 1.9 Hz (M7c §5.2)" : "한쪽당 약 1.6~2.2 Hz (M7c2 §4, 예열 뒤 무입력 5 s)"],
+    ["행동 시작", g.onsets ? g.onsets.total + "번 — 입력 동반 GF " + g.onsets.input + " · 자발 GF만 " + g.onsets.spont : "— (해독기 창 모름)"],
+    ["해독기 재현", !g.spec.known ? "해독기 규격을 모름 — 검사 끔"
+      : g.match + " / " + g.T + "틱 일치 (" + decoderLine(g.spec) + ")" + (g.match === g.T ? "" : " — 정렬 확인 필요")],
     ["TTMn", "L " + g.ttT.L.length + " · R " + g.ttT.R.length + "개"],
     ["GF 대조", "발화율 L " + g.gfT.L.length + "/R " + g.gfT.R.length + " · 스파이크 목록 L " + g.fromList.L + "/R " + g.fromList.R],
   ];
   if(g.unknownEv.length) rows.push(["모르는 사건", g.unknownEv.join(", ")]);
   el("gameStats").innerHTML = rows.map(([k, v]) => "<dt>" + esc(k) + "</dt><dd title=\"" + esc(v) + "\">" + esc(v) + "</dd>").join("");
+
+  // 설명 문구도 이 묶음의 창과 예열에 맞춘다
+  el("gameStatsNote").textContent = "분류는 기술 통계이고 판정이 아니다. " + (g.win == null
+    ? "해독기 창을 몰라 입력 동반 여부를 나누지 않았다(회색). "
+    : "\"입력 동반\" = 스파이크 직전 " + g.win + " ms(해독기 창) 안에 같은 쪽 감지기 출력이 0보다 컸다는 뜻이고, " +
+      "입력이 그 스파이크를 일으켰다는 뜻이 아니다. 입력이 영향을 줬다면 \"입력 있을 때\"의 발화율이 \"없을 때\"보다 높아야 한다. ") +
+    "발화율은 판 전체로 셌고, " + (!g.transient
+      ? "묶음은 예열 " + fmtSec(g.warmMs) + " 뒤부터 기록돼 리셋 직후 과도 구간(M7a2)의 발화는 들어 있지 않다."
+      : g.warmMs === 0 ? "묶음에 예열이 없어 리셋 직후 과도 구간(M7a2, 약 2 s)의 발화도 들어 있다."
+      : warmupLine(g) + " — 리셋 직후 과도 구간(M7a2, 약 2 s)의 발화가 들어 있을 수 있다.");
+  el("lampNote").textContent = g.win == null
+    ? "해독기 창을 몰라 램프를 켜지 않는다. GF 스파이크는 타임라인에 회색으로 보인다."
+    : "램프는 해독기가 보는 창(직전 " + g.win + " ms)에 그 쪽 거대 신경섬유 스파이크가 한 발이라도 있으면 켜진다" +
+      (g.spec.known && g.spec.n > 1 ? "(옆 숫자 = 창 안 개수 / 해독기 기준 " + g.spec.n + "발)" : "") +
+      ". 주황 = 같은 쪽 감지기 입력이 있던 때, 보라 = 입력이 없던 때(자발).";
 }
 
 // ── 매 프레임: 게임 화면 · 램프 · 감지기 막대 · 사건 ─────────────────
@@ -2546,13 +2645,15 @@ function updateGame(){
   el("loomL").style.width = (100 * g.loom[k * 2] / lmax).toFixed(1) + "%";
   el("loomR").style.width = (100 * g.loom[k * 2 + 1] / lmax).toFixed(1) + "%";
 
-  // 해독기가 보는 창(직전 win ms)의 GF 스파이크
+  // 해독기가 보는 창(직전 win ms)의 GF 스파이크. 창을 모르면 켜지 않는다.
   for(const side of ["L", "R"]){
     const lamp = el(side === "L" ? "gfLampL" : "gfLampR");
-    let on = false, spont = true;
-    g.gfT[side].forEach((t0, j) => { if(t0 <= ms && t0 > ms - g.win){ on = true; if(g.gfKind[side][j] === "input") spont = false; } });
-    lamp.classList.toggle("on", on);
-    lamp.classList.toggle("spont", on && spont);
+    let c = 0, spont = true;
+    if(g.win != null)
+      g.gfT[side].forEach((t0, j) => { if(t0 <= ms && t0 > ms - g.win){ c++; if(g.gfKind[side][j] === "input") spont = false; } });
+    lamp.classList.toggle("on", c > 0);
+    lamp.classList.toggle("spont", c > 0 && spont);
+    lamp.textContent = "거대 신경섬유 " + side + (g.spec.known && g.spec.n > 1 ? " " + c + "/" + g.spec.n : "");
   }
 
   // 사건: 최근 350 ms 안의 마지막 사건을 띄운다. 끝에 다다르면 판 끝을 띄운다.
@@ -2589,7 +2690,7 @@ function ramp(v){
   return [229, 72, 77];
 }
 
-// M7c 묶음은 리셋 직후부터 기록됐고 예열이 없다. M7a2(docs/m7-game-ladder.md)는 P2에서 거대
+// M7c 묶음은 리셋 직후부터 기록됐고 예열이 없다(M7c2 묶음은 예열 5 s 뒤부터 — g.transient). M7a2는 P2에서 거대
 // 신경섬유가 리셋 직후 함께 한 발 쏘고 약 0.6 s에 다시 풀리며, 약 2 s에 자리 잡는다고 적었다.
 // 그 구간의 발화는 정상 상태의 배경과 다르므로 타임라인에 따로 칠한다(문서 값, 이 화면이 잰 값 아님).
 const RESET_TRANSIENT_MS = 2000;
@@ -2658,13 +2759,16 @@ function renderTimelineStatic(W, H, t0, t1, dpr){
   ctx.font = `${10 * dpr}px "IBM Plex Mono", monospace`;
   ctx.textBaseline = "middle";
 
-  // 리셋 직후 과도 구간 (M7a2)
-  if(t0 < RESET_TRANSIENT_MS){
+  // 리셋 직후 과도 구간 (M7a2). 예열 2 s 이상인 묶음에는 없다 — 대신 그 사실을 적는다.
+  if(!g.transient){
+    ctx.fillStyle = "#8D7BB0";
+    ctx.fillText(warmupLine(g), X(t0) + 46 * dpr, 7 * dpr);     // "0.00 s" 눈금 글자 뒤
+  }else if(t0 < RESET_TRANSIENT_MS){
     const xa = X(Math.max(t0, 0)), xb = X(Math.min(t1, RESET_TRANSIENT_MS));
     ctx.fillStyle = "rgba(183,155,224,0.07)";
     ctx.fillRect(xa, top - 2 * dpr, xb - xa, H - top);
     ctx.fillStyle = "#8D7BB0";
-    ctx.fillText("과도 구간 (M7a2)", xa + 30 * dpr, 7 * dpr);     // 눈금 줄에 둬서 사건 글자와 겹치지 않게
+    ctx.fillText("과도 구간 (M7a2)", xa + 46 * dpr, 7 * dpr);     // 눈금 줄에 둬서 사건 글자와 겹치지 않게, "0.00 s" 뒤
   }
 
   // 시간 눈금
@@ -2725,13 +2829,13 @@ function renderTimelineStatic(W, H, t0, t1, dpr){
     }else if(row.key.startsWith("gf")){
       g.gfT[side].forEach((t, j) => {
         if(t < t0 || t > t1) return;
-        const c = g.gfKind[side][j] === "input" ? C_GF_INPUT : C_GF_SPONT;
+        const kd = g.gfKind[side][j], c = kd === "input" ? C_GF_INPUT : kd === "spont" ? C_GF_SPONT : C_GF_UNCLASSIFIED;
         ctx.fillStyle = `rgb(${c[0]},${c[1]},${c[2]})`;
         ctx.fillRect(Math.round(X(t)) - dpr, y + 2 * dpr, 2.5 * dpr, h - 4 * dpr);
       });
       const kinds = g.gfKind[side];
       ctx.fillStyle = "#6D7C8C";
-      ctx.fillText(kinds.length + " · 보라 " + kinds.filter(x => x === "spont").length, x1 + 6 * dpr, mid);
+      ctx.fillText(kinds.length + (g.win == null ? " · 분류 안 함" : " · 보라 " + kinds.filter(x => x === "spont").length), x1 + 6 * dpr, mid);
     }else if(row.key.startsWith("tt")){
       ctx.fillStyle = `rgb(${C_TTMN[0]},${C_TTMN[1]},${C_TTMN[2]})`;
       for(const t of g.ttT[side]) if(t >= t0 && t <= t1) ctx.fillRect(Math.round(X(t)), y + 2 * dpr, 2 * dpr, h - 4 * dpr);
