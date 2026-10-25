@@ -13,6 +13,14 @@ Pre-registered (nothing here was chosen after a fly run):
 * **Same muscles**: at the end of each tick the decoder looks at the giant-fibre (``DNp01``)
   spikes of the last 50 ms (``flysim.probe.motor.GiantFibreDecoder``).
 
+M7c2 (docs/m7c2-brief.md §2) adds two arguments; their defaults are M7c exactly:
+
+* ``warmup_steps`` (default 0): after the engine reset, run that many steps with no input before
+  the first game tick. The game clock (ticks, spike times, statistics) starts at 0 when the
+  warm-up ends, and no warm-up spike reaches the decoder or the statistics.
+* ``decoder_window_ms`` (default 50): how far back ``step`` returns giant-fibre spikes. A decoder
+  that needs the tick-end time (``CountWindowDecoder``) is wrapped by ``TickDecoder``.
+
 Cell sets come from the ``escape`` probe profile (``flysim.probe.sets``); no type name is
 written in this file. The harness reads game state only for logging, never for the agent.
 """
@@ -76,10 +84,17 @@ class FlyBrain:
     """
 
     def __init__(self, graph, sets: EscapeSets, k: float, device: str = "cuda",
-                 use_cuda_graph: bool = True, keep_spikes: bool = False):
+                 use_cuda_graph: bool = True, keep_spikes: bool = False,
+                 warmup_steps: int = 0, decoder_window_ms: float = DECODER_WINDOW_MS):
         if not k > 0:
             raise ValueError("k must be > 0")
+        if int(warmup_steps) != warmup_steps or warmup_steps < 0:
+            raise ValueError("warmup_steps must be an integer >= 0")
+        if not decoder_window_ms > 0:
+            raise ValueError("decoder_window_ms must be > 0")
         self.k = float(k)
+        self.warmup_steps = int(warmup_steps)
+        self.decoder_window_ms = float(decoder_window_ms)
         self.sets = sets
         self.params = EngineParams(**BRAIN_PARAMS)
         self.engine = LIFEngine(graph, self.params, device=device,
@@ -94,6 +109,8 @@ class FlyBrain:
     # ------------------------------------------------------------------------------------
     def reset(self, seed: int) -> None:
         self.engine.reset(int(seed))            # noise seed = game seed
+        if self.warmup_steps:                   # no input; its spikes are dropped (game clock starts after)
+            self.engine.run(self.warmup_steps, None, record=True)
         self.seed = int(seed)
         self.tick = 0
         self.t_ms = 0
@@ -138,12 +155,12 @@ class FlyBrain:
             return None
 
         t_steps, idx = self.engine.run(n_steps, once, record=True)
-        t_ms = t_steps.astype(np.float64) * self.params.dt
+        t_ms = (t_steps.astype(np.float64) - self.warmup_steps) * self.params.dt   # game clock
         idx = idx.astype(np.int64)
         self._account(t_ms, idx)
         self.tick += 1
         self.t_ms = tick_end_ms(self.tick - 1)
-        lo = self.t_ms - DECODER_WINDOW_MS
+        lo = self.t_ms - self.decoder_window_ms
         return [(t, s) for (t, s) in self.gf_events if t >= lo]
 
     def _account(self, t_ms: np.ndarray, idx: np.ndarray) -> None:
@@ -201,13 +218,33 @@ class FlyBrain:
         return np.concatenate(self.spikes_t), np.concatenate(self.spikes_i)
 
     def describe(self) -> dict:
-        return {"brain": "FlyBrain", "params": self.params.to_dict(), "k": self.k,
-                "tick_ms": "floor((k+1)*1000/60) - floor(k*1000/60): 16 or 17 steps",
-                "input": "k*loom_L on every left LC4+LPLC2 cell, k*loom_R on the right (no heterogeneity, ASSUMPTION)",
-                "input_cells": {s: int(len(v)) for s, v in self.sets.inputs.items()},
-                "readout": "DNp01 L/R spikes in the last 50 ms (escape profile)",
-                "noise_seed": "game seed"}
+        d = {"brain": "FlyBrain", "params": self.params.to_dict(), "k": self.k,
+             "tick_ms": "floor((k+1)*1000/60) - floor(k*1000/60): 16 or 17 steps",
+             "input": "k*loom_L on every left LC4+LPLC2 cell, k*loom_R on the right (no heterogeneity, ASSUMPTION)",
+             "input_cells": {s: int(len(v)) for s, v in self.sets.inputs.items()},
+             "readout": f"DNp01 L/R spikes in the last {self.decoder_window_ms:g} ms (escape profile)",
+             "noise_seed": "game seed"}
+        if self.warmup_steps:                   # M7c's describe() is left byte-identical at the defaults
+            d["warmup"] = (f"{self.warmup_steps} steps with no input after the reset; "
+                           "game clock 0 = end of warm-up; warm-up spikes not used")
+        return d
 
 
 def make_decoder() -> GiantFibreDecoder:
     return GiantFibreDecoder(window_ms=DECODER_WINDOW_MS)
+
+
+class TickDecoder:
+    """``BrainAgent`` calls ``decoder.decode(spikes)``; ``CountWindowDecoder`` also needs the end
+    of the current tick. This passes the brain's game clock (``brain.t_ms`` = end of the tick
+    ``step`` just ran) along. Nothing else changes."""
+
+    def __init__(self, decoder, brain: FlyBrain):
+        self.decoder = decoder
+        self.brain = brain
+
+    def decode(self, events) -> str:
+        return self.decoder.decode(events, self.brain.t_ms)
+
+    def describe(self) -> dict:
+        return self.decoder.describe() | {"now_ms": "end of the current tick (game clock)"}

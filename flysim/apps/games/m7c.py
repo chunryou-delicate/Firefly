@@ -292,8 +292,13 @@ def control_run(brain: FlyBrain, seed: int) -> dict:
 
 
 # ---------------------------------------------------------------------------------------------
-def write_bundle(game: str, k: float, ep: dict, ctx: dict, brain: FlyBrain, out_dir: Path) -> dict:
-    """Replay bundle for the split screen (docs/m7-game-ladder.md): frames.npz, run.json, game.json."""
+def write_bundle(game: str, k: float, ep: dict, ctx: dict, brain: FlyBrain, out_dir: Path,
+                 run_id: str | None = None, decoder_desc: dict | None = None,
+                 extra_meta: dict | None = None) -> dict:
+    """Replay bundle for the split screen (docs/m7-game-ladder.md): frames.npz, run.json, game.json.
+
+    ``run_id``, ``decoder_desc`` and ``extra_meta`` let M7c2 label its own bundles; left at None
+    they give M7c's bundles byte for byte."""
     rec = ep.pop("record")
     out_dir.mkdir(parents=True, exist_ok=True)
     np.savez_compressed(out_dir / "frames.npz", frames=np.stack(rec["frames"]).astype(np.uint8),
@@ -306,7 +311,7 @@ def write_bundle(game: str, k: float, ep: dict, ctx: dict, brain: FlyBrain, out_
     t, idx = t[keep], idx[keep]
     sets = ctx["escape"].probe_sets
     rt = bin_spikes(t, idx, 1.0, 1.0, dur, sets)
-    write_run_json(out_dir / "run.json", run_id=f"m7c-{game}-brain-seed{BUNDLE_SEED}", sensory_mode="rate",
+    write_run_json(out_dir / "run.json", run_id=run_id or f"m7c-{game}-brain-seed{BUNDLE_SEED}", sensory_mode="rate",
                    dt_ms=1.0, rt=rt, sets=sets, coords=ctx["coords"],
                    input_label=f"{game}: looming (left/right) x k = {k:.4g}",
                    envelope=_envelope(rec, dur), spikes=(rt.t_bin, idx),
@@ -315,10 +320,10 @@ def write_bundle(game: str, k: float, ep: dict, ctx: dict, brain: FlyBrain, out_
                    stimulus={"kind": "game", "game": game, "seed": BUNDLE_SEED},
                    extra_meta={"probe_profile": "escape", "bundle_ms": dur,
                                "game_ms": int(brain.t_ms), "truncated_to_bundle_max": brain.t_ms > BUNDLE_MAX_MS,
-                               "sensory_mode_note": "game looming signal, not the JO adapter"})
+                               "sensory_mode_note": "game looming signal, not the JO adapter"} | (extra_meta or {}))
     game_doc = {"game": game, "seed": BUNDLE_SEED, "score": ep["score"], "ticks": ep["ticks"],
                 "duration_ms": int(brain.t_ms), "bundle_ms": dur,
-                "agent": {"kind": "fly brain", "k": k, "decoder": make_decoder().describe(),
+                "agent": {"kind": "fly brain", "k": k, "decoder": decoder_desc or make_decoder().describe(),
                           "brain": brain.describe()},
                 "crashed": ep["crashed"], "loss_cause": ep.get("loss_cause"),
                 "events": bundle_events(rec["events"], len(rec["frames"])),
