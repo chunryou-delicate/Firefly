@@ -154,3 +154,26 @@
 ## 시간 (예상)
 - 쇼 데이터: 뇌를 다시 돌리지 않는다. 봇 판 재실행과 검증을 합쳐 1~1.5시간이다.
 - 쇼 화면: 3~4시간이다. 가짜 데이터로 먼저 시작하고, 1차 납품(권투)이 오면 붙인다.
+
+## 추가 결정 (2026-10-31, 엔진 창 질문에 대한 답)
+- `dodge_v2_s4` 시드 10 초파리 판은 120 s(7,200틱) 동안 이어졌다. 그런데 M7g 묶음은 M7c 규칙(`BUNDLE_MAX_MS` 60 s)에 따라 앞 60 s만 담고 있다.
+- 그래서 그 한 판만 같은 시드·같은 `k`·같은 설정으로 다시 녹화하는 것을 허락한다. 새 실험이 아니라 표시용 재녹화다.
+  - 저장 위치는 `runs/m7e4/dodge_v2_s4-brain-seed10/`이다. `runs/m7g/`는 건드리지 않는다.
+  - 점수 14가 나와야 하고, 앞 3,600틱의 프레임·행동·스파이크가 M7g 묶음과 비트 단위로 같아야 한다.
+  - 다르면 멈추고, 앞 60 s만 담은 트랙(`cut_ms` 60000)으로 돌아간다.
+
+## 계약 추가 (2026-10-31, 쇼 화면 창 제안 → 총괄 승인)
+1. **`runs/show/classic/index.json`(새 요약 파일).** 첫 화면의 사다리 지도, 오락실 도장, 성적표, 눈 가린 카드가 지연 로딩 전에 쓴다.
+   - 모양: `{"version": 1, "meta": {...}, "games": {"<game>": <그 게임 파일의 "game" 블록 그대로>}}`
+   - 트랙은 넣지 않는다. 게임 파일과 같은 값이어야 한다(테스트).
+2. **`slow.json` 구체 모양:**
+   - `rows.<variant>`: `family`, `s`, `title_ko`, `eval_seeds`, `scores{fly, random, fixed, brainless, oracle}`, `fixed_ref`, `ceiling`(값 또는 `null`), `verdict{vs_random, vs_fixed, vs_brainless}`, `lead_ms_median_top_k`
+   - `posthoc`:
+     - `posthoc: true`, `note: "사후 점검 — 판정 아님"`
+     - `cells[{row, cell: A|B|top, k, game, mean, random, diff_mean, sem, beats, loses}]`
+     - `reading_2x2{<variant>: 문구}`
+     - `appearance[{row, where, passed, within_300ms, frac}]`
+   - `hypothesis{label: "가설 — 약하게만 지지됨(느린 판 실험)", reading: 사다리 문서 "M7g 결과" 절 문구 그대로}`
+   - `games.dodge_v2_s4`: `show-data.json`의 `games` 항목과 같은 모양이다. `rules`에 `SPEED0`, 속도 나눔 `s`, `max_ticks`, 부모 게임을 넣는다.
+   - `tracks`: `show-data.json` 트랙 모양 × 4다. 선수 이름은 `fly|random|fixed|brainless`이고, 화면 이름은 `fixed_ref`에서 만든다(예: "항상 왼쪽").
+   - 판정 블록과 문구는 `m7g-results.json`에서 그대로 옮긴다. 결과 파일의 실제 키 이름이 위와 다르면 엔진 창이 그 이름을 쓰고, 쇼 화면 창에 알린다.
