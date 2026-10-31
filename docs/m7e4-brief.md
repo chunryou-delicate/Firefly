@@ -177,3 +177,9 @@
    - `games.dodge_v2_s4`: `show-data.json`의 `games` 항목과 같은 모양이다. `rules`에 `SPEED0`, 속도 나눔 `s`, `max_ticks`, 부모 게임을 넣는다.
    - `tracks`: `show-data.json` 트랙 모양 × 4다. 선수 이름은 `fly|random|fixed|brainless`이고, 화면 이름은 `fixed_ref`에서 만든다(예: "항상 왼쪽").
    - 판정 블록과 문구는 `m7g-results.json`에서 그대로 옮긴다. 결과 파일의 실제 키 이름이 위와 다르면 엔진 창이 그 이름을 쓰고, 쇼 화면 창에 알린다.
+3. **`shared_scene`(선택 칸, 엔진 창 제안 → 총괄 승인).**
+   - 길 건너기는 차 26대가 매 틱 움직이고, 좌표는 반올림하지 않은 표기다. 그래서 네 판을 담으면 22 MB가 된다.
+   - 차는 시드와 틱으로만 정해지므로 네 판의 차 사각형이 3,600틱 모두 같다.
+   - 그래서 게임 파일 최상위에 `"shared_scene": {"kinds", "ticks"}`를 둔다. 그 층을 쓰는 트랙의 `scene`에는 `"shared": true`를 표시한다.
+   - 틱 k의 목록은 `static` + `shared_scene.ticks[k]` + `ticks[k]` 순서다(`null` = 앞 틱과 같음).
+   - 풀어낸 목록이 `scene()`과 같은지는 틱마다 검사한다. 공유할 층이 없는 게임에는 이 키를 넣지 않는다.
