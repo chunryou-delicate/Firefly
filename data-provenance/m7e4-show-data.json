@@ -1,0 +1,788 @@
+{
+ "generated": "2026-10-31T23:50:16+0900",
+ "git_commit": "a3c96232037e61742bc3901787eacfbbc23b745b",
+ "brief": "docs/m7e4-brief.md §2 and '계약 추가'",
+ "command": "python -m flysim.apps.m7e4_show_data all",
+ "sources": {
+  "data-provenance/m7f-baselines.json": "23f355d9a6319ce0e2f675f26bcb29af84b72fefd061f10afb0ffa345981dd21",
+  "data-provenance/m7f-results.json": "241ac7315f0ffd9165f955d794073cf127758286580a384b0cb53f76607b7f03",
+  "data-provenance/m7f-yoked.json": "fe9608f9f46a2593691aa38258c06d4cdb00b77a89f0a0d7ec2097315e7f321f",
+  "runs/m7f/paddle-brain-seed10/frames.npz": "b31dddfa456dc2ee1a919cde6147709dcb294d80001791e61959a843f4cabcbb",
+  "runs/m7f/paddle-brain-seed10/game.json": "18239f776bed963d9e29160e195cda51bdc8da4f15078638d69af0583b9dae8f",
+  "runs/m7f/paddle-brain-seed10/run.json": "79cdd8c4e1d8ed96d263e6730577db81a8b916083eff8ffa932142641584302d",
+  "runs/m7f/paddle-brain-seed10/scene.json": "ccd5846292262da31e249cb1ac407612a74d11aab055f0ce49d7459c2ebcf727",
+  "runs/m7f/bricks-brain-seed10/frames.npz": "77a6cb1845493ba8a602d0ae13a6bc7dd66c1fa7af0b64a09ccc486aaab305ab",
+  "runs/m7f/bricks-brain-seed10/game.json": "fdde4449677e4b0cb464e8fe128e93684094b523c81e583564e3dd63eb4ae9af",
+  "runs/m7f/bricks-brain-seed10/run.json": "a2221915ec858722b4b8ee65467dbb191a104adb7efc1eeef1b1938bd2ea38fe",
+  "runs/m7f/bricks-brain-seed10/scene.json": "bfbe39ece64a0de962d9700e22b5439b2e14efc72eebe7143fb4b21264af5eaa",
+  "runs/m7f/formation-brain-seed10/frames.npz": "ce436a5acfc49b13141dd2908380326bf898ee5c063d81150b439116fa3fdab0",
+  "runs/m7f/formation-brain-seed10/game.json": "2211a948578dedf2340670e942a1975a2b52f1add448873cdfb3f13e7353ce6f",
+  "runs/m7f/formation-brain-seed10/run.json": "d172f67172e1f92f9fa029c5cc556544add21f209cdca88f83cdebf4a0521ba2",
+  "runs/m7f/formation-brain-seed10/scene.json": "654aac8b8bc9cb8bfdac7cce7455b03008ec468704659d7f3b309765e7b39c92",
+  "runs/m7f/crossing-brain-seed10/frames.npz": "9f96ea867f1fc2c87ac6bb3d1c90abb43328d152e543a1761db171e257456259",
+  "runs/m7f/crossing-brain-seed10/game.json": "ca9bc5e39ec0524e0f779a995be6130b870e130d256f2dc2df08ba722235bd11",
+  "runs/m7f/crossing-brain-seed10/run.json": "b19b342e949259be707eda943a08b070d75a9b35ed37710ea581a828e9ee6d1f",
+  "runs/m7f/crossing-brain-seed10/scene.json": "f365b59de98a91ec01e400c9f3bec4125d17486b2c072ba2238d623f0c21ed1e",
+  "runs/m7f/catch-brain-seed10/frames.npz": "7b93f769dc297c57dac3b3f43f981c9fdf857af424d2e5fd10ed315b4eb9c186",
+  "runs/m7f/catch-brain-seed10/game.json": "39a4f357ceea1c3db679e52234432c40486c1a89ad14b23225690c2e95339de0",
+  "runs/m7f/catch-brain-seed10/run.json": "bfb58c73628067780c886557ffe3a0bd0dedc51bc2503dd97e4037cc838f583c",
+  "runs/m7f/catch-brain-seed10/scene.json": "0c0d2a2b25a8813667f05e4b59d077830738f9b9c96312dcad751e4e874b1160",
+  "runs/m7f/demons-brain-seed10/frames.npz": "3ab0c630f1004dbb119f6330cf40b3a1c321eed347bb8cd2242d3c4b4b2cf218",
+  "runs/m7f/demons-brain-seed10/game.json": "60ba8e886328eb02d3f643a3cbb92109f97e577b1b86bec936d953bd2a48246f",
+  "runs/m7f/demons-brain-seed10/run.json": "3e56586b749c6a80b02bd612ed45b8867d0c8faa8205a74d9c0072523b06dace",
+  "runs/m7f/demons-brain-seed10/scene.json": "dd0f8cef1e630140f60927926a36c5683c3fa5464c707093c7b443fff69789d1",
+  "runs/m7f/ski-brain-seed10/frames.npz": "dbe028f24ac6c702a75de7ddb554b69c015a8e52be4f573180b26d6f9e724842",
+  "runs/m7f/ski-brain-seed10/game.json": "eb6d9a748caf4933e62c76d5a7976ba9315407a69a806f22d5fc91e358661c8a",
+  "runs/m7f/ski-brain-seed10/run.json": "d26dd942512f4ead964a55cd3994e3dbeae3ebb32183780399dde15d02dac526",
+  "runs/m7f/ski-brain-seed10/scene.json": "3e7329462a7c129fc5e59375301908e1fff47572e7668c1dc737213f52909df8",
+  "runs/m7f/boxing-brain-seed10/frames.npz": "e64a0d1eeaa57bdea413c693ae140f7497849ffbcabc74ce70a446784ee458b2",
+  "runs/m7f/boxing-brain-seed10/game.json": "fd34a1c863dc91dce926b01267b9f91afecf5b9977da2613dd60b48ee97dd0b4",
+  "runs/m7f/boxing-brain-seed10/run.json": "33ae5ae8dd7ab5d8f43ff14d52e80b24665f2f68f89104b2bd9f7a52f3de4177",
+  "runs/m7f/boxing-brain-seed10/scene.json": "bb805ed0123955adca68134e1fd54208b92886dcfd844bd791bafa87ec2b9085",
+  "data-provenance/m7g-results.json": "be5f9ccfbe026d3686de749ec519cd2d505a85a8e1b397c0d79d81c16dbc8156",
+  "docs/m7-game-ladder.md": "83c362eb378b179ef817d7b2f53b8bb4827178e25ef7620b2985481f3b1a0f6f",
+  "runs/m7e4/dodge_v2_s4-brain-seed10/frames.npz": "d427a6d7bfce5fdd4d10c782fd572b081892a97af4f46641715e287a07da957f",
+  "runs/m7e4/dodge_v2_s4-brain-seed10/game.json": "40b8850f355546cefcd7115c2ccbb95f152367bdbb0ac993fde836a1881fa3ab",
+  "runs/m7e4/dodge_v2_s4-brain-seed10/run.json": "37549c116a2ea1a330434e5a82ab98975bac3ada7ac7d859cffcec02e170b062",
+  "runs/m7g/dodge_v2_s4-brain-seed10/frames.npz": "4b74926d942e35f3fb896990b2026e70caad5c0234c14ff3fa1a33ff16060ba3",
+  "runs/m7g/dodge_v2_s4-brain-seed10/game.json": "a83b70b8e0715c96e4fa9c056cb49b0e2b2781addc8bb6e2aa3b498d04e8eb6d",
+  "runs/m7g/dodge_v2_s4-brain-seed10/run.json": "04913a50bb6c92366109197afc75a522bfc17475aff348d11a7c6e79f124ebd7"
+ },
+ "outputs": [
+  {
+   "path": "runs/show/classic/paddle.json",
+   "bytes": 229562,
+   "sha256": "42afbc98601fc5539a9c0b127f509c494d50bc390abf78b2d9b8f2348e5703e1"
+  },
+  {
+   "path": "runs/show/classic/bricks.json",
+   "bytes": 213098,
+   "sha256": "b782f330e23f37f8f6f828d2b0334777d5b5f5e6000e4bb717d238fa4e41328d"
+  },
+  {
+   "path": "runs/show/classic/formation.json",
+   "bytes": 2251145,
+   "sha256": "c177338d4a421ce4aa6c2c6c250ab8df802add4715093d309146246dd701cb81"
+  },
+  {
+   "path": "runs/show/classic/crossing.json",
+   "bytes": 6121241,
+   "sha256": "4e0c4abd9d905c043c131ab993ba34f1121a047e8e74ca5f4aab783c8a4369cf"
+  },
+  {
+   "path": "runs/show/classic/catch.json",
+   "bytes": 645538,
+   "sha256": "1555bc6755fe6d33a51ae1bed77565f4d52bd4db6fc3104f5a69eb20e143fac8"
+  },
+  {
+   "path": "runs/show/classic/demons.json",
+   "bytes": 4163679,
+   "sha256": "ea945b0f4c9fb3e78b3dd7015dad4099a56edee5dd369cceef24cf5f8c70248b"
+  },
+  {
+   "path": "runs/show/classic/ski.json",
+   "bytes": 5231884,
+   "sha256": "ad3837ccd138bc4bae63525fecc76388ca1469d3853f5072144df072b9ca3506"
+  },
+  {
+   "path": "runs/show/classic/boxing.json",
+   "bytes": 2245756,
+   "sha256": "4b68e136749fbead41434f950798b8718f24cf991763d00a65ce1f58658902e2"
+  },
+  {
+   "path": "runs/show/classic/index.json",
+   "bytes": 30923,
+   "sha256": "c04cc883510455f371d031ce251b192e54a1c7c4ea16ab3992fbe7b42e565692"
+  },
+  {
+   "path": "runs/show/slow.json",
+   "bytes": 3520780,
+   "sha256": "a5e765ef1984f6c5d94dc52843289e389153691f715f10375af4f51ebe5ac0b3"
+  }
+ ],
+ "size_target_bytes": 8000000,
+ "tracks": {
+  "paddle/fly": {
+   "n_ticks": 312,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 312,
+    "n_frames": 312,
+    "scene_reads_back": 312,
+    "shared_layer_ticks": 312,
+    "scene_json_bit_exact": 312,
+    "scene_matches_scene_json": 312,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 312,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 241094,
+    "net_spikes_match_run": true
+   }
+  },
+  "paddle/random": {
+   "n_ticks": 312,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 312,
+    "n_frames": 312,
+    "scene_reads_back": 312,
+    "shared_layer_ticks": 312,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "paddle/fixed": {
+   "n_ticks": 312,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 312,
+    "n_frames": 312,
+    "scene_reads_back": 312,
+    "shared_layer_ticks": 312,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "paddle/brainless": {
+   "n_ticks": 312,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 312,
+    "n_frames": 312,
+    "scene_reads_back": 312,
+    "shared_layer_ticks": 312,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 312
+   }
+  },
+  "bricks/fly": {
+   "n_ticks": 306,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 306,
+    "n_frames": 306,
+    "scene_reads_back": 306,
+    "shared_layer_ticks": 0,
+    "scene_json_bit_exact": 306,
+    "scene_matches_scene_json": 306,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 306,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 231080,
+    "net_spikes_match_run": true
+   }
+  },
+  "bricks/random": {
+   "n_ticks": 306,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 306,
+    "n_frames": 306,
+    "scene_reads_back": 306,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "bricks/fixed": {
+   "n_ticks": 306,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 306,
+    "n_frames": 306,
+    "scene_reads_back": 306,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "bricks/brainless": {
+   "n_ticks": 306,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 306,
+    "n_frames": 306,
+    "scene_reads_back": 306,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 306
+   }
+  },
+  "formation/fly": {
+   "n_ticks": 671,
+   "score": 18,
+   "check": {
+    "frames_bit_exact": 671,
+    "n_frames": 671,
+    "scene_reads_back": 671,
+    "shared_layer_ticks": 0,
+    "scene_json_bit_exact": 671,
+    "scene_matches_scene_json": 671,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 671,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 519632,
+    "net_spikes_match_run": true
+   }
+  },
+  "formation/random": {
+   "n_ticks": 658,
+   "score": 16,
+   "check": {
+    "frames_bit_exact": 658,
+    "n_frames": 658,
+    "scene_reads_back": 658,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "formation/fixed": {
+   "n_ticks": 634,
+   "score": 12,
+   "check": {
+    "frames_bit_exact": 634,
+    "n_frames": 634,
+    "scene_reads_back": 634,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "formation/brainless": {
+   "n_ticks": 640,
+   "score": 18,
+   "check": {
+    "frames_bit_exact": 640,
+    "n_frames": 640,
+    "scene_reads_back": 640,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 640
+   }
+  },
+  "crossing/fly": {
+   "n_ticks": 3600,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 3600,
+    "scene_json_bit_exact": 3600,
+    "scene_matches_scene_json": 3600,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 3600,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 2764603,
+    "net_spikes_match_run": true
+   }
+  },
+  "crossing/random": {
+   "n_ticks": 3600,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 3600,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "crossing/fixed": {
+   "n_ticks": 3600,
+   "score": 2,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 3600,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "crossing/brainless": {
+   "n_ticks": 3600,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 3600,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 3600
+   }
+  },
+  "catch/fly": {
+   "n_ticks": 522,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 522,
+    "n_frames": 522,
+    "scene_reads_back": 522,
+    "shared_layer_ticks": 0,
+    "scene_json_bit_exact": 522,
+    "scene_matches_scene_json": 522,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 522,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 397392,
+    "net_spikes_match_run": true
+   }
+  },
+  "catch/random": {
+   "n_ticks": 522,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 522,
+    "n_frames": 522,
+    "scene_reads_back": 522,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "catch/fixed": {
+   "n_ticks": 522,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 522,
+    "n_frames": 522,
+    "scene_reads_back": 522,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "catch/brainless": {
+   "n_ticks": 552,
+   "score": 1,
+   "check": {
+    "frames_bit_exact": 552,
+    "n_frames": 552,
+    "scene_reads_back": 552,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 552
+   }
+  },
+  "demons/fly": {
+   "n_ticks": 3101,
+   "score": 60,
+   "check": {
+    "frames_bit_exact": 3101,
+    "n_frames": 3101,
+    "scene_reads_back": 3101,
+    "shared_layer_ticks": 0,
+    "scene_json_bit_exact": 3101,
+    "scene_matches_scene_json": 3101,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 3101,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 2350337,
+    "net_spikes_match_run": true
+   }
+  },
+  "demons/random": {
+   "n_ticks": 3600,
+   "score": 33,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "demons/fixed": {
+   "n_ticks": 3101,
+   "score": 60,
+   "check": {
+    "frames_bit_exact": 3101,
+    "n_frames": 3101,
+    "scene_reads_back": 3101,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "demons/brainless": {
+   "n_ticks": 2566,
+   "score": 49,
+   "check": {
+    "frames_bit_exact": 2566,
+    "n_frames": 2566,
+    "scene_reads_back": 2566,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 2566
+   }
+  },
+  "ski/fly": {
+   "n_ticks": 3600,
+   "score": 13,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "scene_json_bit_exact": 3600,
+    "scene_matches_scene_json": 3600,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 3600,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 2726305,
+    "net_spikes_match_run": true
+   }
+  },
+  "ski/random": {
+   "n_ticks": 3600,
+   "score": 10,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "ski/fixed": {
+   "n_ticks": 3600,
+   "score": 16,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "ski/brainless": {
+   "n_ticks": 3600,
+   "score": 16,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 3600
+   }
+  },
+  "boxing/fly": {
+   "n_ticks": 3600,
+   "score": 2,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "scene_json_bit_exact": 3600,
+    "scene_matches_scene_json": 3600,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 3600,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 2734889,
+    "net_spikes_match_run": true
+   }
+  },
+  "boxing/random": {
+   "n_ticks": 3600,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "boxing/fixed": {
+   "n_ticks": 3600,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true
+   }
+  },
+  "boxing/brainless": {
+   "n_ticks": 3600,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 3600,
+    "n_frames": 3600,
+    "scene_reads_back": 3600,
+    "shared_layer_ticks": 0,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "hud_score_matches_bot": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 3600
+   }
+  },
+  "dodge_v2_s4/m7g/fly": {
+   "n_ticks": 7200,
+   "score": 14,
+   "check": {
+    "frames_bit_exact": 7200,
+    "n_frames": 7200,
+    "score_matches": true,
+    "actions_match": true,
+    "t_ms_match": true,
+    "loom_matches_bundle": true,
+    "events_match_game_json": true,
+    "crash_matches": true,
+    "decoder_reproduces_actions": 7200,
+    "rates_match_spike_list": true,
+    "net_spikes_total": 5521656,
+    "net_spikes_match_run": true
+   }
+  },
+  "dodge_v2_s4/random": {
+   "n_ticks": 581,
+   "score": 0,
+   "check": {
+    "frames_bit_exact": 581,
+    "n_frames": 581,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true
+   }
+  },
+  "dodge_v2_s4/fixed": {
+   "n_ticks": 7200,
+   "score": 14,
+   "check": {
+    "frames_bit_exact": 7200,
+    "n_frames": 7200,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true
+   }
+  },
+  "dodge_v2_s4/brainless": {
+   "n_ticks": 7200,
+   "score": 14,
+   "check": {
+    "frames_bit_exact": 7200,
+    "n_frames": 7200,
+    "score_matches": true,
+    "actions_match": true,
+    "crash_matches": true,
+    "loom_matches_bot": true,
+    "rule_reproduces_actions": 7200
+   }
+  }
+ },
+ "display_rerecord": {
+  "note": "표시용 재녹화(같은 시드·같은 k·같은 설정), 앞 60 s 비트 일치 확인",
+  "row": "dodge_v2_s4",
+  "seed": 10,
+  "k": 1712336.208910595,
+  "how": "m7g._brain + m7g.play(record=True) + m7g.write_bundle with m7c.BUNDLE_MAX_MS set to 120000 for this process (files unchanged)",
+  "m7g_bundle": "runs/m7g/dodge_v2_s4-brain-seed10",
+  "bundle": {
+   "dir": "runs/m7e4/dodge_v2_s4-brain-seed10",
+   "frames": 7200,
+   "bundle_ms": 120000,
+   "game_ms": 120000,
+   "spikes_in_bundle": 5521656
+  },
+  "episode": {
+   "score": 14,
+   "ticks": 7200,
+   "crashed": false,
+   "truncated": true,
+   "network_rate_hz": 0.27866547159070265,
+   "active_fraction": 1.0,
+   "gf_spikes": {
+    "L": 285,
+    "R": 300
+   },
+   "n_spikes": 5521656,
+   "input_cell_spikes": 70029,
+   "decoder_outputs": {
+    "NOOP": 6453,
+    "JUMP": 4,
+    "LEFT": 425,
+    "RIGHT": 318
+   }
+  },
+  "check": {
+   "old_ticks": 3600,
+   "new_ticks": 7200,
+   "frames_equal": true,
+   "t_ms_equal": true,
+   "actions_equal": true,
+   "loom_equal": true,
+   "old_bundle_ms": 60000,
+   "spikes_old": 2754099,
+   "spikes_new_first_part": 2754099,
+   "spikes_equal": true,
+   "events_equal": true,
+   "game_json_equal_except_length": true,
+   "episode_matches_m7g_eval": {
+    "score": true,
+    "ticks": true,
+    "crashed": true,
+    "truncated": true,
+    "network_rate_hz": true,
+    "active_fraction": true,
+    "gf_spikes": true,
+    "n_spikes": true,
+    "input_cell_spikes": true,
+    "decoder_outputs": true
+   }
+  },
+  "generated": "2026-10-31T23:22:55+0900",
+  "git_commit": "bc253296edcd9e342cb509b5874de0ee5b90e2c0"
+ },
+ "shared_scene": {
+  "rule": "shared_scene exists only when all four tracks have the same number of ticks and, at every tick, their lists after static start with the same non-empty run of rectangles (that run is the shared layer); otherwise the key is absent",
+  "approved": "planning session, 2026-10-31 (crossing.json was 22.0 MB, above the 8 MB target)",
+  "games": {
+   "paddle": {
+    "ticks": 312,
+    "kinds": [
+     "cpu_paddle",
+     "paddle",
+     "ball"
+    ],
+    "same_in_all_four_by_kind": {
+     "paddle": 13,
+     "cpu_paddle": 312,
+     "ball": 312,
+     "wall": 312
+    },
+    "null_ticks": 94,
+    "reason": "네 판 모두 312틱에 끝나고(점수 0) 상대 막대와 공이 모든 틱에서 같다. 공은 그리는 순서가 선수 막대 뒤라, 공유 층에는 상대 막대(312틱)와 선수 막대·공이 모두 같은 틱(13틱)만 들어간다. 규칙이 정한 공유"
+   },
+   "crossing": {
+    "ticks": 3600,
+    "kinds": [
+     "car",
+     "walker"
+    ],
+    "same_in_all_four_by_kind": {
+     "walker": 1,
+     "car": 3600,
+     "lane": 3600
+    },
+    "null_ticks": 0,
+    "reason": "길 건너기의 차는 시드와 틱으로만 정해져 네 판이 같다(3,600틱 확인)"
+   }
+  }
+ },
+ "yoked": "data-provenance/m7f-yoked.json present",
+ "wall_s": 59.7
+}
