@@ -24,6 +24,19 @@ flysim-show.html — M7e3 쇼 화면 (docs/m7e3-brief.md 4절). 빌드·서버 �
   5. 점수·판정은 결과 파일 그대로. "늦게 오는 신호"는 가설로 표시한다.
   6. 첫 대결(M7c) 판의 처음 2초는 리셋 직후 착시 구간으로 표시한다(M7e2와 같은 조건: 예열 2 s 미만).
 
+M7e4 (docs/m7e4-brief.md 1·3절, "계약 추가") — 2판에 더한 것:
+  데이터: 같은 ?data= 아래 slow.json(처음에 읽음), classic/index.json(처음에 읽음, 8종 game 블록),
+          classic/<game>.json(그 게임을 열 때·게임기 카드가 화면에 들어올 때 읽음, 지연 로딩).
+  장면 부호화: 틱 k의 사각형 = scene.static + scene.ticks[k] (null이면 앞 틱과 같음), 항목 [kind 번호, x0, x1, y0, y1, value].
+  정직 규칙 추가:
+  1. 사람용 그림은 scene 사각형마다 그 kind의 그림을 같은 자리·같은 크기로 그린다. 밖으로 나가는 꾸밈은 DECOR에 있다.
+     맞음·충돌은 화면에서 계산하지 않는다. 점수·목숨은 hud 기록만 읽는다.
+  2. 원작 제목을 쓰지 않는다(genre_ko·title_ko만).
+  3. 사후 점검(따라 하기, 느린 판 칸 A·B·나타남)에는 "사후 점검 — 판정 아님". 사다리 도장은 사전 등록 판정만.
+  4. 정답을 아는 봇(반칙)은 점수 막대로만, 레이스에는 넣지 않는다.
+  5. 자막은 신호와 사건만 말한다("점수 +1", "목숨 −1", "왼쪽 거대신경 2발 → 오른쪽으로").
+  초파리 눈 창(고전 게임): 배경 190 위에 사각형을 차례로 fill_rect와 같은 규칙으로 그리고 check_frames와 대조한다.
+
 정렬: state[k]·eye_rect[k]·loom[k]는 프레임 k를 만든 상태, action[k]는 그 틱에 고른 행동.
 프레임 k는 t_ms[k] = floor(k·1000/60)부터 다음 틱 시각까지 보인다. 사건의 t_ms는 그 사건이 처음 보이는 프레임의 시각이다.
 -->
@@ -57,6 +70,7 @@ flysim-show.html — M7e3 쇼 화면 (docs/m7e3-brief.md 4절). 빌드·서버 �
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none !important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);
   font-family:"Noto Sans KR","NanumSquareRound","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
@@ -267,7 +281,120 @@ details.honest ul{margin:4px 0 8px;padding-left:20px}
 details.honest li{margin:2px 0}
 footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
 
+/* M7e4: tags */
+.tag{display:inline-block;border-radius:8px;padding:1px 8px;font-size:12px;font-weight:900;background:var(--bg-deep);border:1.5px solid var(--line);color:var(--muted);white-space:nowrap;font-family:"Noto Sans KR",sans-serif;letter-spacing:0;vertical-align:middle}
+.tag.post{background:color-mix(in srgb,var(--warn) 18%,var(--card));border-color:var(--warn);color:var(--ink)}
+.tag.cheat{background:color-mix(in srgb,var(--bad) 14%,var(--card));border-color:var(--bad);color:var(--ink)}
+.vw{display:inline-block;font-weight:900;border-radius:7px;padding:0 7px;border:1.5px solid;font-size:12px;line-height:1.55;white-space:nowrap}
+.vw.beat{color:#0d5e3a;background:#d6f6e6;border-color:#22A06B}
+.vw.lost{color:#86181c;background:#ffe0e0;border-color:#E5484D}
+.vw.tie{color:var(--muted);background:transparent;border-color:var(--line)}
+.vw.ceil{color:#6b4500;background:#fff0c9;border-color:#C27C0E}
+.vw.none{color:var(--muted);background:transparent;border-color:var(--line);border-style:dashed}
+
+/* M7e4: ladder map */
+.ladder-q{padding:14px 18px;font-weight:700;font-size:clamp(15px,1.9vw,18px);display:flex;flex-wrap:wrap;gap:6px 10px;align-items:center;margin-bottom:16px}
+.ladder-q b{font-family:"Jua",sans-serif;font-weight:400;font-size:clamp(21px,2.6vw,27px);color:var(--brand)}
+.map{position:relative;display:grid;gap:18px}
+.map svg.trail{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:0;overflow:visible}
+.zone{position:relative;z-index:1;border-radius:24px;padding:14px 14px 16px;border:2px solid var(--line);box-shadow:var(--shadow)}
+.zone h3{margin:0 0 10px;font-size:23px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;line-height:1.2}
+.zone h3 small{font-family:"Noto Sans KR",sans-serif;font-size:13px;font-weight:700;opacity:.75}
+.zone.z1{background:linear-gradient(135deg,color-mix(in srgb,#8ED37A 34%,var(--card)),color-mix(in srgb,#BFE3FF 36%,var(--card)))}
+.zone.z2{background:linear-gradient(135deg,color-mix(in srgb,#FFC83D 30%,var(--card)),color-mix(in srgb,#FF9A6A 20%,var(--card)))}
+.zone.z3{background:radial-gradient(120% 140% at 10% 0%,#3a2470 0%,#1b1338 55%,#120d27 100%);color:#F3EEFF;border-color:#4b3a7a}
+.cells{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:14px}
+.lcell{position:relative;text-align:left;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:18px;padding:10px 10px 9px;box-shadow:0 4px 0 rgba(34,38,58,.08);display:flex;flex-direction:column;gap:6px;transition:transform .12s, box-shadow .12s;font:inherit}
+.lcell:hover{transform:translateY(-3px);box-shadow:0 7px 0 rgba(34,38,58,.1)}
+.lcell:focus-visible{outline:3px solid var(--sky);outline-offset:2px}
+.zone.z3 .lcell{background:#17112f;color:#F3EEFF;border-color:#5a4796;box-shadow:0 4px 0 #0b0820}
+.lcell canvas{width:100%;aspect-ratio:2/1;border-radius:11px;display:block}
+.lcell .lv{position:absolute;top:-11px;left:-9px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-family:"Jua",sans-serif;font-size:16px;background:var(--brand);color:var(--brand-ink);border:3px solid var(--card);box-shadow:0 2px 0 rgba(0,0,0,.15)}
+.zone.z3 .lcell .lv{background:#FF4FD8;color:#fff;border-color:#17112f}
+.lcell .nm{font-family:"Jua",sans-serif;font-size:19px;line-height:1.1}
+.lcell .nm small{display:block;font-family:"Noto Sans KR",sans-serif;font-size:11.5px;font-weight:700;opacity:.7;margin-top:2px}
+.lcell .fm{font-size:12px;font-weight:700;opacity:.8}
+.lst{display:grid;grid-template-columns:auto 1fr;gap:3px 6px;font-size:12px;align-items:center}
+.lst > span:nth-child(odd){opacity:.72;font-weight:700;white-space:nowrap}
+.map-legend{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:12px;font-size:13px;color:var(--muted);align-items:center}
+
+/* M7e4: arcade */
+.arcade{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:18px}
+.cab{--c1:#FF4FD8;--c2:#7B5CFF;position:relative;cursor:pointer;border-radius:24px 24px 14px 14px;background:linear-gradient(#2c2456,#151131 70%,#0f0c25);border:2px solid #4b3a7a;color:#F3EEFF;padding:10px 10px 12px;display:flex;flex-direction:column;gap:8px;box-shadow:0 6px 0 #0b0820,0 16px 30px rgba(20,10,60,.25);transition:transform .12s}
+.cab:hover{transform:translateY(-4px)}
+.cab:focus-visible{outline:3px solid var(--sky);outline-offset:3px}
+.cab .marquee{font-family:"Jua",sans-serif;font-size:22px;line-height:1.2;text-align:center;border-radius:13px;padding:5px 6px;background:linear-gradient(90deg,var(--c1),var(--c2));color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),0 0 18px color-mix(in srgb,var(--c1) 45%,transparent)}
+.cab .screen{position:relative;border-radius:14px;overflow:hidden;border:5px solid #07051a;background:#05040f;aspect-ratio:1;box-shadow:inset 0 0 0 2px #3a2e66}
+.cab .screen canvas{width:100%;height:100%;display:block}
+.cab .screen .live{position:absolute;left:6px;top:6px;font-size:10.5px;font-weight:900;background:rgba(5,4,15,.72);border-radius:7px;padding:1px 6px;color:#9EF0D2}
+.cab .screen .wait{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;font-size:13px;color:#b9b2dc;text-align:center;padding:10px}
+.cab .cpanel{display:flex;align-items:center;justify-content:center;gap:10px;height:26px;border-radius:10px;background:linear-gradient(#3a2f6c,#231c49);border:1.5px solid #4b3a7a}
+.cab .cpanel i{display:block;border-radius:50%}
+.cab .cpanel .stick{width:9px;height:9px;background:#e8e2ff;box-shadow:0 7px 0 -2px #8f86c4}
+.cab .cpanel .b1{width:12px;height:12px;background:#FF5D73;box-shadow:0 2px 0 #8a1f30}
+.cab .cpanel .b2{width:12px;height:12px;background:#FFD13F;box-shadow:0 2px 0 #8a6a00}
+.cab .cpanel .b3{width:12px;height:12px;background:#3BC6FF;box-shadow:0 2px 0 #145a78}
+.cab .genre{align-self:flex-start;font-size:12px;font-weight:900;border-radius:8px;padding:1px 8px;background:rgba(255,255,255,.12);border:1.5px solid rgba(255,255,255,.22)}
+.cab p{font-size:12.5px;line-height:1.45;opacity:.86;margin:0}
+.cab .lst{font-size:11.5px}
+.cab .vw.tie,.cab .vw.none{color:#cfc8f2;border-color:rgba(255,255,255,.28)}
+
+/* M7e4: stage for the classic games (the eye window sits beside the square screen) */
+.game-area{position:relative}
+.game-area.classic{display:grid;grid-template-columns:minmax(0,1fr) clamp(150px,27%,224px);gap:14px;align-items:start}
+.game-area.classic .eyebox{position:static;width:auto}
+.game-box.classic{background:#151131}
+.scorebar{display:flex;align-items:center;gap:14px;padding:7px 14px;background:#151131;color:#fff;font-weight:700;font-size:14px;font-variant-numeric:tabular-nums}
+.scorebar b{font-family:"Jua",sans-serif;font-weight:400;font-size:24px;color:#FFE07A;line-height:1}
+.scorebar .lives{color:#FF6B8B;letter-spacing:2px;font-size:16px}
+.scorebar .t{margin-left:auto;opacity:.75;font-size:12.5px}
+.stage-loading{position:absolute;inset:0;display:grid;place-items:center;background:rgba(21,17,49,.82);color:#fff;font-weight:700;font-size:15px;text-align:center;padding:16px}
+.cheat-note{margin-top:8px;font-size:12px;color:var(--muted)}
+
+/* M7e4: race for the classic games, with the score-bar panel beside it */
+.race-wrap{display:grid;gap:14px;max-width:1000px;margin:0 auto}
+.race-wrap.classic{max-width:none;grid-template-columns:minmax(0,1fr) 240px;align-items:start}
+.race.classic{grid-template-columns:repeat(4,minmax(0,1fr));max-width:none}
+.race.classic .racer canvas{background:#151131}
+.oraclebar{padding:12px 14px}
+.oraclebar h4{margin:0 0 4px;font-family:"Jua",sans-serif;font-weight:400;font-size:19px}
+.obar{display:grid;grid-template-columns:1fr;gap:2px;margin-top:8px;font-size:12.5px;font-weight:700}
+.obar .tr{position:relative;height:14px;border-radius:7px;background:var(--bg-deep);overflow:hidden}
+.obar .tr i{position:absolute;left:0;top:0;bottom:0;border-radius:7px}
+.obar .lab{display:flex;justify-content:space-between;gap:6px}
+.raceGames{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.raceGames .grp{font-size:12px;font-weight:900;color:var(--muted);margin:0 2px 0 6px}
+.raceGames button{border:2px solid var(--line);background:var(--card);border-radius:11px;padding:4px 10px;font-weight:700;font-size:13.5px}
+.raceGames button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+
+/* M7e4: report card grid for the arcade */
+.rc-grid.two{grid-template-columns:repeat(2,minmax(0,1fr))}
+.sub-h{font-size:24px;margin:22px 0 10px}
+.rc-oracle{font-size:12px;color:var(--muted);margin-top:4px}
+
+/* M7e4: blind card, slow card */
+.blind{padding:18px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px;align-items:start}
+.blind svg,.slow svg{width:100%;height:auto;display:block}
+.bigrow{display:flex;flex-wrap:wrap;gap:12px;margin:8px 0 10px}
+.bigbox{flex:1 1 150px;border-radius:18px;padding:10px 14px;background:var(--card-2);border:2px solid var(--line)}
+.bigbox .bn{font-family:"Jua",sans-serif;font-size:clamp(38px,5vw,56px);line-height:1}
+.bigbox .bl{font-size:13px;font-weight:700;color:var(--muted)}
+.bigbox.real .bn{color:var(--brand)} .bigbox.tape .bn{color:var(--sky)}
+.vt{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+.vt th,.vt td{padding:5px 6px;border-bottom:1.5px solid var(--line);text-align:left;font-variant-numeric:tabular-nums}
+.vt th{font-size:12px;color:var(--muted)}
+.slow{padding:18px;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:20px;align-items:start}
+.posthoc{border:2px dashed var(--warn);border-radius:16px;padding:12px 14px;background:color-mix(in srgb,var(--warn) 8%,var(--card));margin-top:12px}
+.posthoc .pl{font-family:"Jua",sans-serif;font-size:21px;line-height:1.3;margin:6px 0 2px}
+.posthoc .pn{font-size:13px;color:var(--muted);margin:0 0 6px}
+.slow .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:10px 0}
+.why .golink{margin-top:6px}
+
 @media (max-width: 960px){
+  .arcade{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .race-wrap.classic{grid-template-columns:1fr}
+  .rc-grid.two{grid-template-columns:1fr}
+  .blind,.slow{grid-template-columns:1fr}
   .stage{grid-template-columns:1fr}
   .hero-grid{grid-template-columns:1fr}
   .hero-art{max-width:520px}
@@ -302,6 +429,28 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
   .badge b{font-size:20px}
   .badge{padding:8px 10px}
   .controls .time{min-width:0}
+  /* M7e4 */
+  .race.classic{grid-template-columns:1fr 1fr}
+  .game-area.classic{grid-template-columns:1fr;gap:8px}
+  .game-area.classic .eyebox{display:grid;grid-template-columns:128px minmax(0,1fr);column-gap:10px;align-items:center}
+  .game-area.classic .eyebox .lab{grid-column:1/-1}
+  .game-area.classic .eyebox .eyewrap{grid-column:1}
+  .game-area.classic .eyebox .loombars{grid-column:2;margin-top:0}
+  .cells{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .lcell{padding:8px 7px 7px}
+  .lcell .nm{font-size:16px}
+  .lst{font-size:10.5px;gap:2px 4px}
+  .vw{font-size:10.5px;padding:0 4px}
+  .zone{padding:12px 10px 12px}
+  .zone h3{font-size:20px}
+  .arcade{gap:10px}
+  .cab{padding:7px 7px 9px;gap:6px}
+  .cab .marquee{font-size:17px}
+  .cab p{font-size:11px;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
+  .cab .lst{grid-template-columns:1fr}
+  .cab .lst > span:nth-child(odd){margin-top:2px}
+  .vt{font-size:11.5px}
+  .vt th,.vt td{padding:4px 3px}
 }
 </style>
 </head>
@@ -310,7 +459,7 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
   <div class="wrap">
     <div class="logo">🪰 초파리 뇌 게임쇼</div>
     <nav>
-      <a href="#pick">게임</a><a href="#stage">한 판</a><a href="#race">레이스</a><a href="#card">성적표</a><a href="#why">왜?</a><a href="#diff">차이</a>
+      <a href="#ladder">사다리</a><a href="#pick">첫 칸</a><a href="#arcade">오락실</a><a href="#stage">한 판</a><a href="#race">레이스</a><a href="#card">성적표</a><a href="#blind">눈 가리고</a><a href="#slow">느리게</a><a href="#why">왜?</a><a href="#diff">차이</a>
     </nav>
     <button class="iconbtn" id="soundBtn" aria-pressed="false" title="효과음 켜기/끄기">소리 끔</button>
     <button class="iconbtn" id="themeBtn" title="밝게/어둡게">◐</button>
@@ -333,7 +482,8 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
         </div>
         <div class="cta">
           <a class="btn primary" href="#stage">▶ 한 판 보기</a>
-          <a class="btn" href="#race">네 선수 레이스</a>
+          <a class="btn" href="#ladder">사다리 지도</a>
+          <a class="btn" href="#arcade">오락실</a>
           <a class="btn" href="#card">성적표</a>
         </div>
       </div>
@@ -358,24 +508,48 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
     <p class="shortcut"><b>지름길 표시:</b> 눈 그림을 감지 신호로 바꾸는 감지기는 사람이 직접 짠 것(가정)이고, 감지 뉴런부터 근육까지만 배선도입니다. 뉴런 수는 뇌 지도 파일(brain-map.json)에서 읽었습니다.</p>
   </section>
 
-  <!-- 2. 게임 고르기 -->
+  <!-- M7e4 1. 사다리 지도 -->
+  <section id="ladder">
+    <div class="sec-title"><span class="num">1</span><h2>사다리 지도</h2><p>칸을 누르면 그 판을 봅니다. 도장은 결과 파일의 판정 그대로입니다(평가 시드 10~19).</p></div>
+    <div class="card ladder-q"><b>어디까지 깰 수 있을까?</b><span>— 지금까지: 화면을 보고 반응해서 이겼다고 말할 수 있는 게임은 아직 없음</span><span class="tag">총괄 읽기</span></div>
+    <div class="map" id="ladderMap"><svg class="trail" id="ladderTrail" aria-hidden="true"></svg></div>
+    <div class="map-legend">
+      <span><span class="vw beat">이김</span> <span class="vw lost">짐</span> <span class="vw tie">구별 안 됨</span> <span class="vw ceil">천장 — 판정 불가</span></span>
+      <span>판정: 시드별 짝 차이 평균이 표준오차의 3배를 넘을 때만 이김·짐</span>
+      <span>천장: 뇌 없는 봇이 정답을 아는 봇(반칙)과 10판 모두 같은 점수라, 그 봇을 이겼다고 말할 수 없는 칸</span>
+    </div>
+  </section>
+
+  <!-- 2. 게임 고르기 (첫 칸) -->
   <section id="pick">
-    <div class="sec-title"><span class="num">1</span><h2>게임 고르기</h2><p>카드를 누르면 아래에서 한 판을 봅니다. 모두 평가 시드 10판입니다.</p></div>
+    <div class="sec-title"><span class="num">2</span><h2>첫 칸 — 게임 고르기</h2><p>카드를 누르면 아래에서 한 판을 봅니다. 모두 평가 시드 10판입니다.</p></div>
     <div class="picker" id="picker"></div>
+  </section>
+
+  <!-- M7e4 3. 오락실 -->
+  <section id="arcade">
+    <div class="sec-title"><span class="num">3</span><h2>오락실</h2><p>직접 만든 고전 방식 게임 8종. 화면 속은 초파리 판(시드 10)을 4배로 되풀이한 것이고, 누르면 아래에서 크게 봅니다.</p></div>
+    <div class="arcade" id="arcadeGrid"></div>
+    <p class="small muted" style="margin-top:12px">게임 이름은 장르(○○형)로만 적습니다. 발사 버튼이 하던 일은 정해진 주기로 저절로 일어나고, 모든 선수에게 같습니다. 점프 버튼은 원작의 "위" 버튼 자리입니다.</p>
   </section>
 
   <!-- 3. 한 판 보기 -->
   <section id="stage">
-    <div class="sec-title"><span class="num">2</span><h2>한 판 보기</h2><p>왼쪽은 사람을 위한 그림, 오른쪽은 기록된 뇌 활동입니다.</p></div>
+    <div class="sec-title"><span class="num">4</span><h2>한 판 보기</h2><p>왼쪽은 사람을 위한 그림, 오른쪽은 기록된 뇌 활동입니다. 위의 사다리 칸·게임 카드·오락실 게임기를 누르면 여기서 봅니다.</p></div>
     <div class="stage-head">
       <span class="title" id="stageTitle">—</span>
       <div class="seg" id="stageMatch"><button data-match="m7c">첫 대결</button><button data-match="m7c2">재대결</button></div>
+      <span class="pill" id="stageChip" hidden></span>
     </div>
     <div class="stage">
       <div>
+        <div class="game-area" id="gameArea">
         <div class="game-box" id="gameBox">
+          <div class="scorebar" id="scoreBar" hidden><b id="sbScore">0</b><span>점</span><span class="lives" id="sbLives"></span><span class="t" id="sbTime"></span></div>
           <canvas class="game" id="gameCanvas" aria-label="사람용 게임 그림"></canvas>
           <div class="transient" id="transient" hidden>뇌가 막 켜진 착시 구간 (처음 2초)<small>리셋 직후의 발화라 결과로 읽지 않아요 (M7a2)</small></div>
+          <div class="stage-loading" id="stageLoading" hidden></div>
+        </div>
           <div class="eyebox">
             <div class="lab">초파리가 실제로 보는 화면<small>84×84 · 기록 그대로</small></div>
             <div class="eyewrap"><canvas id="eyeCanvas" width="84" height="84"></canvas><i class="mid"></i><span class="lr l">왼</span><span class="lr r">오</span></div>
@@ -398,7 +572,9 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
           <span><i style="background:var(--gfin)"></i>거대신경 (감지 신호와 함께)</span>
           <span><i style="background:var(--spont)"></i>거대신경 (입력 없이 저절로)</span>
           <span><i style="background:#FFD13F"></i>눌린 버튼</span>
-          <span><i style="background:#9fb3c8"></i>장애물이 다가오는 구간</span>
+          <span id="tlObsKey"><i style="background:#9fb3c8"></i>장애물이 다가오는 구간</span>
+          <span id="tlScoreKey" hidden><b style="color:#2EC4A0">✓</b> 점수 (hud 기록)</span>
+          <span id="tlLifeKey" hidden><b style="color:#E5484D">✖</b> 목숨 −1</span>
           <span id="tlTransientKey"><i style="background:repeating-linear-gradient(-45deg,#FFC83D 0 3px,#FFE08A 3px 6px)"></i>착시 구간</span>
           <span>키보드: 스페이스 재생·멈춤, ←/→ 한 틱</span>
         </div>
@@ -427,9 +603,11 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
 
   <!-- 4. 레이스 -->
   <section id="race">
-    <div class="sec-title"><span class="num">3</span><h2>같은 판, 네 선수</h2><p>같은 게임·같은 시드(10)를 네 선수가 동시에 뜁니다.</p></div>
+    <div class="sec-title"><span class="num">5</span><h2>같은 판, 네 선수</h2><p>같은 게임·같은 시드(10)를 네 선수가 동시에 뜁니다.</p></div>
     <div class="race-head">
-      <div class="seg" id="raceGame"></div>
+      <div class="raceGames" id="raceGame"></div>
+    </div>
+    <div class="race-head">
       <div class="seg" id="raceMatch"><button data-match="m7c">초파리 첫 대결</button><button data-match="m7c2">초파리 재대결</button></div>
     </div>
     <div class="race-head">
@@ -439,37 +617,92 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
       <button class="btn" id="raceReset">처음부터</button>
       <span class="time" id="raceTime">0.0 초</span>
     </div>
-    <div class="race" id="raceGrid"></div>
+    <div class="race-wrap" id="raceWrap">
+      <div class="race" id="raceGrid"></div>
+      <aside class="card oraclebar" id="oracleBar" hidden></aside>
+    </div>
     <div class="card podium" id="podium"></div>
   </section>
 
   <!-- 5. 성적표 -->
   <section id="card">
-    <div class="sec-title"><span class="num">4</span><h2>성적표</h2><p>게임마다 평가 시드 10~19의 점수 10개(점)와 평균(막대). 판정은 결과 파일 그대로입니다.</p></div>
+    <div class="sec-title"><span class="num">6</span><h2>성적표</h2><p>게임마다 평가 시드 10~19의 점수 10개(점)와 평균(막대). 판정은 결과 파일 그대로입니다.</p></div>
+    <h3 class="sub-h" style="margin-top:4px">첫 칸</h3>
     <div class="rc-grid" id="rcGrid"></div>
+    <h3 class="sub-h">오락실 8종 <span class="tag post">다섯째 줄 "눈 가린 따라 하기"는 사후 점검 — 판정 아님</span></h3>
+    <div class="rc-grid two" id="rcGridClassic"></div>
+  </section>
+
+  <!-- M7e4 7. 눈 가리고 해 봤어요 -->
+  <section id="blind">
+    <div class="sec-title"><span class="num">7</span><h2>눈 가리고 해 봤어요</h2><p>초파리가 누른 버튼 순서(녹화)를 화면을 보지 않고 다른 판에 그대로 틀어 봤습니다.</p></div>
+    <div class="card blind" id="blindCard">
+      <div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px"><span class="tag post">사후 점검 — 판정 아님</span><span class="jua" style="font-size:22px" id="blindTitle">권투 10×10</span></div>
+        <svg id="blindMap" viewBox="0 0 520 470" role="img" aria-label="녹화한 판 × 틀어 준 판 점수 열지도"></svg>
+        <p class="small muted" id="blindHow">행 = 녹화한 판(초파리가 그 시드에서 누른 버튼 순서), 열 = 틀어 준 판(게임 시드). 굵은 테두리 대각선이 진짜 판입니다.</p>
+      </div>
+      <div>
+        <div class="bigrow">
+          <div class="bigbox real"><div class="bl">진짜 판</div><div class="bn" id="blindReal">—</div></div>
+          <div class="bigbox tape"><div class="bl">녹화만 틀어도</div><div class="bn" id="blindYoked">—</div></div>
+        </div>
+        <div class="jua" style="font-size:22px;line-height:1.3" id="blindLine">—</div>
+        <p class="small muted" id="blindNum"></p>
+        <h4 style="margin:14px 0 2px">8종 전체 — 초파리 대 따라 하기 <span class="tag post">사후 점검 — 판정 아님</span></h4>
+        <table class="vt" id="blindTable"></table>
+        <p class="small muted">따라 하기 점수(게임 시드 j) = 다른 9개 녹화를 그 판에 튼 점수의 평균. 판정 규칙은 성적표와 같은 짝 차이(3 표준오차)지만, 결과를 본 뒤 정한 분석이라 사다리 판정에는 쓰지 않습니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- M7e4 8. 느리게 하면 이길까 -->
+  <section id="slow">
+    <div class="sec-title"><span class="num">8</span><h2>느리게 하면 이길까?</h2><p>장애물만 2·4·8배 느리게 했습니다. 눈·입력·해독기는 그대로입니다. 첫 칸에서 진 뒤에 덧붙인, 더 쉬운 칸입니다.</p></div>
+    <div class="card slow" id="slowCard">
+      <div>
+        <div class="row"><div class="seg" id="slowFam"><button data-fam="dodge_v2" class="on">벽 없는 피하기</button><button data-fam="jump">뛰어넘기</button></div><span class="small muted">평가 시드 10~19 평균 · 막대 = 평균, 점선 = 천장</span></div>
+        <svg id="slowChart" viewBox="0 0 640 330" role="img" aria-label="속도별 점수 막대"></svg>
+        <p class="small muted" id="slowLead"></p>
+        <div class="row">
+          <button class="btn primary" id="slowWatch">▶ 4배 느린 판 한 판 보기</button>
+          <button class="btn" id="slowRace">4배 느린 판 레이스</button>
+        </div>
+      </div>
+      <div>
+        <div class="posthoc" id="slowPost">
+          <span class="tag post">사후 점검 — 판정 아님</span>
+          <div class="pl" id="slowLine1">—</div><p class="pn" id="slowNum1"></p>
+          <div class="pl" id="slowLine2">—</div><p class="pn" id="slowNum2"></p>
+          <p class="pn" id="slowReading"></p>
+        </div>
+        <p class="small muted" id="slowHyp"></p>
+      </div>
+    </div>
   </section>
 
   <!-- 6. 왜 졌을까 -->
   <section id="why">
-    <div class="sec-title"><span class="num">5</span><h2>왜 졌을까?</h2><p>재대결 판의 장애물 하나를 골라 봅니다.</p></div>
+    <div class="sec-title"><span class="num">9</span><h2>왜 졌을까?</h2><p>첫 칸 재대결 판의 장애물 하나를 골라 봅니다.</p></div>
     <div class="card why" id="whyCard">
       <div>
         <div class="chips" id="whyChips"></div>
         <svg id="whyChart" viewBox="0 0 640 300" role="img" aria-label="남은 거리와 감지 신호" style="max-width:100%;height:auto"></svg>
       </div>
       <div>
-        <span class="hyp">가설 — 아직 확인 안 함</span>
+        <span class="hyp">가설 — 약하게만 지지됨(느린 판 실험)</span>
         <div class="bignum" id="whyNum">—</div>
         <div class="jua" style="font-size:24px;line-height:1.25" id="whyLine">감지 신호의 대부분이 마지막 0.3초에</div>
         <p class="muted" id="whyText"></p>
-        <p class="small muted">사람 눈에는 장애물이 일정하게 다가옵니다(파란 선). 초파리의 감지 신호(주황 선)는 거의 0이다가 끝에서 치솟습니다. 회로가 같은 쪽 두 발을 모을 때쯤이면 비키기에 늦을 수 있다는 것이 지금의 가설입니다. 이것을 확인하려면 감지기나 입력 방식을 바꿔야 하는데, 그건 "같은 눈" 규칙에 닿아 사용자 결정 사항입니다.</p>
+        <p class="small muted">사람 눈에는 장애물이 일정하게 다가옵니다(파란 선). 초파리의 감지 신호(주황 선)는 거의 0이다가 끝에서 치솟습니다. 회로가 같은 쪽 두 발을 모을 때쯤이면 비키기에 늦을 수 있다는 것이 이 가설입니다. 느린 판 실험이 눈을 바꾸지 않고 장애물만 느리게 해서 이 가설을 시험했습니다. 사전 등록 규칙으로는 "지지"로 읽혔지만 약합니다. 사후 점검에서는 시간보다 센 입력과 장애물이 "나타나는" 순간이 승리를 더 잘 설명했습니다.</p>
+        <a class="btn golink" href="#slow">→ 느리게 하면 이길까? 카드로</a>
       </div>
     </div>
   </section>
 
   <!-- 7. 다른 영상과 차이 -->
   <section id="diff">
-    <div class="sec-title"><span class="num">6</span><h2>다른 초파리 게임 영상과 뭐가 달라요?</h2></div>
+    <div class="sec-title"><span class="num">10</span><h2>다른 초파리 게임 영상과 뭐가 달라요?</h2></div>
     <div class="diff">
       <div class="card dcard"><div class="ic">0</div><h3>학습 없음</h3><p>배선도에 가소성이 없어요. 같은 시드면 같은 판이 나옵니다. "연습해서 늘었다"는 장면은 없습니다.</p></div>
       <div class="card dcard"><div class="ic">1줄</div><h3>별도 인공지능 없음</h3><p>감지기 한 줄과 해독 규칙 한 줄뿐. 그 사이 일은 전부 배선도가 합니다.</p></div>
@@ -493,6 +726,12 @@ footer{padding:26px 0 40px;color:var(--muted);font-size:13px;text-align:center}
         <li>자막은 신호만 말합니다. "봤다", "무서워한다" 같은 말은 쓰지 않습니다.</li>
         <li>점수와 판정은 결과 파일 그대로입니다. "늦게 오는 신호"는 가설입니다.</li>
         <li>첫 대결 판의 처음 2초는 리셋 직후 착시 구간입니다(M7a2). 재대결 판은 예열 5초 뒤부터 기록해 그 구간이 없습니다.</li>
+        <li>오락실 게임의 사람용 그림은 장면 기록의 사각형마다 그 종류의 그림을 같은 자리·같은 크기로 그린 것입니다. 사각형 밖으로 나가는 장식은 아래 꾸밈 목록에 있습니다.</li>
+        <li>오락실 게임에서 맞음·충돌을 화면에서 새로 계산하지 않습니다. 점수와 목숨은 장면 기록의 hud 값만 읽습니다.</li>
+        <li id="selfCheckClassic">오락실 눈 그림 대조: —</li>
+        <li>원작 제목은 쓰지 않습니다. 이름은 게임 코드의 장르(○○형)와 한국어 제목입니다.</li>
+        <li>사후 점검(눈 가린 따라 하기, 느린 판의 칸 A·B와 나타남 비율)에는 "사후 점검 — 판정 아님"을 붙였습니다. 사다리 도장은 결과 파일의 사전 등록 판정만 씁니다.</li>
+        <li>정답을 아는 봇(반칙)은 게임 내부 상태를 읽는 봇입니다. 비교 대상이 아니라 천장 참고값이라 점수 막대로만 보이고, 레이스에는 넣지 않습니다.</li>
       </ul>
       <h4>꾸밈 요소 (기록과 무관한 그림)</h4>
       <ul id="decorList"></ul>
@@ -549,17 +788,40 @@ const DECOR = [
   "뇌 지도의 빛 번짐(발광 효과), 스파이크 번쩍임 길이(기록 시간 160 ms), 감지 뉴런 밝기를 최근 100 ms 기록 발화율 평균으로 부드럽게 한 것",
   "효과음(발화 '틱', 충돌 '쿵', 통과 '띵') — 기본은 꺼짐",
   "첫 화면의 각설탕을 뛰어넘는 초파리 그림 — 기록이 아닌 장식 애니메이션",
+  // M7e4: 오락실 게임 그림. 사각형 안의 모양은 종류별 그림이고, 사각형 밖으로 나가는 것은 아래에 적는다
+  "오락실 게임의 종류별 그림(사각형 안): 공 = 빛나는 공, 막대 = 네온 막대(컴퓨터 쪽은 빨간 막대에 눈 두 개), 벽 = 금속 판, 벽돌 = 줄마다 다른 색, 외계인·악마 = 직접 그린 픽셀 그림(다리 모양은 30틱, 날갯짓 모양은 15틱마다 바뀜), 포대 = 초록 포대, 탄 = 빛줄기, 폭탄 = 도화선 달린 검은 폭탄(받기형)·붉은 방울(편대형), 번개 = 지그재그 빛, 폭격수 = 복면 쓴 인물, 바구니 = 물이 든 파란 통, 차 = 색색의 차(색은 기록 순서로, 앞뒤 방향은 직전 틱 대비 위치 변화로), 차선 = 흰 점선·가운데 노란 줄, 스키어 = 스키 탄 초파리, 깃발 = 문의 왼쪽 빨강·오른쪽 파랑, 나무 = 눈 덮인 전나무, 권투 선수 = 장갑 낀 선수(위에서 본 모습), 링 줄 = 빨강·하양·파랑 줄",
+  "작은 초파리 조종사 — 플레이어 쪽 그림(막대·포대·바구니·권투 선수)에 태운 초파리, 길 건너기와 스키는 초파리가 직접 걷고 탄다. 사각형 밖으로 조금 나간다",
+  "오락실 게임의 배경 — 네온 바닥, 별·행성·성운, 잔디와 아스팔트·인도, 밤 도시와 벽돌담, 눈밭 무늬, 링 바닥과 관중 점. 기록과 무관",
+  "오락실 그림의 사각형 밖 꾸밈 — 공·탄의 빛 번짐과 꼬리(꼬리는 기록된 직전 4틱 위치), 폭탄 도화선 불꽃, 차 바퀴, 링 모서리 기둥, 그림자",
+  "권투 장갑 뻗기 — 규칙의 펀치 주기(30틱)마다 그리는 연출. 맞았는지는 점수 기록에서만 읽는다",
+  "점수 때 \"+1\"과 반짝임(권투는 \"퍽!\"), 목숨을 잃을 때 붉은 번쩍임과 \"목숨 −1\", 게임 끝·시간 끝 표시 — 시각은 사건 기록",
+  "사다리 지도·오락실 게임기의 꾸밈 — 지도 칸을 잇는 점선 길, 칸의 작은 대표 그림, 게임기 모양(간판·조이스틱·버튼)",
 ];
+// M7e4: 오락실 8종 (M7f 지시서 2절 표 순서)과 각 게임의 플레이어 그림 종류(같은 표의 kind 이름)
+const CLASSIC_ORDER = ["paddle", "bricks", "formation", "crossing", "catch", "demons", "ski", "boxing"];
+const PLAYER_KIND = {paddle: "paddle", bricks: "paddle", formation: "cannon", crossing: "walker", catch: "bucket", demons: "cannon", ski: "skier", boxing: "boxer"};
+const ACT_NAMES = ["NOOP", "JUMP", "LEFT", "RIGHT"];
+const FIXED_KO = {NOOP: "늘 가만히", JUMP: "늘 점프(위)", LEFT: "늘 왼쪽", RIGHT: "늘 오른쪽"};
+const SLOW_FIXED_KO = {NOOP: "항상 가만히", JUMP: "항상 점프", LEFT: "항상 왼쪽", RIGHT: "항상 오른쪽"};
+const CHEAT_KO = "정답을 아는 봇(반칙)";
+const POSTHOC_KO = "사후 점검 — 판정 아님";
+const SLOW_LABEL = "가설 — 약하게만 지지됨(느린 판 실험)";
+const SLOW_TRACK_GAME = "dodge_v2_s4";
+const CAB_COLORS = {paddle: ["#3BC6FF", "#5D6BFF"], bricks: ["#FF8A3D", "#FF4F7B"], formation: ["#7CF29A", "#21A7FF"], crossing: ["#FFD13F", "#FF8A3D"],
+                    catch: ["#FF5D5D", "#B33BFF"], demons: ["#FF4FD8", "#7B5CFF"], ski: ["#9FE8FF", "#4C8DFF"], boxing: ["#FF5D73", "#FFB13B"]};
 
 /* ============================== 상태 ============================== */
 const Q = new URLSearchParams(location.search);
 const DATA_DIR = (() => { const d = Q.get("data") || "runs/show/"; return d.endsWith("/") ? d : d + "/"; })();
 const S = {
-  data: null, map: null, problems: [], games: {}, tracks: [], byId: new Map(),
+  data: null, map: null, problems: [], notes: [], games: {}, tracks: [], byId: new Map(),
   pick: {game: "dodge_v2", match: "m7c2"},
   stage: {P: null, now: 0, playing: false, speed: 1, lastWall: null, crashWall: null, slow: false},
   race: {game: "dodge_v2", match: "m7c2", now: 0, playing: false, speed: 1, panels: [], lastWall: null},
   why: {sel: null}, sound: false, audio: null, mapLayers: null, visible: new Set(["stage"]),
+  // M7e4
+  classic: {index: null, indexMissing: false, games: {}, files: {}, blocks: {}}, slow: null, slowTracks: [],
+  slowFam: "dodge_v2", cabs: [],
 };
 const el = id => document.getElementById(id);
 const fmtS = ms => (ms / 1000).toFixed(2);
@@ -594,30 +856,42 @@ function decoderLine(spec){
 // fill_rect(): 열·행별 덮임 비율 cx, cy를 float32로 구하고 img = img·(1 − cov) + 25·cov, 그다음 rint(반올림 짝수)·clip.
 // 파이썬 float 좌표는 numpy float32 배열과 연산할 때 float32로 바뀐다(NEP 50) → Math.fround.
 function roundHalfEven(v){ const fl = Math.floor(v), d = v - fl; return d > 0.5 ? fl + 1 : d < 0.5 ? fl : (fl % 2 === 0 ? fl : fl + 1); }
-function eyePixels(rect){
+// fill_rect 한 번: img(float32 84×84)에 value를 덮임 비율만큼 섞는다
+function fillRectF32(img, x0, x1, y0, y1, value){
   const f = Math.fround, W = EYE.W, H = EYE.H;
-  const img = new Float32Array(W * H);
-  for(let r = 0; r < H; r++) img.fill(r + 0.5 < EYE.HORIZON_ROW ? EYE.SKY : EYE.GROUND, r * W, r * W + W);
-  if(rect){
-    const [x0, x1, y0, y1] = rect;
-    if(x1 > x0 && y1 > y0){
-      const X0 = f(x0), X1 = f(x1), Y0 = f(y0), Y1 = f(y1);
-      const cx = new Float32Array(W), cy = new Float32Array(H);
-      let ax = false, ay = false;
-      for(let c = 0; c < W; c++){ cx[c] = clamp(f(Math.min(X1, c + 1) - Math.max(X0, c)), 0, 1); if(cx[c] !== 0) ax = true; }
-      for(let r = 0; r < H; r++){ cy[r] = clamp(f(Math.min(Y1, r + 1) - Math.max(Y0, r)), 0, 1); if(cy[r] !== 0) ay = true; }
-      if(ax && ay){
-        for(let r = 0; r < H; r++) for(let c = 0; c < W; c++){
-          const cov = f(cy[r] * cx[c]), i = r * W + c;
-          img[i] = img[i] * f(1 - cov);
-          img[i] = img[i] + f(EYE.OBJECT * cov);
-        }
-      }
+  if(!(x1 > x0 && y1 > y0)) return;
+  const X0 = f(x0), X1 = f(x1), Y0 = f(y0), Y1 = f(y1);
+  const cx = new Float32Array(W), cy = new Float32Array(H);
+  let ax = false, ay = false;
+  for(let c = 0; c < W; c++){ cx[c] = clamp(f(Math.min(X1, c + 1) - Math.max(X0, c)), 0, 1); if(cx[c] !== 0) ax = true; }
+  for(let r = 0; r < H; r++){ cy[r] = clamp(f(Math.min(Y1, r + 1) - Math.max(Y0, r)), 0, 1); if(cy[r] !== 0) ay = true; }
+  if(!ax || !ay) return;
+  for(let r = 0; r < H; r++){
+    if(cy[r] === 0) continue;                                   // 덮임 0인 행은 값이 그대로다 (img·1 + v·0)
+    for(let c = 0; c < W; c++){
+      const cov = f(cy[r] * cx[c]), i = r * W + c;
+      img[i] = img[i] * f(1 - cov);
+      img[i] = img[i] + f(value * cov);
     }
   }
-  const out = new Uint8Array(W * H);
-  for(let i = 0; i < W * H; i++) out[i] = clamp(roundHalfEven(img[i]), 0, 255);
+}
+function toFrame(img){
+  const out = new Uint8Array(EYE.W * EYE.H);
+  for(let i = 0; i < out.length; i++) out[i] = clamp(roundHalfEven(img[i]), 0, 255);
   return out;
+}
+function eyePixels(rect){
+  const W = EYE.W, H = EYE.H;
+  const img = new Float32Array(W * H);
+  for(let r = 0; r < H; r++) img.fill(r + 0.5 < EYE.HORIZON_ROW ? EYE.SKY : EYE.GROUND, r * W, r * W + W);
+  if(rect) fillRectF32(img, rect[0], rect[1], rect[2], rect[3], EYE.OBJECT);
+  return toFrame(img);
+}
+// M7e4 고전 게임: classic.common.draw — 배경 190 위에 사각형을 그리는 순서대로 (항목 [kind 번호, x0, x1, y0, y1, value])
+function classicPixels(lists){
+  const img = new Float32Array(EYE.W * EYE.H).fill(EYE.SKY);
+  for(const list of lists) for(const it of list) fillRectF32(img, it[1], it[2], it[3], it[4], it[5]);
+  return toFrame(img);
 }
 
 /* ============================== 데이터 읽기·점검 ============================== */
@@ -743,6 +1017,140 @@ function countIn(a, lo, hi){ return lowerBound(a, hi) - lowerBound(a, lo); }
 function spikesIn(a, kinds, lo, hi){ const i0 = lowerBound(a, lo), i1 = lowerBound(a, hi); const out = []; for(let i = i0; i < i1; i++) out.push({ms: a[i], kind: kinds ? kinds[i] : null}); return out; }
 function lastAtOrBefore(a, v){ const i = lowerBound(a, v + 1e-9) - 1; return i; }
 
+/* ============================== M7e4 고전 게임 판 읽기·점검 ============================== */
+const CLASSIC_EVENTS = ["score", "life_lost", "game_over"];
+function prepClassic(tr, G, shared){
+  const errs = [];
+  const T = tr.n_ticks;
+  if(!(Number.isInteger(T) && T > 0)) return {errs: ["n_ticks가 양의 정수가 아님"]};
+  for(const key of ["action", "loom"]) if(!Array.isArray(tr[key]) || tr[key].length !== T) errs.push(key + " 길이가 n_ticks와 다름");
+  const sc = tr.scene, hud = tr.hud;
+  if(!sc || !Array.isArray(sc.kinds) || !Array.isArray(sc.static) || !Array.isArray(sc.ticks) || sc.ticks.length !== T)
+    errs.push("scene 형식이 계약과 다름 (kinds · static · ticks 길이)");
+  if(!hud || !Array.isArray(hud.score) || hud.score.length !== T) errs.push("hud.score 길이가 n_ticks와 다름");
+  if(hud && hud.lives != null && (!Array.isArray(hud.lives) || hud.lives.length !== T)) errs.push("hud.lives 길이가 n_ticks와 다름");
+  if(errs.length) return {errs};
+  const t = new Float64Array(T), tEnd = new Float64Array(T);
+  for(let k = 0; k < T; k++){ t[k] = tickMs(k); tEnd[k] = tickMs(k + 1); }
+  const action = new Int8Array(T);
+  for(let k = 0; k < T; k++){
+    const a = tr.action[k];
+    if(!(Number.isInteger(a) && a >= 0 && a <= 3)){ errs.push("action 값이 0~3이 아님 (틱 " + k + ")"); return {errs}; }
+    action[k] = a;
+  }
+  const loom = new Float64Array(2 * T);
+  for(let k = 0; k < T; k++){ const v = tr.loom[k]; loom[2 * k] = v ? v[0] : 0; loom[2 * k + 1] = v ? v[1] : 0; }
+  // 장면: 틱 k = static + ticks[k], null이면 앞 틱과 같은 목록
+  const at = new Array(T), nk = sc.kinds.length;
+  const okItem = it => Array.isArray(it) && it.length === 6 && Number.isInteger(it[0]) && it[0] >= 0 && it[0] < nk && it.slice(1).every(v => typeof v === "number");
+  if(!sc.static.every(okItem)) errs.push("scene.static 항목이 [kind, x0, x1, y0, y1, value]가 아님");
+  let prev = null;
+  for(let k = 0; k < T; k++){
+    const r = sc.ticks[k];
+    if(r === null){ if(prev === null){ errs.push("scene.ticks[0]이 null"); return {errs}; } at[k] = prev; continue; }
+    if(!Array.isArray(r) || !r.every(okItem)){ errs.push("scene.ticks[" + k + "] 항목 형식이 다름"); return {errs}; }
+    at[k] = prev = r;
+  }
+  // 공유 층 (계약 추가: shared_scene): 틱 k = static + shared_scene.ticks[k] + scene.ticks[k].
+  // 공유 층의 kind 번호는 shared_scene.kinds 기준이라, 이 판의 kind 목록으로 옮겨 적는다(목록마다 한 번)
+  const kinds = sc.kinds.slice();
+  if(sc.shared === true){
+    if(!shared || shared.at.length !== T){ errs.push("scene.shared인데 shared_scene이 없거나 틱 수가 다름"); return {errs}; }
+    const map = shared.kinds.map(name => { let i = kinds.indexOf(name); if(i < 0){ kinds.push(name); i = kinds.length - 1; } return i; });
+    const moved = new Map(), joined = [];
+    let pa = null, pb = null, pj = null;
+    for(let k = 0; k < T; k++){
+      const a = shared.at[k], b = at[k];
+      if(a === pa && b === pb){ at[k] = pj; continue; }
+      let m = moved.get(a);
+      if(!m){ m = a.map(it => [map[it[0]], it[1], it[2], it[3], it[4], it[5]]); moved.set(a, m); }
+      pa = a; pb = b; pj = at[k] = m.concat(b);
+    }
+  }
+  const known = new Set(Array.isArray(G.kinds) ? G.kinds : []);
+  for(const kd of kinds) if(!known.has(kd)) errs.push("scene.kinds의 " + kd + "가 game.kinds에 없음");
+  const pIdx = kinds.indexOf(PLAYER_KIND[G.name]);
+  // 사건: t_ms = 그 사건이 처음 보이는 프레임 = floor((tick + 1)·1000/60) (M7e3과 같은 규칙). 점수 사건은 hud와 대조
+  const events = (tr.events || []).map(e => ({...e, t_ms: typeof e.t_ms === "number" ? e.t_ms : tickMs(e.tick + 1)}))
+    .sort((a, b) => a.t_ms - b.t_ms || a.tick - b.tick);
+  for(const e of events){
+    if(!CLASSIC_EVENTS.includes(e.type)){ errs.push("모르는 사건 종류 " + e.type); continue; }
+    if(e.t_ms !== tickMs(e.tick + 1)){ errs.push("사건 시각이 규칙과 다름 (틱 " + e.tick + ")"); break; }
+    if(e.type === "score" && e.tick + 1 < T && !(hud.score[e.tick + 1] > hud.score[e.tick])){ errs.push("점수 사건(틱 " + e.tick + ")이 hud.score와 맞지 않음"); break; }
+    if(e.type === "life_lost" && hud.lives && e.tick + 1 < T && !(hud.lives[e.tick + 1] < hud.lives[e.tick])){ errs.push("목숨 사건(틱 " + e.tick + ")이 hud.lives와 맞지 않음"); break; }
+  }
+  const P = {kind: "classic", tr, G, id: tr.id, game: tr.game || G.name, player: tr.player, match: null, T, t, tEnd, dur: tEnd[T - 1],
+             action, loom, scene: {kinds, static: sc.static, at}, pIdx, hudScore: hud.score, hudLives: hud.lives || null,
+             events, errs, crashMs: null};
+  if(P.game !== G.name) errs.push("track.game(" + P.game + ")이 game.name과 다름");
+  // 정직 규칙: 눈 그림을 기록 프레임과 바이트 단위로 대조
+  P.eyeCheck = null;
+  const cf = tr.check_frames;
+  if(cf && Array.isArray(cf.ticks) && Array.isArray(cf.raw_b64) && cf.ticks.length === cf.raw_b64.length){
+    let ok = 0;
+    cf.ticks.forEach((tk, i) => {
+      const raw = atob(cf.raw_b64[i]), mine = Number.isInteger(tk) && tk >= 0 && tk < T ? classicPixels([sc.static, at[tk]]) : null;
+      let same = !!mine && raw.length === mine.length;
+      for(let j = 0; same && j < mine.length; j++) if(raw.charCodeAt(j) !== mine[j]) same = false;
+      if(same) ok++;
+    });
+    P.eyeCheck = {ok, n: cf.ticks.length};
+    if(ok !== cf.ticks.length) errs.push("눈 그림이 check_frames와 다름 (" + ok + "/" + cf.ticks.length + ")");
+  } else errs.push("check_frames 없음 — 눈 그림을 대조하지 못함");
+  if(tr.player === "brainless" && G.brainless_theta != null && tr.theta !== G.brainless_theta) errs.push("θ가 game.brainless_theta와 다름");
+  if(tr.brain) prepBrain(P, tr.brain);
+  P.caps = buildCaptionsClassic(P);
+  return P;
+}
+function classicBlock(g){
+  const C = S.classic;
+  return (C.games[g] && C.games[g].G) || (C.index && C.index.games && C.index.games[g]) || null;
+}
+function classicFile(g){
+  const C = S.classic;
+  if(!C.files[g]){
+    C.files[g] = getJSON("classic/" + g + ".json").then(d => { ingestClassic(g, d); classicLoaded(g); return C.games[g]; },
+      e => { C.games[g] = {G: null, tracks: [], error: e.message}; addProblem("classic/" + g + ".json을 읽지 못했습니다: " + e.message); classicLoaded(g); return C.games[g]; });
+  }
+  return C.files[g];
+}
+function ingestClassic(g, d){
+  const C = S.classic, where = "classic/" + g + ".json";
+  if(d.version !== 1) addProblem(where + ": version이 1이 아님");
+  const G = d.game;
+  if(!G || G.name !== g){ addProblem(where + ": game.name이 파일 이름과 다름"); C.games[g] = {G: null, tracks: [], error: "game 블록"}; return; }
+  const iG = C.index && C.index.games ? C.index.games[g] : null;
+  if(iG && JSON.stringify(iG) !== JSON.stringify(G)) addProblem(where + ": index.json의 game 블록이 게임 파일과 다름");
+  let shared = null;
+  if(d.shared_scene != null){
+    const ss = d.shared_scene, ok = ss && Array.isArray(ss.kinds) && Array.isArray(ss.ticks);
+    if(!ok) addProblem(where + ": shared_scene 형식이 다름 (kinds · ticks)");
+    else {
+      const at = new Array(ss.ticks.length), nk = ss.kinds.length;
+      const okItem = it => Array.isArray(it) && it.length === 6 && Number.isInteger(it[0]) && it[0] >= 0 && it[0] < nk && it.slice(1).every(v => typeof v === "number");
+      let prev = null, bad = null;
+      for(let k = 0; k < ss.ticks.length && !bad; k++){
+        const r = ss.ticks[k];
+        if(r === null){ if(prev === null) bad = "shared_scene.ticks[0]이 null"; else at[k] = prev; continue; }
+        if(!Array.isArray(r) || !r.every(okItem)) bad = "shared_scene.ticks[" + k + "] 항목 형식이 다름"; else at[k] = prev = r;
+      }
+      if(bad) addProblem(where + ": " + bad); else shared = {kinds: ss.kinds, at};
+    }
+  }
+  const tracks = [];
+  for(const tr of d.tracks || []){
+    const P = prepClassic(tr, G, shared);
+    if(!P.T){ addProblem((tr.id || "?") + ": " + P.errs.join(", ")); continue; }
+    if(P.errs.length) addProblem(tr.id + ": " + P.errs.join(", "));
+    if(P.errs.some(e => /길이|형식|0~3|scene/.test(e))) continue;
+    tracks.push(P); S.byId.set(P.id, P);
+  }
+  for(const pl of ["fly", "random", "fixed", "brainless"]) if(!tracks.some(P => P.player === pl)) addProblem(where + ": " + pl + " 판이 없음");
+  const sc = G.scores || {}, i10 = (G.eval_seeds || []).indexOf(10);
+  for(const P of tracks) if(i10 >= 0 && sc[P.player] && sc[P.player][i10] !== P.tr.score) addProblem(P.id + ": 판 점수(" + P.tr.score + ")가 scores." + P.player + " 시드 10 값과 다름");
+  C.games[g] = {G, tracks, meta: d.meta};
+}
+
 /* ============================== 자막 (신호만 말한다) ============================== */
 function buildCaptions(P){
   const caps = [];
@@ -757,36 +1165,77 @@ function buildCaptions(P){
   }
   if(P.tr.truncated) add(P.dur, "시간 제한까지 완주!", "pass", 9, Infinity);
   if(P.player === "fly"){
-    // 감지 신호 ↑ : 표시 기준(LOOM_UP)을 처음 넘는 틱 (아래에서 위로 넘을 때마다)
-    for(const [col, side] of [[0, "L"], [1, "R"]]){
-      for(let k = 1; k < P.T; k++){
-        if(P.loom[2 * k + col] >= LOOM_UP && P.loom[2 * (k - 1) + col] < LOOM_UP){
-          const both = P.loom[2 * k + (1 - col)] >= LOOM_UP && P.loom[2 * (k - 1) + (1 - col)] < LOOM_UP;
-          if(both && col === 1) continue;                    // 양쪽이 같이 넘으면 한 번만
-          add(P.t[k], (both ? "양쪽" : sideKo(side)) + " 감지 신호 ↑", "in", 2);
-        }
-      }
-    }
-    const B = P.brain;
-    if(B){
-      for(const side of ["L", "R"]){
-        B.gf[side].forEach((ms, i) => {
-          const kd = B.kind[side][i];
-          const tail = kd === "spont" ? " (입력 없이 저절로)" : kd === "input" ? " (감지 신호와 함께)" : "";
-          let text;
-          if(B.spec.known && B.spec.n > 1){
-            const c = countIn(B.gf[side], ms - B.W + 1e-9, ms + 1e-9);   // (s − W, s]
-            text = c < B.spec.n ? sideKo(side) + " 거대신경 " + c + "발 — " + B.spec.n + "발이 필요해요"
-                                : sideKo(side) + " 거대신경 " + c + "발 모였다!";
-          } else text = sideKo(side) + " 거대신경 1발!";
-          add(ms, text + tail, kd === "spont" ? "gf-spont" : kd === "input" ? "gf-input" : "ev", 5, 800);
-        });
-      }
-    }
+    signalCaptions(P, add);
     for(let k = 0; k < P.T; k++){
       const a = P.action[k];
       if(a !== 0 && (k === 0 || P.action[k - 1] !== a))
         add(P.t[k], a === 1 ? "▲ 점프 버튼!" : a === 2 ? "◀ 왼쪽 버튼!" : "▶ 오른쪽 버튼!", "act", 7, 700);
+    }
+  }
+  caps.sort((a, b) => a.ms - b.ms);
+  return caps;
+}
+// 감지 신호와 거대신경 자막 (첫 칸·오락실 공통)
+function signalCaptions(P, add){
+  // 감지 신호 ↑ : 표시 기준(LOOM_UP)을 처음 넘는 틱 (아래에서 위로 넘을 때마다)
+  for(const [col, side] of [[0, "L"], [1, "R"]]){
+    for(let k = 1; k < P.T; k++){
+      if(P.loom[2 * k + col] >= LOOM_UP && P.loom[2 * (k - 1) + col] < LOOM_UP){
+        const both = P.loom[2 * k + (1 - col)] >= LOOM_UP && P.loom[2 * (k - 1) + (1 - col)] < LOOM_UP;
+        if(both && col === 1) continue;                    // 양쪽이 같이 넘으면 한 번만
+        add(P.t[k], (both ? "양쪽" : sideKo(side)) + " 감지 신호 ↑", "in", 2);
+      }
+    }
+  }
+  const B = P.brain;
+  if(!B) return;
+  for(const side of ["L", "R"]){
+    B.gf[side].forEach((ms, i) => {
+      const kd = B.kind[side][i];
+      const tail = kd === "spont" ? " (입력 없이 저절로)" : kd === "input" ? " (감지 신호와 함께)" : "";
+      let text;
+      if(B.spec.known && B.spec.n > 1){
+        const c = countIn(B.gf[side], ms - B.W + 1e-9, ms + 1e-9);   // (s − W, s]
+        text = c < B.spec.n ? sideKo(side) + " 거대신경 " + c + "발 — " + B.spec.n + "발이 필요해요"
+                            : sideKo(side) + " 거대신경 " + c + "발 모였다!";
+      } else text = sideKo(side) + " 거대신경 1발!";
+      add(ms, text + tail, kd === "spont" ? "gf-spont" : kd === "input" ? "gf-input" : "ev", 5, 800);
+    });
+  }
+}
+// M7e4 오락실 판 자막: 사건(점수·목숨·끝)과 신호만. 버튼은 "왼쪽 거대신경 2발 → 오른쪽으로"처럼 해독 규칙 그대로 적는다
+function effectKo(G, act){
+  const raw = act === 1 ? G.jump_effect : act === 2 ? (G.left_effect || (G.rules && G.rules.actions && G.rules.actions.LEFT)) : (G.right_effect || (G.rules && G.rules.actions && G.rules.actions.RIGHT));
+  const s = String(raw || "");
+  if(!s || s.startsWith("nothing")) return {none: true, word: act === 1 ? "점프" : act === 2 ? "왼쪽" : "오른쪽"};
+  if(act === 1) return {none: false, word: s === "move up" ? "위로" : s === "walk up" ? "위로 걷기" : "점프 (" + s + ")"};
+  return {none: false, word: act === 2 ? "왼쪽으로" : "오른쪽으로"};
+}
+function buildCaptionsClassic(P){
+  const caps = [];
+  const add = (ms, text, cls, prio, hold = 900) => caps.push({ms, text, cls, prio, hold});
+  for(const e of P.events){
+    if(e.type === "score") add(e.t_ms, "점수 +" + (e.points || 1), "pass", 8, 1000);       // 사건이 버튼 자막(7)보다 앞선다
+    else if(e.type === "life_lost") add(e.t_ms, "목숨 −1", "crash", 8, 1100);
+    else if(e.type === "game_over") add(e.t_ms, "게임 끝 — " + fmtS(e.t_ms) + "초", "crash", 9, Infinity);
+  }
+  if(P.tr.truncated) add(P.dur, "시간 끝 — " + fmtS(P.dur) + "초", "pass", 9, Infinity);
+  if(P.player === "fly"){
+    signalCaptions(P, add);
+    const B = P.brain;
+    for(let k = 0; k < P.T; k++){
+      const a = P.action[k];
+      if(a === 0 || (k > 0 && P.action[k - 1] === a)) continue;
+      const ef = effectKo(P.G, a), noFx = ef.none ? " (효과 없음)" : "";
+      let text = null;
+      if(B && B.spec.known){
+        const e = P.tEnd[k], cl = countIn(B.gf.L, e - B.W, e), cr = countIn(B.gf.R, e - B.W, e);
+        if(a === 3 && cl >= B.spec.n) text = "왼쪽 거대신경 " + cl + "발 → " + (ef.none ? "오른쪽 버튼" : ef.word);
+        else if(a === 2 && cr >= B.spec.n) text = "오른쪽 거대신경 " + cr + "발 → " + (ef.none ? "왼쪽 버튼" : ef.word);
+        else if(a === 1 && cl >= B.spec.n && cr >= B.spec.n) text = "양쪽 거대신경 " + cl + "·" + cr + "발 → ▲ " + (ef.none ? "점프 버튼" : ef.word);
+      }
+      if(!text) text = a === 1 ? "▲ 점프 버튼!" : a === 2 ? "◀ 왼쪽 버튼!" : "▶ 오른쪽 버튼!";
+      add(P.t[k], text + noFx, "act", 7, 800);
     }
   }
   caps.sort((a, b) => a.ms - b.ms);
@@ -1176,11 +1625,392 @@ function hudScore(ctx, w, h, P, k, o, band){
   ctx.restore();
 }
 
+/* ============================== M7e4 오락실 게임 그림 (사람용) ============================== */
+// 정직 규칙 1: 장면 기록의 사각형 하나 = 그 kind의 그림 하나, 같은 자리·같은 크기. 사각형 밖으로 나가는 꾸밈은 DECOR에 있다.
+// 위치는 전부 기록에서 온다. 맞음·충돌·점수는 여기서 계산하지 않는다(점수·목숨은 hud, 사건은 events).
+const ALIEN_A = ["...XXXXX...", ".XXXXXXXXX.", "XXooXXXooXX", "XXopXXXopXX", "XXXXXXXXXXX", ".XXX.X.XXX.", ".X.X.X.X.X.", "X..X...X..X"];
+const ALIEN_B = ["...XXXXX...", ".XXXXXXXXX.", "XXooXXXooXX", "XXpoXXXpoXX", "XXXXXXXXXXX", ".XXX.X.XXX.", "..X.X.X.X..", "..X.X.X.X.."];
+const DEMON_A = ["W...........W", "WW...XXX...WW", "WWW.XXXXX.WWW", "WWWXXeXeXXWWW", ".WWXXXXXXXWW.", "..W.XXXXX.W..", "....X.X.X...."];
+const DEMON_B = [".............", ".....XXX.....", "W..XXXXXXX..W", "WWWXXeXeXXWWW", "WWWWXXXXXWWWW", "WW..XXXXX..WW", "W...X.X.X...W"];
+const ROW_COLORS = ["#FF5D5D", "#FF8A3D", "#FFD13F", "#7CF29A", "#3BC6FF", "#C08BFF", "#FF7EC7"];
+const CAR_COLORS = ["#FF5D5D", "#FFB13B", "#3BC6FF", "#7CF29A", "#C08BFF", "#FF7EC7", "#FFE14D", "#5D8BFF", "#FFFFFF"];
+function pix(ctx, x, y, w, h, rows, pal){
+  const R = rows.length, C = rows[0].length, cw = w / C, ch = h / R;
+  for(let r = 0; r < R; r++) for(let c = 0; c < C; c++){
+    const q = rows[r][c]; if(q === "." || !pal[q]) continue;
+    ctx.fillStyle = pal[q]; ctx.fillRect(x + c * cw, y + r * ch, cw + 0.35, ch + 0.35);
+  }
+}
+function disc(ctx, x, y, r, color){ ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, Math.max(0.3, r), 0, Math.PI * 2); ctx.fill(); }
+function glowOn(ctx, color, blur, o){ if(!o || !o.cheap){ ctx.shadowColor = color; ctx.shadowBlur = blur; } }
+function pilot(ctx, cx, cy, size, o, rot){
+  // 작은 초파리 조종사 (꾸밈). 위에서 본 모습, 머리가 위
+  ctx.save(); ctx.translate(cx, cy); if(rot) ctx.rotate(rot);
+  flyTop(ctx, 0, 0, size, {wall: o && o.wall});
+  ctx.restore();
+}
+function spBall(ctx, x, y, w, h, o){
+  const cx = x + w / 2, cy = y + h / 2, r = Math.min(w, h) / 2;
+  if(o.trail) o.trail.forEach((p, i) => { ctx.globalAlpha = 0.3 * (1 - i / o.trail.length); disc(ctx, p[0], p[1], r * (0.9 - i * 0.14), "#FFE07A"); });
+  ctx.globalAlpha = 1;
+  ctx.save(); glowOn(ctx, "rgba(255,214,90,.95)", r * 3, o);
+  const g = ctx.createRadialGradient(cx - r * 0.35, cy - r * 0.35, r * 0.1, cx, cy, r);
+  g.addColorStop(0, "#FFFFFF"); g.addColorStop(0.45, "#FFF3A6"); g.addColorStop(1, "#FFB000");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+function spPaddle(ctx, x, y, w, h, cpu, o){
+  const r = h / 2;
+  ctx.save(); glowOn(ctx, cpu ? "rgba(255,79,123,.85)" : "rgba(59,198,255,.9)", h * 1.8, o);
+  const g = ctx.createLinearGradient(0, y, 0, y + h);
+  if(cpu){ g.addColorStop(0, "#FFB3C6"); g.addColorStop(0.5, "#FF4F7B"); g.addColorStop(1, "#A3103F"); }
+  else { g.addColorStop(0, "#D8F7FF"); g.addColorStop(0.5, "#3BC6FF"); g.addColorStop(1, "#1462C2"); }
+  ctx.fillStyle = g; rrect(ctx, x, y, w, h, r); ctx.fill(); ctx.restore();
+  ctx.fillStyle = "rgba(255,255,255,.55)"; rrect(ctx, x + r, y + h * 0.14, Math.max(0, w - 2 * r), h * 0.22, h * 0.11); ctx.fill();
+  if(cpu) for(const sg of [-1, 1]){ disc(ctx, x + w / 2 + sg * w * 0.13, y + h / 2, h * 0.26, "#fff"); disc(ctx, x + w / 2 + sg * w * 0.13, y + h * 0.58, h * 0.13, "#3a0014"); }
+}
+function spWall(ctx, x, y, w, h){
+  const g = ctx.createLinearGradient(x, y, w > h ? x : x + w, w > h ? y + h : y);
+  g.addColorStop(0, "#8A93B8"); g.addColorStop(0.5, "#C9D0EA"); g.addColorStop(1, "#5D6688");
+  ctx.fillStyle = g; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = "rgba(20,24,44,.55)";
+  const n = Math.max(1, Math.floor(Math.max(w, h) / (Math.min(w, h) * 4)));
+  for(let i = 0; i < n; i++){
+    const f = (i + 0.5) / n;
+    disc(ctx, w > h ? x + w * f : x + w / 2, w > h ? y + h / 2 : y + h * f, Math.min(w, h) * 0.16, "rgba(20,24,44,.45)");
+  }
+}
+function spBrick(ctx, x, y, w, h, color){
+  ctx.fillStyle = color; rrect(ctx, x, y, w, h, Math.min(w, h) * 0.18); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.38)"; ctx.fillRect(x + w * 0.06, y + h * 0.1, w * 0.88, h * 0.2);
+  ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.fillRect(x + w * 0.04, y + h * 0.74, w * 0.92, h * 0.2);
+  ctx.fillStyle = "rgba(255,255,255,.7)"; ctx.fillRect(x + w * 0.1, y + h * 0.16, Math.max(1, w * 0.12), Math.max(1, h * 0.12));
+}
+function spCannon(ctx, x, y, w, h, o){
+  ctx.fillStyle = "#16301f"; rrect(ctx, x, y + h * 0.66, w, h * 0.34, h * 0.17); ctx.fill();
+  for(let i = 0; i < 4; i++) disc(ctx, x + w * (0.17 + i * 0.22), y + h * 0.83, h * 0.09, "#8FA79A");
+  const g = ctx.createLinearGradient(0, y + h * 0.35, 0, y + h * 0.7); g.addColorStop(0, "#B6FFC9"); g.addColorStop(1, "#22A06B");
+  ctx.fillStyle = g; ctx.beginPath();
+  ctx.moveTo(x + w * 0.05, y + h * 0.7); ctx.lineTo(x + w * 0.2, y + h * 0.36); ctx.lineTo(x + w * 0.8, y + h * 0.36); ctx.lineTo(x + w * 0.95, y + h * 0.7); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#E6FFF0"; rrect(ctx, x + w * 0.44, y, w * 0.12, h * 0.42, w * 0.05); ctx.fill();
+  ctx.save(); glowOn(ctx, "#9EF0D2", h * 0.8, o); disc(ctx, x + w * 0.5, y + h * 0.04, w * 0.07, "#F4FFF8"); ctx.restore();
+  ctx.fillStyle = "rgba(190,240,255,.5)"; ctx.beginPath(); ctx.arc(x + w / 2, y + h * 0.5, w * 0.2, Math.PI, 0); ctx.closePath(); ctx.fill();
+}
+function spShot(ctx, x, y, w, h, color, o){
+  ctx.save(); glowOn(ctx, color, w * 4, o);
+  ctx.fillStyle = color; rrect(ctx, x, y, w, h, w / 2); ctx.fill(); ctx.restore();
+  ctx.fillStyle = "rgba(255,255,255,.95)"; rrect(ctx, x + w * 0.3, y + h * 0.08, w * 0.4, h * 0.84, w * 0.2); ctx.fill();
+}
+function spPlasma(ctx, x, y, w, h, o){
+  ctx.save(); glowOn(ctx, "rgba(255,80,60,.9)", w * 4, o);
+  const g = ctx.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, "#FFE14D"); g.addColorStop(1, "#FF3D2E");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(x + w / 2, y + h / 2, w / 2, h / 2, 0, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+}
+function spBolt(ctx, x, y, w, h, o){
+  ctx.save(); glowOn(ctx, "rgba(255,90,220,.95)", w * 4, o);
+  ctx.strokeStyle = "#FFB3F0"; ctx.lineWidth = Math.max(1, w * 0.45); ctx.lineJoin = "round"; ctx.lineCap = "round";
+  ctx.beginPath(); const n = 4;
+  for(let i = 0; i <= n; i++){ const px = x + (i % 2 ? w * 0.9 : w * 0.1), py = y + h * i / n; i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+  ctx.stroke(); ctx.restore();
+}
+function spBomb(ctx, x, y, w, h, o){
+  const r = Math.min(w / 2, h * 0.38), cx = x + w / 2, cy = y + h - r;
+  const g = ctx.createRadialGradient(cx - r * 0.4, cy - r * 0.4, r * 0.1, cx, cy, r);
+  g.addColorStop(0, "#6B6F86"); g.addColorStop(1, "#111320");
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#3a3f55"; ctx.fillRect(cx - r * 0.3, cy - r * 1.18, r * 0.6, r * 0.32);
+  ctx.strokeStyle = "#C79A5B"; ctx.lineWidth = Math.max(1, w * 0.08); ctx.beginPath();
+  ctx.moveTo(cx, cy - r * 1.18); ctx.quadraticCurveTo(cx + r * 0.7, y + h * 0.05, cx + r * 0.35, y); ctx.stroke();
+  const fl = 0.75 + 0.25 * Math.sin((o.wall || 0) / 45 + x);              // 도화선 불꽃 (꾸밈)
+  ctx.save(); glowOn(ctx, "#FFB000", w * 0.9, o); disc(ctx, cx + r * 0.35, y, w * 0.16 * fl, "#FFE14D"); ctx.restore();
+}
+function spBomber(ctx, x, y, w, h){
+  const cx = x + w / 2;
+  ctx.fillStyle = "#1f1f2b"; rrect(ctx, x + w * 0.22, y, w * 0.56, h * 0.18, h * 0.06); ctx.fill();          // 모자
+  ctx.fillRect(x + w * 0.12, y + h * 0.15, w * 0.76, h * 0.06);
+  disc(ctx, cx, y + h * 0.36, Math.min(w * 0.24, h * 0.18), "#F2C9A0");                                   // 얼굴
+  ctx.fillStyle = "#14141c"; ctx.fillRect(x + w * 0.24, y + h * 0.29, w * 0.52, h * 0.1);                  // 복면
+  disc(ctx, cx - w * 0.1, y + h * 0.34, h * 0.035, "#fff"); disc(ctx, cx + w * 0.1, y + h * 0.34, h * 0.035, "#fff");
+  ctx.save(); rrect(ctx, x + w * 0.14, y + h * 0.55, w * 0.72, h * 0.45, w * 0.12); ctx.clip();            // 줄무늬 옷
+  ctx.fillStyle = "#f4f4f4"; ctx.fillRect(x, y + h * 0.55, w, h * 0.45);
+  ctx.fillStyle = "#1f1f2b"; for(let i = 0; i < 4; i++) ctx.fillRect(x, y + h * (0.58 + i * 0.11), w, h * 0.05);
+  ctx.restore();
+}
+function spBucket(ctx, x, y, w, h){
+  const g = ctx.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, "#1F5FD0"); g.addColorStop(0.5, "#5DA9FF"); g.addColorStop(1, "#1A4FB0");
+  ctx.fillStyle = g; ctx.beginPath();
+  ctx.moveTo(x, y + h * 0.12); ctx.lineTo(x + w, y + h * 0.12); ctx.lineTo(x + w * 0.88, y + h); ctx.lineTo(x + w * 0.12, y + h); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "#BFE6FF"; ctx.beginPath(); ctx.ellipse(x + w / 2, y + h * 0.16, w * 0.48, h * 0.14, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = "#E8F4FF"; ctx.fillRect(x, y + h * 0.04, w, h * 0.1);
+  ctx.strokeStyle = "rgba(255,255,255,.5)"; ctx.lineWidth = Math.max(1, h * 0.06);
+  ctx.beginPath(); ctx.moveTo(x + w * 0.08, y + h * 0.55); ctx.lineTo(x + w * 0.92, y + h * 0.55); ctx.stroke();
+}
+function spCar(ctx, x, y, w, h, color, dir){
+  ctx.fillStyle = "#14161f";                                                  // 바퀴 (조금 밖으로, 꾸밈)
+  for(const fx of [0.18, 0.72]) for(const fy of [-0.12, 0.86]) rrect(ctx, x + w * fx, y + h * fy, w * 0.13, h * 0.26, h * 0.08), ctx.fill();
+  ctx.fillStyle = color; rrect(ctx, x, y + h * 0.04, w, h * 0.92, h * 0.38); ctx.fill();
+  ctx.fillStyle = "rgba(0,0,0,.18)"; rrect(ctx, x, y + h * 0.62, w, h * 0.34, h * 0.2); ctx.fill();
+  const front = dir >= 0 ? 1 : 0;
+  ctx.fillStyle = "#1d2a44";                                                  // 앞유리·뒷유리
+  rrect(ctx, x + w * (front ? 0.56 : 0.2), y + h * 0.2, w * 0.24, h * 0.6, h * 0.14); ctx.fill();
+  ctx.fillStyle = "rgba(29,42,68,.75)"; rrect(ctx, x + w * (front ? 0.22 : 0.58), y + h * 0.24, w * 0.18, h * 0.52, h * 0.12); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.55)"; ctx.fillRect(x + w * 0.4, y + h * 0.16, w * 0.16, h * 0.1);
+  disc(ctx, front ? x + w * 0.97 : x + w * 0.03, y + h * 0.26, h * 0.12, "#FFF6B0");   // 앞불
+  disc(ctx, front ? x + w * 0.97 : x + w * 0.03, y + h * 0.74, h * 0.12, "#FFF6B0");
+  disc(ctx, front ? x + w * 0.03 : x + w * 0.97, y + h * 0.3, h * 0.09, "#FF4040");    // 뒷불
+  disc(ctx, front ? x + w * 0.03 : x + w * 0.97, y + h * 0.7, h * 0.09, "#FF4040");
+}
+function spLane(ctx, x, y, w, h, role){
+  if(role === "edge"){ ctx.fillStyle = "#F4F6FB"; ctx.fillRect(x, y, w, h); return; }
+  if(role === "mid"){ ctx.fillStyle = "#FFD13F"; ctx.fillRect(x, y - h * 0.25, w, h * 0.55); ctx.fillRect(x, y + h * 0.7, w, h * 0.55); return; }
+  ctx.fillStyle = "rgba(255,255,255,.85)";
+  const dash = h * 6, gap = h * 5;
+  for(let px = x + gap * 0.5; px < x + w; px += dash + gap) ctx.fillRect(px, y, Math.min(dash, x + w - px), h);
+}
+function spFlag(ctx, x, y, w, h, left){
+  const color = left ? "#FF3D4F" : "#2F6BFF";
+  const poleX = left ? x + w * 0.85 : x + w * 0.15;
+  ctx.fillStyle = "#30364a"; ctx.fillRect(poleX - w * 0.13, y, w * 0.26, h);
+  ctx.fillStyle = color; ctx.beginPath();
+  if(left){ ctx.moveTo(poleX, y + h * 0.04); ctx.lineTo(x, y + h * 0.26); ctx.lineTo(poleX, y + h * 0.5); }
+  else { ctx.moveTo(poleX, y + h * 0.04); ctx.lineTo(x + w, y + h * 0.26); ctx.lineTo(poleX, y + h * 0.5); }
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.35)"; ctx.fillRect(poleX - w * 0.05, y, w * 0.08, h);
+}
+function spTree(ctx, x, y, w, h){
+  ctx.fillStyle = "#7A4B27"; ctx.fillRect(x + w * 0.42, y + h * 0.8, w * 0.16, h * 0.2);
+  for(let i = 0; i < 3; i++){
+    const ty = y + h * (0.02 + i * 0.24), bw = w * (0.55 + i * 0.22), bh = h * 0.42;
+    ctx.fillStyle = ["#2E8B57", "#26794B", "#1F6B41"][i]; ctx.beginPath();
+    ctx.moveTo(x + w / 2, ty); ctx.lineTo(x + w / 2 + bw / 2, ty + bh); ctx.lineTo(x + w / 2 - bw / 2, ty + bh); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,.85)"; ctx.beginPath();
+    ctx.moveTo(x + w / 2, ty); ctx.lineTo(x + w / 2 + bw * 0.18, ty + bh * 0.34); ctx.lineTo(x + w / 2 - bw * 0.18, ty + bh * 0.34); ctx.closePath(); ctx.fill();
+  }
+}
+function spSkier(ctx, x, y, w, h, tilt, o){
+  const cx = x + w / 2, cy = y + h / 2;
+  ctx.save(); ctx.translate(cx, cy); ctx.rotate(tilt);
+  ctx.fillStyle = "#FF5D5D";                                                  // 스키 두 짝 (조금 길게, 꾸밈)
+  for(const sg of [-1, 1]){ rrect(ctx, sg * w * 0.26 - w * 0.08, -h * 0.56, w * 0.16, h * 1.12, w * 0.08); ctx.fill(); }
+  ctx.restore();
+  pilot(ctx, cx, cy, Math.min(w * 1.15, h * 0.85), o, Math.PI + tilt);       // 비탈 아래(화면 아래)를 보고 탄다
+  ctx.fillStyle = "#FF8A3D"; ctx.fillRect(cx - w * 0.28, cy - h * 0.06, w * 0.56, h * 0.08);   // 목도리 (꾸밈)
+}
+function spBoxer(ctx, x, y, w, h, cpu, punch, o){
+  const cx = x + w / 2, cy = y + h / 2, face = cpu ? 1 : -1;               // 플레이어는 위를, 컴퓨터는 아래를 본다
+  ctx.fillStyle = "rgba(0,0,0,.22)"; ctx.beginPath(); ctx.ellipse(cx + w * 0.06, cy + h * 0.08, w * 0.48, h * 0.34, 0, 0, Math.PI * 2); ctx.fill();
+  const body = ctx.createLinearGradient(x, 0, x + w, 0);
+  if(cpu){ body.addColorStop(0, "#2448B8"); body.addColorStop(0.5, "#5D8BFF"); body.addColorStop(1, "#2448B8"); }
+  else { body.addColorStop(0, "#D9761E"); body.addColorStop(0.5, "#FFB13B"); body.addColorStop(1, "#D9761E"); }
+  ctx.fillStyle = body; ctx.beginPath(); ctx.ellipse(cx, cy - face * h * 0.02, w * 0.46, h * 0.27, 0, 0, Math.PI * 2); ctx.fill();
+  if(cpu){
+    disc(ctx, cx, cy, w * 0.2, "#9AA6C8"); ctx.fillStyle = "#14204a"; rrect(ctx, cx - w * 0.15, cy + h * 0.02, w * 0.3, h * 0.09, h * 0.04); ctx.fill();
+    ctx.save(); glowOn(ctx, "#7FE3EE", w * 0.2, o); ctx.fillStyle = "#7FE3EE"; ctx.fillRect(cx - w * 0.12, cy + h * 0.045, w * 0.24, h * 0.03); ctx.restore();
+  } else {
+    disc(ctx, cx, cy, w * 0.21, "rgba(190,236,255,.55)");
+    pilot(ctx, cx, cy + h * 0.02, w * 0.34, o, 0);
+    ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = Math.max(1, w * 0.025); ctx.beginPath(); ctx.arc(cx, cy, w * 0.21, 0, Math.PI * 2); ctx.stroke();
+  }
+  const gc = cpu ? "#2F6BFF" : "#E5484D", gl = cpu ? "#9FC0FF" : "#FFB0B2", arm = cpu ? "#2448B8" : "#D9761E";
+  ctx.lineCap = "round";
+  for(const sg of [-1, 1]){
+    const ext = punch && sg === 1 ? 0.22 : 0;                                 // 펀치 연출 (꾸밈, 규칙 주기)
+    const gx = cx + sg * w * (0.3 - ext * 0.5), gy = cy + face * h * (0.36 + ext);
+    ctx.strokeStyle = arm; ctx.lineWidth = Math.max(1.5, w * 0.13);            // 팔 (꾸밈)
+    ctx.beginPath(); ctx.moveTo(cx + sg * w * 0.36, cy - face * h * 0.02); ctx.lineTo(gx, gy - face * h * 0.08); ctx.stroke();
+    ctx.save(); glowOn(ctx, "rgba(0,0,0,.35)", w * 0.12, o);
+    disc(ctx, gx, gy, w * 0.19, gc); ctx.restore();                            // 장갑 (사각형 밖으로 조금 나감, 꾸밈)
+    disc(ctx, gx - w * 0.06, gy - face * h * 0.06, w * 0.07, gl);
+    ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fillRect(gx - w * 0.13, gy - face * h * 0.17 - h * 0.02, w * 0.26, h * 0.045);
+  }
+}
+function spRope(ctx, x, y, w, h){
+  const horiz = w >= h, n = 3, cols = ["#FF3D4F", "#F4F6FB", "#2F6BFF"];
+  for(let i = 0; i < n; i++){
+    ctx.fillStyle = cols[i];
+    if(horiz) ctx.fillRect(x, y + h * i / n, w, h / n + 0.3); else ctx.fillRect(x + w * i / n, y, w / n + 0.3, h);
+  }
+}
+// 배경 (꾸밈, 기록과 무관)
+function classicBg(ctx, side, s, P, k, o){
+  const g = P.game, W = side;
+  const stars = (n, seed, a) => { for(let i = 0; i < n; i++){ ctx.globalAlpha = a * (0.4 + 0.6 * hash2(i, seed + 3)); disc(ctx, hash2(i, seed) * W, hash2(i, seed + 1) * W, Math.max(0.6, s * 0.18 * hash2(i, seed + 2)), "#fff"); } ctx.globalAlpha = 1; };
+  if(g === "paddle"){
+    const gr = ctx.createRadialGradient(W / 2, W / 2, W * 0.1, W / 2, W / 2, W * 0.75); gr.addColorStop(0, "#14244f"); gr.addColorStop(1, "#060a1c");
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
+    ctx.strokeStyle = "rgba(120,170,255,.08)"; ctx.lineWidth = 1;
+    for(let i = 6; i < 84; i += 6){ ctx.beginPath(); ctx.moveTo(i * s, 0); ctx.lineTo(i * s, W); ctx.moveTo(0, i * s); ctx.lineTo(W, i * s); ctx.stroke(); }
+  } else if(g === "bricks"){
+    const gr = ctx.createLinearGradient(0, 0, 0, W); gr.addColorStop(0, "#22114a"); gr.addColorStop(1, "#08051a");
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W); stars(40, 11, 0.6);
+  } else if(g === "formation" || g === "demons"){
+    const gr = ctx.createLinearGradient(0, 0, 0, W);
+    if(g === "formation"){ gr.addColorStop(0, "#03041a"); gr.addColorStop(1, "#14093a"); } else { gr.addColorStop(0, "#1a0630"); gr.addColorStop(1, "#3a0c3f"); }
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
+    if(g === "demons"){ const n = ctx.createRadialGradient(W * 0.7, W * 0.3, 0, W * 0.7, W * 0.3, W * 0.5); n.addColorStop(0, "rgba(255,79,216,.25)"); n.addColorStop(1, "rgba(255,79,216,0)"); ctx.fillStyle = n; ctx.fillRect(0, 0, W, W); }
+    stars(70, g === "formation" ? 21 : 31, 0.85);
+    if(g === "formation"){ ctx.fillStyle = "#3b2a7a"; disc(ctx, W * 0.86, W * 0.18, W * 0.07, "#5b47b0"); ctx.fillStyle = "rgba(255,255,255,.15)"; disc(ctx, W * 0.84, W * 0.16, W * 0.03, "rgba(255,255,255,.18)"); }
+    else { ctx.fillStyle = "#2a1033"; ctx.beginPath(); ctx.ellipse(W / 2, W * 1.12, W * 0.9, W * 0.24, 0, 0, Math.PI * 2); ctx.fill(); }
+  } else if(g === "crossing"){
+    ctx.fillStyle = "#5DBB63"; ctx.fillRect(0, 0, W, W);
+    const lanes = classicItems(P, k, "lane");
+    if(lanes.length){
+      const y0 = Math.min(...lanes.map(it => it[3])) * s, y1 = Math.max(...lanes.map(it => it[4])) * s;
+      ctx.fillStyle = "#C9CED8"; ctx.fillRect(0, y0 - s * 2, W, s * 2); ctx.fillRect(0, y1, W, s * 2);
+      ctx.fillStyle = "#3a3f4b"; ctx.fillRect(0, y0, W, y1 - y0);
+      ctx.fillStyle = "rgba(255,255,255,.035)"; for(let i = 0; i < 60; i++) ctx.fillRect(hash2(i, 5) * W, y0 + hash2(i, 6) * (y1 - y0), s * 1.5, s * 0.5);
+    }
+    for(let i = 0; i < 16; i++){ const fy = hash2(i, 8) < 0.5 ? hash2(i, 9) * s * 4 : W - hash2(i, 9) * s * 4; disc(ctx, hash2(i, 7) * W, fy, s * 0.5, ["#FFE066", "#FF8FB1", "#fff"][i % 3]); }
+  } else if(g === "catch"){
+    const gr = ctx.createLinearGradient(0, 0, 0, W); gr.addColorStop(0, "#0f1534"); gr.addColorStop(1, "#2b1d4a");
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W); stars(30, 41, 0.5);
+    disc(ctx, W * 0.86, W * 0.3, W * 0.05, "#FFF3C4");
+    ctx.fillStyle = "#6b2a2a"; ctx.fillRect(0, 0, W, s * 11);
+    ctx.fillStyle = "#8a3a34"; for(let r = 0; r < 4; r++) for(let c = -1; c < 15; c++) ctx.fillRect((c * 6 + (r % 2) * 3) * s + s * 0.3, r * 2.75 * s + s * 0.3, s * 5.4, s * 2.2);
+    ctx.fillStyle = "#151a33";
+    for(let i = 0; i < 9; i++){ const bx = i * 10 * s - s * 2, bh = (8 + 10 * hash2(i, 44)) * s; ctx.fillRect(bx, W - bh, s * 9, bh); }
+    ctx.fillStyle = "rgba(255,224,122,.55)";
+    for(let i = 0; i < 40; i++) if(hash2(i, 45) < 0.5) ctx.fillRect(hash2(i, 46) * W, W - hash2(i, 47) * 14 * s, s * 1.1, s * 1.1);
+  } else if(g === "ski"){
+    const gr = ctx.createLinearGradient(0, 0, W, W); gr.addColorStop(0, "#F7FBFF"); gr.addColorStop(1, "#D6E7F8");
+    ctx.fillStyle = gr; ctx.fillRect(0, 0, W, W);
+    ctx.fillStyle = "rgba(120,160,210,.12)"; for(let i = 0; i < 18; i++){ ctx.beginPath(); ctx.ellipse(hash2(i, 51) * W, hash2(i, 52) * W, s * (3 + 4 * hash2(i, 53)), s * 1.2, 0, 0, Math.PI * 2); ctx.fill(); }
+  } else if(g === "boxing"){
+    ctx.fillStyle = "#1a1530"; ctx.fillRect(0, 0, W, W);
+    for(let i = 0; i < 120; i++){ const a = hash2(i, 61); const px = a * W, py = hash2(i, 62) < 0.5 ? hash2(i, 63) * s * 2.6 : W - hash2(i, 63) * s * 2.6; disc(ctx, px, py, s * 0.55, ["#FF8FB1", "#FFE066", "#7FE3EE", "#B79BE0", "#fff"][i % 5]); }
+    const ring = classicItems(P, k, "ring");
+    if(ring.length){
+      const x0 = Math.min(...ring.map(it => it[1])) * s, x1 = Math.max(...ring.map(it => it[2])) * s, y0 = Math.min(...ring.map(it => it[3])) * s, y1 = Math.max(...ring.map(it => it[4])) * s;
+      const mg = ctx.createLinearGradient(0, y0, 0, y1); mg.addColorStop(0, "#3E7BFF"); mg.addColorStop(1, "#2350C8");
+      ctx.fillStyle = mg; ctx.fillRect(x0, y0, x1 - x0, y1 - y0);
+      ctx.strokeStyle = "rgba(255,255,255,.18)"; ctx.lineWidth = s * 0.8; ctx.beginPath(); ctx.arc((x0 + x1) / 2, (y0 + y1) / 2, (x1 - x0) * 0.16, 0, Math.PI * 2); ctx.stroke();
+    }
+  } else { ctx.fillStyle = "#151131"; ctx.fillRect(0, 0, W, W); }
+}
+function classicItems(P, k, kind){
+  const out = [], ki = P.scene.kinds.indexOf(kind);
+  if(ki < 0 || k < 0 || k >= P.T) return out;
+  for(const list of [P.scene.static, P.scene.at[k]]) for(const it of list) if(it[0] === ki) out.push(it);
+  return out;
+}
+function classicPunch(P, k){
+  const c = P.G && P.G.rules && P.G.rules.constants, n = c && c.PUNCH_EVERY;
+  return n > 0 && k >= n && k % n < 4;                                       // 펀치 연출: 규칙 주기 뒤 4틱 (꾸밈)
+}
+function drawClassic(ctx, w, h, P, k, o){
+  const side = Math.min(w, h), ox = (w - side) / 2, oy = (h - side) / 2, s = side / 84;
+  ctx.save();
+  ctx.fillStyle = "#0b0920"; ctx.fillRect(0, 0, w, h);
+  ctx.beginPath(); ctx.rect(ox, oy, side, side); ctx.clip(); ctx.translate(ox, oy);
+  classicBg(ctx, side, s, P, k, o);
+  const g = P.game, kinds = P.scene.kinds, seen = {};
+  const brickC = P.G && P.G.rules && P.G.rules.constants;
+  const lanesY = g === "crossing" ? classicItems(P, k, "lane").map(it => it[3]).sort((a, b) => a - b) : null;
+  const alienY = g === "formation" ? [...new Set(classicItems(P, k, "alien").map(it => it[3]))].sort((a, b) => a - b) : null;
+  const prevOf = (kind, idx) => { const kk = k > 0 ? k - 1 : (P.T > 1 ? 1 : -1); const a = classicItems(P, kk, kind); return a[idx] || null; };
+  const sign = k > 0 ? 1 : -1;
+  let player = null;
+  const punch = g === "boxing" && classicPunch(P, k);
+  for(const list of [P.scene.static, P.scene.at[k]]) for(const it of list){
+    const kind = kinds[it[0]], idx = seen[kind] = (seen[kind] == null ? 0 : seen[kind] + 1);
+    const x = it[1] * s, y = it[3] * s, ww = (it[2] - it[1]) * s, hh = (it[4] - it[3]) * s;
+    if(ww <= 0 || hh <= 0) continue;
+    if(kind === PLAYER_KIND[g]) player = [x, y, ww, hh];
+    switch(kind){
+      case "ball": {
+        const trail = [];
+        if(!o.cheap) for(let j = 1; j <= 4 && k - j >= 0; j++){ const b = classicItems(P, k - j, "ball")[0]; if(b) trail.push([(b[1] + b[2]) / 2 * s, (b[3] + b[4]) / 2 * s]); }
+        spBall(ctx, x, y, ww, hh, {...o, trail}); break;
+      }
+      case "paddle": spPaddle(ctx, x, y, ww, hh, false, o); break;
+      case "cpu_paddle": spPaddle(ctx, x, y, ww, hh, true, o); break;
+      case "wall": spWall(ctx, x, y, ww, hh); break;
+      case "brick": {
+        const row = brickC && brickC.BRICK_TOP != null && brickC.BRICK_PITCH_Y ? Math.round((it[3] - brickC.BRICK_TOP) / brickC.BRICK_PITCH_Y) : 0;
+        spBrick(ctx, x, y, ww, hh, ROW_COLORS[((row % ROW_COLORS.length) + ROW_COLORS.length) % ROW_COLORS.length]); break;
+      }
+      case "cannon": spCannon(ctx, x, y, ww, hh, o); break;
+      case "alien": {
+        const row = alienY.indexOf(it[3]), c = ROW_COLORS[(row + 3) % ROW_COLORS.length];
+        pix(ctx, x, y, ww, hh, Math.floor(k / 30) % 2 ? ALIEN_B : ALIEN_A, {X: c, o: "#fff", p: "#14093a"}); break;
+      }
+      case "demon": pix(ctx, x, y, ww, hh, Math.floor((k + idx * 11) / 15) % 2 ? DEMON_B : DEMON_A, {X: "#FF4FD8", W: "#8E5CFF", e: "#FFE14D"}); break;
+      case "shot": spShot(ctx, x, y, ww, hh, g === "demons" ? "#7FE3EE" : "#9EF0D2", o); break;
+      case "bomb": if(g === "catch") spBomb(ctx, x, y, ww, hh, o); else spPlasma(ctx, x, y, ww, hh, o); break;
+      case "bolt": spBolt(ctx, x, y, ww, hh, o); break;
+      case "bomber": spBomber(ctx, x, y, ww, hh); break;
+      case "bucket": spBucket(ctx, x, y, ww, hh); break;
+      case "car": {
+        const pv = prevOf("car", idx); let dir = 1;
+        if(pv){ const dx = (it[1] - pv[1]) * sign; dir = Math.abs(dx) > 20 ? -Math.sign(dx) : Math.sign(dx) || 1; }
+        spCar(ctx, x, y, ww, hh, CAR_COLORS[idx % CAR_COLORS.length], dir); break;
+      }
+      case "lane": {
+        const r = lanesY.indexOf(it[3]), n = lanesY.length;
+        spLane(ctx, x, y, ww, hh, r === 0 || r === n - 1 ? "edge" : r === Math.floor(n / 2) ? "mid" : "dash"); break;
+      }
+      case "walker": pilot(ctx, x + ww / 2, y + hh / 2, Math.max(ww, hh) * 1.25, o, 0); break;
+      case "skier": {
+        const pv = prevOf("skier", 0); const dx = pv ? (it[1] - pv[1]) * sign : 0;
+        spSkier(ctx, x, y, ww, hh, clamp(dx, -1, 1) * 0.35, o); break;
+      }
+      case "flag": spFlag(ctx, x, y, ww, hh, idx % 2 === 0); break;
+      case "tree": spTree(ctx, x, y, ww, hh); break;
+      case "boxer": spBoxer(ctx, x, y, ww, hh, false, punch, o); break;
+      case "cpu_boxer": spBoxer(ctx, x, y, ww, hh, true, punch, o); break;
+      case "ring": spRope(ctx, x, y, ww, hh); break;
+      default: ctx.fillStyle = it[5] > 100 ? "#8A93B8" : "#FFD13F"; ctx.fillRect(x, y, ww, hh);
+    }
+    // 플레이어 쪽 그림에 초파리 조종사 (꾸밈)
+    if(kind === PLAYER_KIND[g]){
+      if(kind === "paddle") pilot(ctx, x + ww / 2, y + hh * 0.2, Math.max(hh * 2.4, s * 3.6), o, 0);
+      else if(kind === "cannon") pilot(ctx, x + ww / 2, y + hh * 0.47, ww * 0.32, o, 0);
+      else if(kind === "bucket") pilot(ctx, x + ww / 2, y - hh * 0.05, Math.max(hh * 1.1, s * 3.4), o, 0);
+    }
+  }
+  if(g === "boxing"){                                                       // 링 모서리 기둥 (꾸밈)
+    const ring = classicItems(P, k, "ring");
+    if(ring.length){
+      const x0 = Math.min(...ring.map(it => it[1])) * s, x1 = Math.max(...ring.map(it => it[2])) * s, y0 = Math.min(...ring.map(it => it[3])) * s, y1 = Math.max(...ring.map(it => it[4])) * s;
+      for(const [px, py] of [[x0, y0], [x1, y0], [x0, y1], [x1, y1]]){ disc(ctx, px, py, s * 1.5, "#FFD13F"); disc(ctx, px - s * 0.4, py - s * 0.4, s * 0.5, "#FFF6B0"); }
+    }
+  }
+  classicFx(ctx, side, s, P, k, o, player);
+  ctx.restore();
+}
+function classicFx(ctx, W, s, P, k, o, player){
+  const now = o.now;
+  for(const e of P.events){
+    if(e.t_ms > now) break;
+    const age = now - e.t_ms;
+    if(e.type === "score" && age < 650 && player){
+      const [x, y, w] = player;
+      if(P.game === "boxing"){
+        const c = classicItems(P, k, "cpu_boxer")[0];
+        const mx = c ? ((c[1] + c[2]) / 2 * s + x + w / 2) / 2 : x + w / 2, my = c ? (c[4] * s + y) / 2 : y;
+        if(age < 320) for(let i = 0; i < 6; i++){ const a = i / 6 * Math.PI * 2 + age / 140; star(ctx, mx + Math.cos(a) * s * (2 + age / 60), my + Math.sin(a) * s * (2 + age / 60), s * 1.4, a, i % 2 ? "#FFD13F" : "#FF8A3D"); }
+        popText(ctx, mx, my - s * 2, "퍽!", s * 9, age, "#FFE14D");
+      } else popText(ctx, x + w / 2, y - s * 2, "+" + (e.points || 1), s * 8, age, "#7CF29A");
+    }
+    if(e.type === "life_lost" && age < 650 && !(o.mini && now >= P.dur)){
+      ctx.fillStyle = "rgba(255,40,60," + (0.34 * (1 - age / 650)).toFixed(3) + ")"; ctx.fillRect(0, 0, W, W);
+      if(!o.mini) popText(ctx, W / 2, W / 2, "목숨 −1", s * 10, age, "#FF8A8E");
+    }
+  }
+  if(!o.mini && now >= P.dur){
+    ctx.fillStyle = "rgba(10,8,28,.55)"; ctx.fillRect(0, 0, W, W);
+    ctx.save(); ctx.font = Math.round(s * 11) + "px Jua, NanumSquareRound, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineWidth = Math.max(3, s * 1.2); ctx.strokeStyle = "#1a0f3a";
+    const txt = P.tr.truncated ? "시간 끝!" : "게임 끝";
+    ctx.strokeText(txt, W / 2, W / 2); ctx.fillStyle = P.tr.truncated ? "#9EF0D2" : "#FF8A8E"; ctx.fillText(txt, W / 2, W / 2);
+    ctx.restore();
+  }
+}
+
 /* ============================== 초파리 눈 창 ============================== */
 const eyeCv = el("eyeCanvas"), eyeCtx = eyeCv.getContext("2d", {willReadFrequently: true});
 const eyeImg = eyeCtx.createImageData(84, 84);
 function paintEye(P, k){
-  const px = eyePixels(P.rects[k]);
+  const px = P.kind === "classic" ? classicPixels([P.scene.static, P.scene.at[k]]) : eyePixels(P.rects[k]);
   const d = eyeImg.data;
   for(let i = 0; i < px.length; i++){ const v = px[i]; d[4 * i] = v; d[4 * i + 1] = v; d[4 * i + 2] = v; d[4 * i + 3] = 255; }
   eyeCtx.putImageData(eyeImg, 0, 0);
@@ -1195,6 +2025,8 @@ function buildMapLayers(){
   const bw = M.box.w, bh = M.box.h;
   const availW = wrap.clientWidth || 300;
   const maxH = window.innerWidth < 960 ? 520 : 470;
+  const key = availW + ":" + maxH + ":" + (window.devicePixelRatio || 1);       // 지도 층은 판과 무관: 크기가 같으면 다시 그리지 않는다
+  if(S.mapLayers && S.mapLayers.key === key) return;
   let cssW = availW, cssH = availW * bh / bw;
   if(cssH > maxH){ cssH = maxH; cssW = cssH * bw / bh; }
   const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
@@ -1258,7 +2090,7 @@ function buildMapLayers(){
       glow[name][kk] = c;
     }
   }
-  S.mapLayers = {cv, ctx: cv.getContext("2d"), base, glow, sx, sy, dpr};
+  S.mapLayers = {cv, ctx: cv.getContext("2d"), base, glow, sx, sy, dpr, key};
   const v = M.view || {};
   el("mapNote").textContent = "점 " + fmtInt(M.dots.n) + "개 (전체 뉴런에서 시드 " + M.dots.seed + "로 뽑음) · 투영 " + (v.plane || "?") + " · 화면 왼쪽 = " + (v.screen_left === "fly left" ? "초파리 왼쪽" : v.screen_left || "?") + (M.fixture ? " · 가짜 지도" : "");
 }
@@ -1301,11 +2133,18 @@ function paintMap(P, k, now){
 /* ============================== 한 판 보기 ============================== */
 const gameCv = el("gameCanvas"), tlCv = el("timeline");
 let gameGeom = null, tlGeom = null, tlStatic = null;
+function modeOf(g){ return CLASSIC_ORDER.includes(g) ? "classic" : S.slow && S.slow.games && S.slow.games[g] ? "slow" : "rung"; }
+function gameTitle(g){
+  if(CLASSIC_ORDER.includes(g)){ const G = classicBlock(g); return G ? G.title_ko : "불러오는 중…"; }
+  return S.games[g] ? S.games[g].title_ko : GAME_FALLBACK_TITLE[g] || g;
+}
 function sizeStage(){
-  const P = S.stage.P;
+  const P = S.stage.P, classic = modeOf(S.pick.game) === "classic";
+  el("gameArea").classList.toggle("classic", classic);
+  el("gameBox").classList.toggle("classic", classic);
   const box = el("gameBox");
   const w = box.clientWidth || 600;
-  const ratio = !P || P.game === "jump" ? (w < 560 ? 0.72 : 0.6) : (w < 560 ? 0.9 : 0.72);
+  const ratio = classic ? 1 : !P || P.game === "jump" ? (w < 560 ? 0.72 : 0.6) : (w < 560 ? 0.9 : 0.72);
   gameGeom = fitCanvas(gameCv, w, Math.round(w * ratio));
   const tw = tlCv.parentElement.clientWidth || 600;
   tlGeom = fitCanvas(tlCv, tw, 76);
@@ -1313,26 +2152,65 @@ function sizeStage(){
   buildMapLayers();
 }
 function stageTrack(){
-  return S.tracks.find(P => P.player === "fly" && P.game === S.pick.game && P.match === S.pick.match) || null;
+  const g = S.pick.game, mode = modeOf(g);
+  if(mode === "classic"){ const C = S.classic.games[g]; return C ? C.tracks.find(P => P.player === "fly") || null : null; }
+  if(mode === "slow") return S.slowTracks.find(P => P.player === "fly" && P.game === g) || null;
+  return S.tracks.find(P => P.player === "fly" && P.game === g && P.match === S.pick.match) || null;
 }
-function loadStage(P){
+// 게임을 고른다: 오락실 게임은 그 파일을 처음 열 때 읽는다(지연 로딩)
+function pickGame(g, match){
+  S.pick.game = g; if(match) S.pick.match = match;
+  if(modeOf(g) === "classic" && !S.classic.games[g]){
+    loadStage(null, "불러오는 중… (classic/" + g + ".json)");
+    classicFile(g).then(() => { if(S.pick.game === g) loadStage(stageTrack()); });
+    return;
+  }
+  loadStage(stageTrack());
+}
+function padLabels(P){
+  const G = P && P.kind === "classic" ? P.G : null;
+  const bs = el("pad").querySelectorAll("button");
+  const lab = {2: "◀ 왼쪽", 1: "▲ 점프", 3: "오른쪽 ▶"};
+  if(G){
+    const j = effectKo(G, 1), l = effectKo(G, 2), r = effectKo(G, 3);
+    lab[1] = j.none ? "▲ (이 게임에선 효과 없음)" : "▲ " + j.word;
+    lab[2] = l.none ? "◀ (효과 없음)" : "◀ 왼쪽";
+    lab[3] = r.none ? "(효과 없음) ▶" : "오른쪽 ▶";
+  }
+  for(const b of bs) b.textContent = lab[b.dataset.act];
+}
+function loadStage(P, waiting){
   const st = S.stage;
   st.P = P; st.now = 0; st.playing = false; st.crashWall = null; st.slow = false;
   setPlayLabel();
-  el("stageTitle").textContent = (S.games[S.pick.game] ? S.games[S.pick.game].title_ko : GAME_FALLBACK_TITLE[S.pick.game]) + " · " + MATCH_KO[S.pick.match];
+  const mode = modeOf(S.pick.game);
+  el("stageTitle").textContent = gameTitle(S.pick.game) + (mode === "rung" ? " · " + MATCH_KO[S.pick.match] : "");
+  el("stageMatch").hidden = mode !== "rung";
+  const chip = el("stageChip");
+  chip.hidden = mode === "rung";
+  if(mode === "classic"){ const G = classicBlock(S.pick.game); chip.textContent = "오락실 · " + (G ? G.genre_ko : "") + " · 초파리 판"; }
+  else if(mode === "slow"){ const r = S.games[S.pick.game] && S.games[S.pick.game].rules; chip.textContent = "느린 판 · 장애물 " + (r && r.speed_divisor ? r.speed_divisor + "배" : "") + " 느리게 · 초파리 판"; }
   for(const b of el("stageMatch").querySelectorAll("button")) b.classList.toggle("on", b.dataset.match === S.pick.match);
+  el("scoreBar").hidden = mode !== "classic";
+  el("tlObsKey").hidden = mode === "classic";
+  el("tlScoreKey").hidden = el("tlLifeKey").hidden = mode !== "classic";
+  el("slowBtn").textContent = mode === "classic" ? "마지막 사건 느리게 다시 보기" : "충돌 순간 느리게 다시 보기";
+  const ld = el("stageLoading"); ld.hidden = !waiting; ld.textContent = waiting || "";
+  padLabels(P);
   sizeStage();
   const info = el("stageInfo");
   if(!P){
-    info.innerHTML = "<b>이 판의 기록이 아직 없습니다.</b> (" + S.pick.game + " / " + S.pick.match + " / fly)";
+    info.innerHTML = waiting ? "" : "<b>이 판의 기록이 아직 없습니다.</b> (" + S.pick.game + (mode === "rung" ? " / " + S.pick.match : "") + " / fly)";
     renderStage(performance.now()); return;
   }
   const B = P.brain, ck = P.tr.check || {};
   const bits = [];
   bits.push("시드 <b>" + P.tr.seed + "</b> · " + P.T + "틱 · 점수 <b>" + P.tr.score + "</b>");
-  if(B) bits.push("해독기 <b>" + decoderLine(B.spec) + "</b>" + (S.pick.match ? " (" + (P.match === "m7c" ? "M7c" : "M7c2") + ")" : ""));
+  if(mode === "classic" && P.G) bits.push("감지 배율 k <b>" + (+Number(P.G.k).toPrecision(4)) + "</b> (M7f2에서 고른 값)");
+  if(B) bits.push("해독기 <b>" + decoderLine(B.spec) + "</b>" + (mode === "rung" ? " (" + (P.match === "m7c" ? "M7c" : "M7c2") + ")" : mode === "classic" ? " (M7f2)" : " (M7g)"));
   if(B) bits.push(B.transient ? "예열 없음 — 리셋 직후부터 기록" : "예열 " + (B.warm / 1000) + " s 뒤부터 기록");
   if(ck.n_frames != null) bits.push("장면 기록 확인(생산 쪽): 프레임 " + ck.frames_bit_exact + "/" + ck.n_frames + " 비트 일치");
+  if(P.tr.cut_ms != null) bits.push("<b>기록은 처음 " + fmtS(P.tr.cut_ms) + "초까지</b>");
   if(P.eyeCheck) bits.push("눈 그림 대조(이 화면): " + P.eyeCheck.ok + "/" + P.eyeCheck.n + " 프레임 일치");
   if(B && B.match != null) bits.push("해독기 재현(브라우저): " + B.match + "/" + P.T + " 틱 일치");
   if(P.errs.length) bits.push("<b style='color:var(--bad)'>기록 문제: " + P.errs.join(" · ") + "</b>");
@@ -1377,7 +2255,16 @@ function renderStage(wall){
   const k = tickAt(P, st.now);
   const ended = st.now >= P.dur;
   if(ended && st.crashWall == null) st.crashWall = wall;
-  drawScene(ctx, w, h, P, k, {wall, now: st.now, mini: false, fx: true, crashWall: st.crashWall});
+  if(P.kind === "classic"){
+    drawClassic(ctx, w, h, P, k, {wall, now: st.now, mini: false});
+    // 점수판 = hud 기록 그대로 (끝난 뒤에는 결과 파일의 판 점수)
+    const sc = ended ? P.tr.score : P.hudScore[k], lv = P.hudLives ? P.hudLives[k] : null;
+    el("sbScore").textContent = sc;
+    el("sbLives").textContent = lv == null ? "" : "♥".repeat(Math.max(0, lv)) + (lv > 0 ? "" : "목숨 0");
+    el("sbTime").textContent = fmtS(Math.min(st.now, P.dur)) + "초 · 틱 " + k;
+    const sb = el("scoreBar"); sb.dataset.tick = k; sb.dataset.score = sc; sb.dataset.hud = P.hudScore[k]; sb.dataset.lives = lv == null ? "" : lv;
+  }
+  else drawScene(ctx, w, h, P, k, {wall, now: st.now, mini: false, fx: true, crashWall: st.crashWall});
   paintEye(P, k);
   paintMap(P, k, st.now);
   paintBrainDom(P, k, st.now);
@@ -1390,10 +2277,16 @@ function renderStage(wall){
   el("hud").innerHTML = "뉴런 <b>" + fmtInt(GRAPH.neurons) + "</b>개 · 이번 틱 스파이크 <b>" + (net == null ? "—" : fmtInt(net)) + "</b>개";
   const cap = captionAt(P, st.now);
   const cv = el("caption");
-  // 사건이 없을 때: 기록된 거리만 말한다
-  const dd = P.st.dist ? P.st.dist[k] : null, ox = P.st.obj_x ? P.st.obj_x[k] : null, xx = P.st.x ? (P.st.x[k] || 0) : 0;
-  const idle = st.now === 0 && !st.playing ? "▶ 를 눌러 시작해요" : dd == null ? "장애물 없음"
-    : (P.game === "jump" ? "각설탕까지 " : "기둥까지 ") + dd.toFixed(1) + "칸" + (ox != null ? (ox > xx ? " · 오른쪽" : " · 왼쪽") : "");
+  // 사건이 없을 때: 기록된 값만 말한다 (첫 칸은 거리, 오락실은 hud 점수·목숨)
+  let idle;
+  if(P.kind === "classic"){
+    const lv = P.hudLives ? P.hudLives[k] : null;
+    idle = st.now === 0 && !st.playing ? "▶ 를 눌러 시작해요" : "점수 " + P.hudScore[k] + (lv != null ? " · 목숨 " + lv : "");
+  } else {
+    const dd = P.st.dist ? P.st.dist[k] : null, ox = P.st.obj_x ? P.st.obj_x[k] : null, xx = P.st.x ? (P.st.x[k] || 0) : 0;
+    idle = st.now === 0 && !st.playing ? "▶ 를 눌러 시작해요" : dd == null ? "장애물 없음"
+      : (P.game === "jump" ? "각설탕까지 " : "기둥까지 ") + dd.toFixed(1) + "칸" + (ox != null ? (ox > xx ? " · 오른쪽" : " · 왼쪽") : "");
+  }
   const text = cap ? cap.text : idle;
   if(cv.textContent !== text) cv.textContent = text;
   cv.className = "caption " + (cap ? cap.cls : "idle");
@@ -1435,7 +2328,7 @@ function paintTimeline(P, now){
       for(let x = -h; x < x1 + h; x += 8){ g.strokeStyle = "rgba(255,200,61,.35)"; g.lineWidth = 3; g.beginPath(); g.moveTo(x, h); g.lineTo(x + h, 0); g.stroke(); }
       g.restore();
     }
-    for(const ob of P.obstacles){
+    for(const ob of P.obstacles || []){
       const t0 = P.t[Math.min(P.T - 1, ob.spawn_tick + 1)] ?? 0, t1 = ob.reach_t_ms != null ? ob.reach_t_ms : tickMs(ob.end_tick + 1);
       g.fillStyle = "rgba(159,179,200,.35)"; g.fillRect(X(t0), h * 0.42, Math.max(2, X(t1) - X(t0)), h * 0.16);
     }
@@ -1462,6 +2355,9 @@ function paintTimeline(P, now){
       else if(e.type === "pass"){ g.fillStyle = "#7CF29A"; g.fillText("✓", x, h * 0.68); }
       else if(e.type === "crash"){ g.fillStyle = "#FF6B6F"; g.font = "900 16px sans-serif"; g.fillText("✖", Math.min(x, w - 12), h * 0.5); g.font = "900 12px sans-serif"; }
       else if(e.type === "speedup"){ g.fillStyle = "#FFD13F"; g.fillText("⇡", x, h * 0.68); }
+      else if(e.type === "score"){ g.fillStyle = "#2EC4A0"; g.fillText("✓", x, h * 0.32); }
+      else if(e.type === "life_lost"){ g.fillStyle = "#FF6B6F"; g.fillText("✖", x, h * 0.68); }
+      else if(e.type === "game_over"){ g.fillStyle = "#FF6B6F"; g.font = "900 16px sans-serif"; g.fillText("■", Math.min(x, w - 12), h * 0.5); g.font = "900 12px sans-serif"; }
     }
     tlStatic = {P, w, c};
   }
@@ -1491,13 +2387,32 @@ function beep(kind){
 }
 function soundsBetween(P, a, b){
   if(!S.sound || !(b > a)) return;
-  for(const e of P.events){ if(e.t_ms > a && e.t_ms <= b){ if(e.type === "pass") beep("ding"); else if(e.type === "crash") beep("thud"); } }
+  for(const e of P.events){ if(e.t_ms > a && e.t_ms <= b){ if(e.type === "pass" || e.type === "score") beep("ding"); else if(e.type === "crash" || e.type === "life_lost" || e.type === "game_over") beep("thud"); } }
   if(P.brain && S.stage.speed <= 1) for(const side of ["L", "R"]) if(countIn(P.brain.gf[side], a + 1e-9, b + 1e-9) > 0) beep("tick");
 }
 
 /* ============================== 레이스 ============================== */
 function raceTracks(){
-  const g = S.race.game;
+  const g = S.race.game, mode = modeOf(g);
+  if(mode === "classic"){
+    const C = S.classic.games[g], G = C && C.G;
+    const find = pl => C ? C.tracks.find(P => P.player === pl) || null : null;
+    return [
+      {key: "fly", name: "초파리", sub: "M7f2 · 같은 판", P: find("fly")},
+      {key: "random", name: "무작위 봇", sub: "매 틱 아무 버튼", P: find("random")},
+      {key: "fixed", name: "고정 행동 기준", sub: G ? FIXED_KO[G.fixed_ref] || G.fixed_ref : "", P: find("fixed")},
+      {key: "brainless", name: "뇌 없는 봇", sub: "같은 눈 + 임계값 한 줄", P: find("brainless")},
+    ];
+  }
+  if(mode === "slow"){
+    const find = pl => S.slowTracks.find(P => P.game === g && P.player === pl) || null, G = S.games[g] || {};
+    return [
+      {key: "fly", name: "초파리", sub: "느린 판 · M7g", P: find("fly")},
+      {key: "random", name: "무작위 봇", sub: "매 틱 아무 버튼", P: find("random")},
+      {key: "fixed", name: "고정 행동 기준", sub: SLOW_FIXED_KO[G.fixed_ref] || G.fixed_ref || "", P: find("fixed")},
+      {key: "brainless", name: "뇌 없는 봇", sub: "같은 눈 + 임계값 한 줄", P: find("brainless")},
+    ];
+  }
   const find = (player, match) => S.tracks.find(P => P.game === g && P.player === player && (match === undefined || P.match === match)) || null;
   return [
     {key: "fly", name: "초파리", sub: MATCH_KO[S.race.match], P: find("fly", S.race.match)},
@@ -1506,12 +2421,28 @@ function raceTracks(){
     {key: "brainless", name: "뇌 없는 봇", sub: "같은 눈 + 임계값 한 줄", P: find("brainless")},
   ];
 }
+function buildRaceGames(){
+  const btn = g => '<button data-game="' + g + '"' + (S.race.game === g ? ' class="on"' : '') + '>' + gameTitle(g) + '</button>';
+  const slowG = S.slow && S.slow.games ? Object.keys(S.slow.games) : [];
+  el("raceGame").innerHTML = '<span class="grp">첫 칸</span>' + GAME_ORDER.map(btn).join("") +
+    (slowG.length ? '<span class="grp">느린 판</span>' + slowG.map(btn).join("") : "") +
+    '<span class="grp">오락실</span>' + CLASSIC_ORDER.map(btn).join("");
+}
 function buildRace(){
+  const mode = modeOf(S.race.game);
+  if(mode === "classic" && !S.classic.games[S.race.game]){
+    const g = S.race.game;
+    classicFile(g).then(() => { if(S.race.game === g) buildRace(); });
+  }
+  el("raceMatch").parentElement.hidden = mode !== "rung";
+  el("raceGrid").classList.toggle("classic", mode === "classic");
+  el("raceWrap").classList.toggle("classic", mode === "classic");
   const grid = el("raceGrid"); grid.innerHTML = "";
   S.race.panels = raceTracks().map(r => {
     const card = document.createElement("div"); card.className = "card racer"; card.dataset.player = r.key;
     card.innerHTML = '<div class="rh"><div class="nm">' + r.name + '<small>' + r.sub + '</small></div><div class="sc"><b>0</b><span>0.0초</span></div></div>' +
-      (r.P ? '<canvas></canvas><div class="minipad"><b data-act="2">◀</b><b data-act="1">▲</b><b data-act="3">▶</b></div>' : '<div class="missing">기록 없음</div>') +
+      (r.P ? '<canvas></canvas><div class="minipad"><b data-act="2">◀</b><b data-act="1">▲</b><b data-act="3">▶</b></div>'
+           : '<div class="missing">' + (mode === "classic" && !S.classic.games[S.race.game] ? "불러오는 중…" : "기록 없음") + '</div>') +
       '<div class="outbadge"></div>';
     if(r.P) card.dataset.track = r.P.id;
     grid.appendChild(card);
@@ -1521,13 +2452,29 @@ function buildRace(){
   for(const b of el("raceMatch").querySelectorAll("button")) b.classList.toggle("on", b.dataset.match === S.race.match);
   S.race.now = 0; S.race.playing = false; el("racePlay").textContent = "▶ 출발";
   el("podium").className = "card podium"; el("podium").innerHTML = "";
+  buildOracleBar(mode);
   sizeRace(); renderRace(performance.now());
+}
+// 정답을 아는 봇(반칙): 레이스에는 넣지 않고, 옆의 점수 막대로만 (시드 10 점수)
+function buildOracleBar(mode){
+  const box = el("oracleBar");
+  const G = mode === "classic" ? classicBlock(S.race.game) : null;
+  if(!G){ box.hidden = true; box.innerHTML = ""; return; }
+  const i10 = (G.eval_seeds || []).indexOf(10), ora = G.scores && G.scores.oracle && i10 >= 0 ? G.scores.oracle[i10] : null;
+  const rows = S.race.panels.filter(p => p.P);
+  const top = Math.max(1, ora || 0, ...rows.map(p => p.P.tr.score));
+  box.hidden = false;
+  box.dataset.top = top;
+  box.innerHTML = '<h4>점수 막대 · 시드 10</h4><div class="small muted">막대 끝 = ' + top + '점. 네 선수는 지금 점수가 자랍니다.</div>' +
+    rows.map(p => '<div class="obar" data-key="' + p.key + '"><div class="lab"><span>' + p.name + '</span><b class="v">0</b></div><div class="tr"><i style="width:0;background:' + (p.key === "fly" ? "var(--brand)" : p.key === "brainless" ? "var(--good)" : p.key === "fixed" ? "var(--sky)" : "#8C93A8") + '"></i></div></div>').join("") +
+    (ora != null ? '<div class="obar" data-key="oracle" data-score="' + ora + '"><div class="lab"><span>' + CHEAT_KO + '</span><b>' + ora + '</b></div><div class="tr"><i style="width:' + (100 * ora / top).toFixed(1) + '%;background:repeating-linear-gradient(-45deg,#E5484D 0 6px,#ff8a8e 6px 12px)"></i></div></div>' +
+      '<p class="cheat-note">게임 내부 상태를 읽는 봇이라 비교 대상이 아니라 천장 참고값입니다. 판은 넣지 않았습니다.</p>' : '<p class="cheat-note">정답을 아는 봇 점수 없음</p>');
 }
 function sizeRace(){
   for(const p of S.race.panels){
     if(!p.cv) continue;
     const w = p.cv.parentElement.clientWidth - (window.innerWidth < 640 ? 12 : 20);
-    p.geom = fitCanvas(p.cv, w, Math.round(w * (S.race.game === "jump" ? 0.42 : 0.5)));
+    p.geom = fitCanvas(p.cv, w, Math.round(w * (modeOf(S.race.game) === "classic" ? 1 : S.race.game === "jump" ? 0.42 : 0.5)));
   }
 }
 function raceEnd(){ return Math.max(0, ...S.race.panels.filter(p => p.P).map(p => p.P.dur)); }
@@ -1538,10 +2485,12 @@ function renderRace(wall, domOnly){
     const P = p.P, k = tickAt(P, now), out = now >= P.dur;
     const {ctx, w, h} = p.geom;
     if(!domOnly){                                                 // domOnly: 테스트가 버튼·탈락 표시만 빨리 훑을 때
-      drawScene(ctx, w, h, P, k, {wall, now, mini: true, fx: false});
+      if(P.kind === "classic") drawClassic(ctx, w, h, P, k, {wall, now, mini: true, cheap: true});
+      else drawScene(ctx, w, h, P, k, {wall, now, mini: true, fx: false});
       if(p.key === "brainless") thetaBars(ctx, w, h, P, k);
     }
-    const score = out ? P.tr.score : P.st.score[k];
+    const score = out ? P.tr.score : P.kind === "classic" ? P.hudScore[k] : P.st.score[k];
+    p.score = score;
     p.card.querySelector(".sc b").textContent = score;
     p.card.querySelector(".sc span").textContent = (Math.min(now, P.dur) / 1000).toFixed(1) + "초";
     for(const b of p.card.querySelectorAll(".minipad b")) b.classList.toggle("on", !out && Number(b.dataset.act) === P.action[k]);
@@ -1550,11 +2499,21 @@ function renderRace(wall, domOnly){
     const badge = p.card.querySelector(".outbadge");
     if(out){
       p.card.dataset.outMs = P.dur;
-      badge.textContent = P.tr.crashed ? "탈락 " + fmtS(P.dur) + "초" : "완주 " + fmtS(P.dur) + "초";
-      badge.classList.toggle("fin", !P.tr.crashed);
+      const fin = P.kind === "classic" ? !!P.tr.truncated : !P.tr.crashed;
+      badge.textContent = (fin ? "완주 " : P.kind === "classic" ? "게임 끝 " : "탈락 ") + fmtS(P.dur) + "초";
+      badge.classList.toggle("fin", fin);
     } else { delete p.card.dataset.outMs; }
   }
   el("raceTime").textContent = (now / 1000).toFixed(1) + " / " + (raceEnd() / 1000).toFixed(1) + " 초";
+  const ob = el("oracleBar");
+  if(!ob.hidden){
+    const top = Number(ob.dataset.top) || 1;
+    for(const p of S.race.panels){
+      const row = ob.querySelector('.obar[data-key="' + p.key + '"]'); if(!row || !p.P) continue;
+      row.querySelector(".v").textContent = p.score; row.dataset.score = p.score;
+      row.querySelector("i").style.width = (100 * p.score / top).toFixed(1) + "%";
+    }
+  }
   const done = S.race.panels.some(p => p.P) && now >= raceEnd();
   if(done && !el("podium").classList.contains("show")) showPodium();
   if(!done && el("podium").classList.contains("show")){ el("podium").className = "card podium"; }
@@ -1588,11 +2547,12 @@ function showPodium(){
   ranked.forEach((p, i) => { if(!prev || p.P.tr.score !== prev.P.tr.score || p.P.dur !== prev.P.dur) rank = i + 1; p.rank = rank; prev = p; });
   const order = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
   const box = el("podium");
-  box.innerHTML = '<h3>시상대 — ' + (S.games[S.race.game] ? S.games[S.race.game].title_ko : S.race.game) + ', 시드 10</h3><div class="steps">' +
-    order.map(p => '<div class="step r' + Math.min(p.rank, 4) + '"><div class="who">' + p.name + (p.key === "fly" ? " (" + MATCH_KO[S.race.match] + ")" : "") +
+  const rung = modeOf(S.race.game) === "rung";
+  box.innerHTML = '<h3>시상대 — ' + gameTitle(S.race.game) + ', 시드 10</h3><div class="steps">' +
+    order.map(p => '<div class="step r' + Math.min(p.rank, 4) + '"><div class="who">' + p.name + (p.key === "fly" && rung ? " (" + MATCH_KO[S.race.match] + ")" : "") +
       '</div><div class="pts">' + p.P.tr.score + '점 · ' + fmtS(p.P.dur) + '초</div><div class="blk">' + p.rank + '</div></div>').join("") + '</div>' +
     (ranked[3] ? '<div class="rest">' + ranked[3].rank + '위: ' + ranked[3].name + ' — ' + ranked[3].P.tr.score + '점 · ' + fmtS(ranked[3].P.dur) + '초</div>' : '') +
-    '<div class="rest small">순위: 점수가 높은 순, 같으면 오래 버틴 순. 이 한 판(시드 10)의 순위이고, 판정은 아래 성적표의 10판으로 합니다.</div>';
+    '<div class="rest small">순위: 점수가 높은 순, 같으면 오래 버틴 순. 이 한 판(시드 10)의 순위이고, 판정은 아래 성적표의 10판으로 합니다.' + (rung ? '' : ' 정답을 아는 봇(반칙)은 순위에 넣지 않습니다.') + '</div>';
   box.className = "card podium show";
 }
 
@@ -1758,6 +2718,381 @@ function thumbTick(P){
   return 0;
 }
 
+/* ============================== M7e4 판정 도장 ============================== */
+// 결과 파일의 사전 등록 판정만 읽는다: beats → 이김, loses → 짐, 뇌 없는 봇 칸이 천장이면 천장 — 판정 불가, 나머지 구별 안 됨
+function vword(v, ceiling){
+  if(!v || typeof v !== "object") return {cls: "none", text: "기록 없음"};
+  if(v.beats) return {cls: "beat", text: "이김"};
+  if(v.loses) return {cls: "lost", text: "짐"};
+  if(ceiling) return {cls: "ceil", text: "천장 — 판정 불가"};
+  return {cls: "tie", text: "구별 안 됨"};
+}
+const mean = a => Array.isArray(a) && a.length ? a.reduce((x, y) => x + y, 0) / a.length : null;
+const f1 = v => v == null ? "—" : (+v.toFixed(1)).toString();
+// 사다리 칸 하나의 비교 세 줄
+function cellVerdicts(c){
+  if(c.zone === "rung"){
+    const G = S.games[c.g], v = G && G.verdict && G.verdict.m7c2;
+    return [["random", "대 무작위", vword(v && v.vs_random)], ["fixed", "대 한 방향", vword(v && v.vs_one_way)],
+            ["brainless", "대 뇌 없는", vword(v && v.vs_brainless, G && G.ceiling != null)]];
+  }
+  const R = c.zone === "slow" ? S.slow && S.slow.rows && S.slow.rows[c.g] : classicBlock(c.g);
+  const v = R && R.verdict, ceil = R ? (c.zone === "slow" ? slowCeil(R).is : R.ceiling === true) : false;
+  return [["random", "대 무작위", vword(v && v.vs_random)], ["fixed", "대 고정 행동", vword(v && v.vs_fixed)],
+          ["brainless", "대 뇌 없는", vword(v && v.vs_brainless, ceil)]];
+}
+function cellFlyMean(c){
+  if(c.zone === "rung"){ const G = S.games[c.g]; return mean(G && G.scores && G.scores.fly_m7c2); }
+  const R = c.zone === "slow" ? S.slow && S.slow.rows && S.slow.rows[c.g] : classicBlock(c.g);
+  return mean(R && R.scores && R.scores.fly);
+}
+function lstHTML(rows){
+  return '<div class="lst">' + rows.map(([key, lab, w]) => '<span>' + lab + '</span><span class="vw ' + w.cls + '" data-vs="' + key + '" data-v="' + w.cls + '">' + w.text + '</span>').join("") + '</div>';
+}
+
+/* ============================== M7e4 사다리 지도 ============================== */
+function ladderCells(){
+  const cells = [];
+  GAME_ORDER.forEach(g => cells.push({zone: "rung", g, title: gameTitle(g), sub: "첫 칸 · 재대결"}));
+  const rows = S.slow && S.slow.rows ? Object.entries(S.slow.rows).filter(([, r]) => r.s > 1)
+    .sort((a, b) => (a[1].family === "dodge_v2" ? 0 : 1) - (b[1].family === "dodge_v2" ? 0 : 1) || a[1].s - b[1].s) : [];
+  rows.forEach(([g, r]) => cells.push({zone: "slow", g, title: r.title_ko || g, sub: "장애물 " + r.s + "배 느리게"}));
+  CLASSIC_ORDER.forEach(g => { const G = classicBlock(g); cells.push({zone: "classic", g, title: G ? G.title_ko : "불러오는 중…", sub: G ? G.genre_ko : ""}); });
+  return cells;
+}
+function buildLadder(){
+  const map = el("ladderMap");
+  [...map.querySelectorAll(".zone")].forEach(z => z.remove());
+  const cells = ladderCells();
+  const zones = [["rung", "z1", "첫 칸", "직접 만든 가장 쉬운 세 게임 (M7b·M7c·M7c2)"],
+                 ["slow", "z2", "느린 판", "첫 칸에서 진 뒤 덧붙인 더 쉬운 칸 — 장애물만 느리게 (M7g)"],
+                 ["classic", "z3", "오락실 8종", "직접 만든 고전 방식 게임 (M7f)"]];
+  let n = 0;
+  for(const [zk, cls, name, sub] of zones){
+    const zc = cells.filter(c => c.zone === zk);
+    const z = document.createElement("div"); z.className = "zone " + cls; z.dataset.zone = zk;
+    z.innerHTML = '<h3>' + name + ' <small>' + sub + '</small></h3><div class="cells"></div>';
+    if(!zc.length) z.querySelector(".cells").innerHTML = '<p class="small muted">기록 없음' + (zk === "slow" ? " (slow.json)" : "") + '</p>';
+    for(const c of zc){
+      n++;
+      const b = document.createElement("button"); b.className = "lcell"; b.type = "button";
+      b.dataset.cell = c.zone + ":" + c.g; b.dataset.zone = c.zone; b.dataset.game = c.g;
+      const fm = cellFlyMean(c);
+      b.innerHTML = '<span class="lv">' + n + '</span><canvas aria-hidden="true"></canvas><div class="nm">' + c.title + '<small>' + c.sub + '</small></div>' +
+        '<div class="fm">초파리 평균 ' + (fm == null ? "—" : f1(fm) + "점") + '</div>' + lstHTML(cellVerdicts(c));
+      b.onclick = () => openCell(c);
+      z.querySelector(".cells").appendChild(b);
+      requestAnimationFrame(() => { const cv = b.querySelector("canvas"), w = cv.clientWidth || 160; const geo = fitCanvas(cv, w, Math.round(w / 2)); drawEmblem(geo.ctx, geo.w, geo.h, c); });
+    }
+    map.appendChild(z);
+  }
+  requestAnimationFrame(drawTrail);
+}
+function openCell(c){
+  if(c.zone === "slow"){
+    if(S.slowTracks.some(P => P.game === c.g)){ pickGame(c.g); el("stage").scrollIntoView({behavior: "smooth", block: "start"}); }
+    else { S.slowFam = S.slow.rows[c.g].family; buildSlow(); el("slow").scrollIntoView({behavior: "smooth", block: "start"}); }
+    return;
+  }
+  pickGame(c.g, c.zone === "rung" ? "m7c2" : null);
+  if(c.zone === "rung") buildPicker();
+  el("stage").scrollIntoView({behavior: "smooth", block: "start"});
+}
+function drawTrail(){
+  // 칸을 잇는 점선 길 (꾸밈): 칸 중심을 차례로 잇는다
+  const map = el("ladderMap"), svg = el("ladderTrail");
+  const r0 = map.getBoundingClientRect();
+  const pts = [...map.querySelectorAll(".lcell")].map(b => { const r = b.getBoundingClientRect(); return [r.left - r0.left + r.width / 2, r.top - r0.top + r.height / 2]; });
+  svg.setAttribute("viewBox", "0 0 " + Math.max(1, r0.width) + " " + Math.max(1, r0.height));
+  if(pts.length < 2){ svg.innerHTML = ""; return; }
+  let d = "M" + pts[0][0].toFixed(1) + " " + pts[0][1].toFixed(1);
+  for(let i = 1; i < pts.length; i++){
+    const [x0, y0] = pts[i - 1], [x1, y1] = pts[i], my = (y0 + y1) / 2;
+    d += Math.abs(y1 - y0) < 4 ? " L" + x1.toFixed(1) + " " + y1.toFixed(1) : " C" + x0.toFixed(1) + " " + my.toFixed(1) + " " + x1.toFixed(1) + " " + my.toFixed(1) + " " + x1.toFixed(1) + " " + y1.toFixed(1);
+  }
+  svg.innerHTML = '<path d="' + d + '" fill="none" stroke="#FF6A3D" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 12" opacity=".75"/>';
+}
+// 칸의 작은 대표 그림 (꾸밈, 기록 아님). 84×42 공간에 종류별 그림을 놓는다
+function drawEmblem(ctx, w, h, c){
+  const s = w / 84, o = {wall: 0, cheap: true};
+  const g = c.g, base = c.zone === "slow" ? (S.slow.rows[g] || {}).family : g;
+  ctx.save();
+  const bg = ctx.createLinearGradient(0, 0, 0, h);
+  if(c.zone === "classic"){ bg.addColorStop(0, "#120d27"); bg.addColorStop(1, "#2a1b52"); }
+  else { bg.addColorStop(0, "#9ED4FF"); bg.addColorStop(1, "#E8F6FF"); }
+  ctx.fillStyle = bg; ctx.fillRect(0, 0, w, h);
+  const R = (x0, x1, y0, y1) => [x0 * s, y0 * s, (x1 - x0) * s, (y1 - y0) * s];
+  const at = (f, x0, x1, y0, y1, ...rest) => { const [x, y, ww, hh] = R(x0, x1, y0, y1); f(ctx, x, y, ww, hh, ...rest); };
+  if(c.zone !== "classic"){
+    ctx.fillStyle = "#7CC66A"; ctx.fillRect(0, h * 0.62, w, h * 0.38);
+    if(base === "jump"){ sugarCube(ctx, w * 0.68, h * 0.8, h * 0.36); flySide(ctx, w * 0.3, h * 0.62, h * 0.6, {wall: 0, airborne: true}); }
+    else { stump(ctx, w * 0.66, h * 0.36, h * 0.16); pilot(ctx, w * 0.36, h * 0.66, h * 0.5, o, -0.25); }
+    if(c.zone === "slow"){ const r = S.slow.rows[g]; ctx.font = Math.round(h * 0.26) + "px Jua, sans-serif"; ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillStyle = "rgba(20,24,44,.72)"; rrect(ctx, 5, 5, h * 0.62, h * 0.32, 8); ctx.fill(); ctx.fillStyle = "#FFE07A"; ctx.fillText("÷" + r.s, 11, 7); }
+  } else if(g === "paddle"){ at(spPaddle, 30, 42, 4, 6, true, o); at(spBall, 50, 52, 18, 20, o); at(spPaddle, 36, 48, 34, 36, false, o); pilot(ctx, 42 * s, 34.4 * s, 3.6 * s, o, 0); }
+  else if(g === "bricks"){ for(let r = 0; r < 3; r++) for(let i = 0; i < 9; i++) at(spBrick, 4 + i * 8.6, 11.6 + i * 8.6, 4 + r * 4, 7 + r * 4, ROW_COLORS[r]); at(spBall, 46, 48, 24, 26, o); at(spPaddle, 34, 46, 36, 38, false, o); pilot(ctx, 40 * s, 36.4 * s, 3.6 * s, o, 0); }
+  else if(g === "formation"){ for(let r = 0; r < 2; r++) for(let i = 0; i < 5; i++) pix(ctx, (16 + i * 11) * s, (4 + r * 7) * s, 6 * s, 4 * s, r ? ALIEN_B : ALIEN_A, {X: ROW_COLORS[r + 3], o: "#fff", p: "#14093a"}); at(spShot, 41.5, 42.5, 22, 26, "#9EF0D2", o); at(spCannon, 38.5, 45.5, 34, 38, o); pilot(ctx, 42 * s, 35.9 * s, 2.2 * s, o, 0); }
+  else if(g === "crossing"){ ctx.fillStyle = "#3a3f4b"; ctx.fillRect(0, 8 * s, w, 26 * s); for(const [y, x] of [[10, 8], [17, 44], [24, 20], [24, 62]]) at(spCar, x, x + 8, y, y + 3, CAR_COLORS[x % 7], y === 17 ? -1 : 1); spLane(ctx, 0, 15.5 * s, w, 0.5 * s, "mid"); spLane(ctx, 0, 22.5 * s, w, 0.5 * s, "dash"); pilot(ctx, 30 * s, 37 * s, 4 * s, o, 0); }
+  else if(g === "catch"){ at(spBomber, 38, 46, 2, 8, o); at(spBomb, 30, 33, 14, 18, o); at(spBomb, 52, 55, 22, 26, o); at(spBucket, 37, 47, 34, 38); pilot(ctx, 42 * s, 33.8 * s, 3.4 * s, o, 0); }
+  else if(g === "demons"){ pix(ctx, 18 * s, 6 * s, 8 * s, 4 * s, DEMON_A, {X: "#FF4FD8", W: "#8E5CFF", e: "#FFE14D"}); pix(ctx, 54 * s, 10 * s, 8 * s, 4 * s, DEMON_B, {X: "#FF4FD8", W: "#8E5CFF", e: "#FFE14D"}); at(spBolt, 22, 23, 14, 18, o); at(spShot, 41.5, 42.5, 20, 24, "#7FE3EE", o); at(spCannon, 38.5, 45.5, 34, 38, o); pilot(ctx, 42 * s, 35.9 * s, 2.2 * s, o, 0); }
+  else if(g === "ski"){ ctx.fillStyle = "#F4FAFF"; ctx.fillRect(0, 0, w, h); at(spFlag, 22, 24, 22, 26, true); at(spFlag, 40, 42, 22, 26, false); at(spTree, 60, 65, 26, 32); at(spTree, 8, 13, 6, 12); at(spSkier, 38, 42, 6, 12, 0.2, o); }
+  else if(g === "boxing"){ ctx.fillStyle = "#3E7BFF"; ctx.fillRect(10 * s, 2 * s, 64 * s, 38 * s); at(spRope, 10, 74, 2, 3); at(spRope, 10, 74, 39, 40); at(spBoxer, 36, 44, 6, 14, true, false, o); at(spBoxer, 37, 45, 22, 30, false, true, o); }
+  ctx.restore();
+}
+
+/* ============================== M7e4 오락실 게임기 ============================== */
+function buildArcade(){
+  const grid = el("arcadeGrid"); grid.innerHTML = "";
+  S.cabs = CLASSIC_ORDER.map(g => {
+    const G = classicBlock(g), [c1, c2] = CAB_COLORS[g];
+    const cab = document.createElement("div"); cab.className = "cab"; cab.dataset.game = g; cab.tabIndex = 0; cab.setAttribute("role", "button");
+    cab.style.setProperty("--c1", c1); cab.style.setProperty("--c2", c2);
+    const v = G && G.verdict;
+    cab.innerHTML = '<div class="marquee">' + (G ? G.title_ko : "…") + '</div>' +
+      '<div class="screen"><canvas></canvas><span class="live">초파리 판 · 4×</span><div class="wait">' + (G ? "화면에 들어오면 불러와요" : "불러오는 중…") + '</div></div>' +
+      '<div class="cpanel" aria-hidden="true"><i class="stick"></i><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>' +
+      '<span class="genre">' + (G ? G.genre_ko : "") + '</span><p>' + (G ? G.player_ko : "") + '</p>' +
+      lstHTML([["random", "대 무작위", vword(v && v.vs_random)], ["fixed", "대 고정 행동", vword(v && v.vs_fixed)], ["brainless", "대 뇌 없는 봇", vword(v && v.vs_brainless, G && G.ceiling === true)]]);
+    cab.onclick = () => { pickGame(g); el("stage").scrollIntoView({behavior: "smooth", block: "start"}); };
+    cab.onkeydown = ev => { if(ev.key === "Enter"){ ev.preventDefault(); cab.click(); } };
+    grid.appendChild(cab);
+    return {g, cab, cv: cab.querySelector("canvas"), geom: null, visible: false, t0: null};
+  });
+  if("IntersectionObserver" in window){
+    const io = new IntersectionObserver(es => { for(const e of es){ const c = S.cabs.find(x => x.cab === e.target); if(!c) continue; c.visible = e.isIntersecting; if(c.visible) cabWake(c); } }, {rootMargin: "60px"});
+    for(const c of S.cabs) io.observe(c.cab);
+  } else for(const c of S.cabs){ c.visible = true; cabWake(c); }
+}
+function cabWake(c){
+  if(!S.classic.games[c.g]) classicFile(c.g);
+  else cabReady(c);
+}
+function cabReady(c){
+  const C = S.classic.games[c.g];
+  const fly = C && C.tracks.find(P => P.player === "fly");
+  const wait = c.cab.querySelector(".wait");
+  wait.hidden = !!fly; if(!fly) wait.textContent = C && C.error ? "기록 없음" : "초파리 판 없음";
+  c.P = fly || null;
+  const w = c.cv.clientWidth || 200;
+  c.geom = fitCanvas(c.cv, w, w);
+}
+function paintCabs(wall){
+  for(const c of S.cabs){
+    if(!c.visible || !c.P || !c.geom) continue;
+    if(c.t0 == null) c.t0 = wall;
+    const span = c.P.dur + 1500, now = Math.min(c.P.dur, ((wall - c.t0) * 4) % span);   // 4배 되풀이, 끝에서 1.5초 멈춤
+    drawClassic(c.geom.ctx, c.geom.w, c.geom.h, c.P, tickAt(c.P, now), {wall, now, mini: true, cheap: true});
+  }
+}
+function classicLoaded(g){
+  const c = S.cabs.find(x => x.g === g); if(c) cabReady(c);
+  if(S.classic.indexMissing){ buildLadder(); refreshCabText(g); buildCardClassic(); buildBlind(); buildRaceGames(); }
+  updateClassicSelfCheck();
+}
+function refreshCabText(g){
+  const c = S.cabs.find(x => x.g === g), G = classicBlock(g); if(!c || !G) return;
+  c.cab.querySelector(".marquee").textContent = G.title_ko;
+  c.cab.querySelector(".genre").textContent = G.genre_ko;
+  c.cab.querySelector("p").textContent = G.player_ko;
+  const v = G.verdict;
+  c.cab.querySelector(".lst").outerHTML = lstHTML([["random", "대 무작위", vword(v && v.vs_random)], ["fixed", "대 고정 행동", vword(v && v.vs_fixed)], ["brainless", "대 뇌 없는 봇", vword(v && v.vs_brainless, G.ceiling === true)]]);
+}
+function updateClassicSelfCheck(){
+  let ok = 0, n = 0, dm = 0, dn = 0, files = 0;
+  for(const C of Object.values(S.classic.games)){
+    if(!C.tracks) continue; files++;
+    for(const P of C.tracks){ if(P.eyeCheck){ ok += P.eyeCheck.ok; n += P.eyeCheck.n; } if(P.brain && P.brain.match != null){ dm += P.brain.match; dn += P.T; } }
+  }
+  el("selfCheckClassic").textContent = "오락실 눈 그림 대조: 지금까지 연 게임 " + files + "개에서 " + ok + "/" + n + " 프레임 바이트 일치" + (dn ? ", 초파리 판 해독기 재현 " + dm + "/" + dn + " 틱 일치" : "") + ". 게임 파일은 열 때 읽으므로 이 숫자는 늘어납니다.";
+}
+
+/* ============================== M7e4 성적표 — 오락실 8종 ============================== */
+function buildCardClassic(){
+  const grid = el("rcGridClassic"); grid.innerHTML = "";
+  const rows = [["fly", "초파리", "#FF6A3D"], ["random", "무작위 봇", "#8C93A8"], ["fixed", "고정 행동 기준", "#4C8DFF"], ["brainless", "뇌 없는 봇", "#22A06B"], ["yoked", "눈 가린 따라 하기", "#B79BE0"]];
+  for(const g of CLASSIC_ORDER){
+    const G = classicBlock(g);
+    const card = document.createElement("div"); card.className = "card rc-game"; card.dataset.game = g;
+    if(!G){ card.innerHTML = "<h3>…</h3><p class='muted'>성적 기록을 불러오는 중이거나 없습니다.</p>"; grid.appendChild(card); continue; }
+    const sc = G.scores || {};
+    const all = rows.flatMap(([key]) => sc[key] || []);
+    const maxV = Math.max(1, ...all);
+    const top = maxV <= 5 ? 5 : maxV <= 10 ? 10 : Math.ceil(maxV / 10) * 10;
+    const W = clamp(Math.round((grid.clientWidth > 700 ? grid.clientWidth / 2 - 24 : grid.clientWidth || 600) - 36), 300, 620), small = W < 480;
+    const L = small ? 104 : 132, R = small ? 40 : 52, rowH = small ? 36 : 40, H = (rows.length + 1) * rowH + 34, fs = small ? 12.5 : 14;
+    const X = v => L + (W - L - R) * Math.min(v, top) / top;
+    let svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" width="' + W + '" height="' + H + '" role="img" aria-label="' + G.title_ko + ' 점수">';
+    for(let i = 0; i <= 5; i++){ const v = top * i / 5, x = X(v); svg += '<line x1="' + x + '" y1="4" x2="' + x + '" y2="' + (H - 26) + '" stroke="currentColor" opacity=".12"/><text x="' + x + '" y="' + (H - 8) + '" font-size="12" text-anchor="middle" fill="currentColor" opacity=".6">' + (+v.toFixed(1)) + '</text>'; }
+    rows.forEach(([key, label, color], i) => {
+      const a = sc[key], y = 10 + i * rowH + rowH / 2;
+      const lab = key === "fixed" ? label + " (" + (FIXED_KO[G.fixed_ref] || G.fixed_ref) + ")" : label;
+      svg += '<g class="rc-row" data-key="' + key + '"><text x="0" y="' + (y + 5) + '" font-size="' + fs + '" font-weight="700" fill="currentColor">' + (small && key === "fixed" ? "고정 행동 기준" : lab) + '</text>';
+      if(key === "yoked") svg += '<text x="0" y="' + (y + 18) + '" font-size="10.5" font-weight="700" fill="#C27C0E">사후 점검 — 판정 아님</text>';
+      if(!Array.isArray(a) || !a.length){ svg += '<text x="' + L + '" y="' + (y + 5) + '" font-size="13" fill="currentColor" opacity=".6">기록 없음</text></g>'; return; }
+      const m = mean(a);
+      svg += '<rect x="' + L + '" y="' + (y - 12) + '" width="' + Math.max(0, X(m) - L) + '" height="24" rx="8" fill="' + color + '" opacity=".22"/>';
+      svg += '<line x1="' + X(m) + '" y1="' + (y - 14) + '" x2="' + X(m) + '" y2="' + (y + 14) + '" stroke="' + color + '" stroke-width="3"/>';
+      const seen = {};
+      a.forEach((v, j) => {
+        const n = seen[v] = (seen[v] || 0) + 1;
+        const dy = ((n - 1) % 2) * 10 - 5, dx = Math.floor((n - 1) / 2) * 6;
+        svg += '<circle class="dot" data-score="' + v + '" cx="' + (X(v) + dx) + '" cy="' + (y + dy) + '" r="4.5" fill="' + color + '" stroke="#fff" stroke-width="1.1"><title>시드 ' + (G.eval_seeds ? G.eval_seeds[j] : j) + ': ' + (+v.toFixed(2)) + '점</title></circle>';
+      });
+      svg += '<text class="mean" data-mean="' + m + '" x="' + (W - R + 6) + '" y="' + (y + 5) + '" font-size="13.5" font-weight="700" fill="currentColor">' + f1(m) + '</text></g>';
+    });
+    // 정답을 아는 봇(반칙): 점수 막대만 (점·판정 없음). 축을 넘으면 끝에 화살표
+    const ora = sc.oracle, om = mean(ora), y = 10 + rows.length * rowH + rowH / 2;
+    if(om != null){
+      const over = om > top;
+      svg += '<g class="rc-row" data-key="oracle"><text x="0" y="' + (y + 5) + '" font-size="' + (fs - 1) + '" font-weight="700" fill="#E5484D">' + (small ? "반칙 봇" : CHEAT_KO) + '</text>' +
+        '<rect x="' + L + '" y="' + (y - 7) + '" width="' + Math.max(0, X(om) - L) + '" height="14" rx="7" fill="#E5484D" opacity=".5"/>' +
+        (over ? '<text x="' + (X(top) - 2) + '" y="' + (y + 5) + '" font-size="13" font-weight="900" text-anchor="end" fill="#fff">≫</text>' : '') +
+        '<text class="mean" data-mean="' + om + '" x="' + (W - R + 6) + '" y="' + (y + 5) + '" font-size="13.5" font-weight="700" fill="#E5484D">' + f1(om) + '</text></g>';
+    }
+    svg += '</svg>';
+    const v = G.verdict || {}, yv = G.yoked && G.yoked.verdict;
+    const st = (key, lab, w) => '<span class="stamp' + (w.cls === "tie" || w.cls === "none" ? " none" : "") + '" data-vs="' + key + '" data-v="' + w.cls + '"><small>' + lab + '</small>' + w.text + '</span>';
+    card.innerHTML = '<div class="rc-top"><h3>' + G.title_ko + ' <span class="tag">' + G.genre_ko + '</span></h3><div class="rc-stamps">' +
+      st("random", "대 무작위", vword(v.vs_random)) + st("fixed", "대 고정 행동", vword(v.vs_fixed)) + st("brainless", "대 뇌 없는 봇", vword(v.vs_brainless, G.ceiling === true)) +
+      st("yoked", "대 따라 하기 · 사후 점검 — 판정 아님", vword(yv)) + '</div></div>' + svg +
+      '<div class="rc-raw">판정 원문(결과 파일): ' + ["vs_random", "vs_fixed", "vs_brainless"].map(kk => kk + " = " + (v[kk] ? (v[kk].verdict || (v[kk].beats ? "beat" : v[kk].loses ? "lost" : "indistinguishable")) + " (" + (v[kk].mean >= 0 ? "+" : "") + Number(v[kk].mean).toFixed(2) + " ± " + Number(v[kk].sem).toFixed(2) + ")" : "—")).join(" · ") +
+      ' · 감지 배율 k ' + (+Number(G.k).toPrecision(4)) + ' · ' + CHEAT_KO + '은 천장 참고값(비교 대상 아님)</div>';
+    grid.appendChild(card);
+  }
+}
+
+/* ============================== M7e4 눈 가리고 해 봤어요 ============================== */
+function buildBlind(){
+  const G = classicBlock("boxing"), Y = G && G.yoked;
+  const svg = el("blindMap");
+  if(!Y || !Array.isArray(Y.matrix_tape_x_game)){ svg.innerHTML = '<text x="20" y="40" font-size="16" fill="currentColor">따라 하기 기록이 아직 없습니다.</text>'; el("blindReal").textContent = el("blindYoked").textContent = "—"; el("blindLine").textContent = "—"; }
+  else {
+    const M = Y.matrix_tape_x_game, n = M.length, seeds = G.eval_seeds || M.map((_, i) => i);
+    const vmax = Math.max(1, ...M.flat());
+    const L = 64, T = 46, cs = 44, W = L + n * cs + 10, H = T + n * cs + 30;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    let s = '<text x="' + (L + n * cs / 2) + '" y="16" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor">틀어 준 판 (게임 시드) →</text>';
+    s += '<text x="14" y="' + (T + n * cs / 2) + '" text-anchor="middle" font-size="13" font-weight="700" fill="currentColor" transform="rotate(-90 14 ' + (T + n * cs / 2) + ')">녹화한 판 (테이프 시드) →</text>';
+    for(let j = 0; j < n; j++) s += '<text x="' + (L + j * cs + cs / 2) + '" y="' + (T - 8) + '" text-anchor="middle" font-size="11.5" fill="currentColor" opacity=".7">' + seeds[j] + '</text>';
+    for(let i = 0; i < n; i++){
+      s += '<text x="' + (L - 8) + '" y="' + (T + i * cs + cs / 2 + 4) + '" text-anchor="end" font-size="11.5" fill="currentColor" opacity=".7">' + seeds[i] + '</text>';
+      for(let j = 0; j < n; j++){
+        const v = M[i][j], a = v / vmax;
+        const fill = "rgba(76,141,255," + (0.08 + 0.85 * a).toFixed(3) + ")", diag = i === j;
+        s += '<g class="bm-cell" data-r="' + i + '" data-c="' + j + '" data-v="' + v + '"><rect x="' + (L + j * cs + 1.5) + '" y="' + (T + i * cs + 1.5) + '" width="' + (cs - 3) + '" height="' + (cs - 3) + '" rx="7" fill="' + (diag ? "rgba(255,106,61," + (0.15 + 0.8 * a).toFixed(3) + ")" : fill) + '"' + (diag ? ' stroke="#FF6A3D" stroke-width="3"' : '') + '/>' +
+          '<text x="' + (L + j * cs + cs / 2) + '" y="' + (T + i * cs + cs / 2 + 5) + '" text-anchor="middle" font-size="14" font-weight="700" fill="' + (a > 0.55 ? "#fff" : "currentColor") + '">' + v + '</text></g>';
+      }
+    }
+    s += '<text x="' + L + '" y="' + (H - 8) + '" font-size="12" fill="currentColor" opacity=".7">주황 테두리 = 대각선(녹화한 판에 그 판을 다시 튼 것 = 진짜 판)</text>';
+    svg.innerHTML = s;
+    const real = mean(G.scores && G.scores.fly), tape = mean(G.scores && G.scores.yoked);
+    el("blindReal").textContent = f1(real) + "점"; el("blindReal").dataset.mean = real;
+    el("blindYoked").textContent = f1(tape) + "점"; el("blindYoked").dataset.mean = tape;
+    const yv = Y.verdict || {};
+    // 지시서의 한 줄은 "구별 안 됨"일 때의 읽기다. 판정이 다르면 그 문장을 쓰지 않는다
+    el("blindLine").textContent = !yv.beats && !yv.loses ? "같은 버튼 순서만으로도 점수가 나요. 상대를 보고 맞혔다고는 아직 말할 수 없어요."
+      : yv.beats ? "진짜 판이 녹화만 튼 판보다 높았어요 (사후 점검 — 판정 아님)." : "녹화만 튼 판이 진짜 판보다 높았어요 (사후 점검 — 판정 아님).";
+    el("blindNum").textContent = "권투 짝 차이(진짜 − 따라 하기) " + (yv.mean >= 0 ? "+" : "") + Number(yv.mean).toFixed(2) + " ± " + Number(yv.sem).toFixed(2) + " → " + vword(yv).text + " (3 표준오차 기준).";
+  }
+  const rowsHTML = CLASSIC_ORDER.map(g => {
+    const B = classicBlock(g), y = B && B.yoked, v = y && y.verdict;
+    if(!B) return '<tr data-game="' + g + '"><td colspan="4" class="muted">불러오는 중…</td></tr>';
+    const w = vword(v);
+    return '<tr data-game="' + g + '"><td>' + B.title_ko + '</td><td>' + f1(mean(B.scores && B.scores.fly)) + '</td><td>' + f1(mean(B.scores && B.scores.yoked)) + '</td><td>' +
+      (v ? (v.mean >= 0 ? "+" : "") + Number(v.mean).toFixed(2) + " ± " + Number(v.sem).toFixed(2) : "—") + '</td><td><span class="vw ' + w.cls + '" data-v="' + w.cls + '">' + w.text + '</span></td></tr>';
+  }).join("");
+  el("blindTable").innerHTML = '<tr><th>게임</th><th>초파리</th><th>따라 하기</th><th>짝 차이 ± SEM</th><th>사후 점검</th></tr>' + rowsHTML;
+}
+
+/* ============================== M7e4 느리게 하면 이길까 ============================== */
+// slow.json rows.*.ceiling은 결과 파일의 객체 {ceiling, rule, value} (예전 모양인 숫자·null도 읽는다).
+// 천장 값이 없으면(뇌 없는 봇 = 정답을 아는 봇 규칙) 그 두 봇의 같은 점수 = 정답을 아는 봇 평균을 선으로 쓴다
+function slowCeil(r){
+  const c = r && r.ceiling;
+  if(c && typeof c === "object") return {is: !!c.ceiling, value: c.ceiling ? (typeof c.value === "number" ? c.value : mean(r.scores && r.scores.oracle)) : null, given: typeof c.value === "number"};
+  return {is: typeof c === "number", value: typeof c === "number" ? c : null, given: typeof c === "number"};
+}
+const WHERE_KO = {top_k_train: "맨 위 k·학습", selected_k_eval: "고른 k·평가", selected_k_train: "고른 k·학습", cell_A: "칸 A", cell_B: "칸 B"};
+function mdBold(t){ const e = String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;"); return e.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, "$1"); }
+function slowRows(fam){
+  const R = S.slow && S.slow.rows || {};
+  return Object.entries(R).filter(([, r]) => r.family === fam).sort((a, b) => a[1].s - b[1].s);
+}
+function buildSlow(){
+  for(const b of el("slowFam").querySelectorAll("button")) b.classList.toggle("on", b.dataset.fam === S.slowFam);
+  const svg = el("slowChart");
+  const rows = slowRows(S.slowFam);
+  if(!rows.length){ svg.innerHTML = '<text x="20" y="40" font-size="16" fill="currentColor">느린 판 기록이 아직 없습니다 (slow.json).</text>'; }
+  else {
+    const W = clamp(Math.round(svg.parentElement.clientWidth || 640), 300, 720), H = W < 480 ? 290 : 330, small = W < 480;
+    svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+    const L = 34, Rm = 8, T = 34, B = 74;
+    const vals = rows.flatMap(([, r]) => [mean(r.scores.fly), mean(r.scores.random), mean(r.scores.fixed), slowCeil(r).value || 0]);
+    const top = Math.max(5, ...vals.filter(v => v != null)) * 1.1;
+    const Y = v => T + (H - T - B) * (1 - v / top);
+    const gw = (W - L - Rm) / rows.length, bw = Math.min(30, gw / 4.2);
+    let s = '';
+    for(let i = 0; i <= 4; i++){ const v = top * i / 4; s += '<line x1="' + L + '" y1="' + Y(v) + '" x2="' + (W - Rm) + '" y2="' + Y(v) + '" stroke="currentColor" opacity=".1"/><text x="' + (L - 6) + '" y="' + (Y(v) + 4) + '" font-size="11" text-anchor="end" fill="currentColor" opacity=".6">' + Math.round(v) + '</text>'; }
+    const bars = [["fly", "초파리", "#FF6A3D"], ["random", "무작위", "#8C93A8"], ["fixed", "고정 기준", "#4C8DFF"]];
+    rows.forEach(([name, r], i) => {
+      const x0 = L + i * gw + gw / 2 - bw * 1.6;
+      s += '<g class="sl-group" data-row="' + name + '" data-s="' + r.s + '">';
+      bars.forEach(([key, , color], j) => {
+        const m = mean(r.scores[key]); if(m == null) return;
+        s += '<rect class="sl-bar" data-key="' + key + '" data-mean="' + m + '" x="' + (x0 + j * bw * 1.1) + '" y="' + Y(m) + '" width="' + bw + '" height="' + Math.max(0, Y(0) - Y(m)) + '" rx="5" fill="' + color + '"/>';
+        s += '<text x="' + (x0 + j * bw * 1.1 + bw / 2) + '" y="' + (Y(m) - 4) + '" font-size="11" font-weight="700" text-anchor="middle" fill="currentColor">' + f1(m) + '</text>';
+      });
+      const cl = slowCeil(r);
+      if(cl.is && cl.value != null){ const y = Y(cl.value); s += '<line class="sl-ceil" data-ceiling="' + cl.value + '" x1="' + (x0 - 6) + '" y1="' + y + '" x2="' + (x0 + bw * 3.3 + 6) + '" y2="' + y + '" stroke="#C27C0E" stroke-width="2.5" stroke-dasharray="5 4"/><text x="' + (x0 + bw * 3.3 + 4) + '" y="' + (y - 4) + '" font-size="10.5" font-weight="700" text-anchor="end" fill="#C27C0E">천장 ' + f1(cl.value) + '</text>'; }
+      const vw = vword(r.verdict && r.verdict.vs_random);
+      const col = vw.cls === "beat" ? "#22A06B" : vw.cls === "lost" ? "#E5484D" : "currentColor";
+      s += '<text x="' + (x0 + bw * 1.6) + '" y="' + (H - B + 18) + '" font-size="' + (small ? 12.5 : 15) + '" font-weight="700" text-anchor="middle" fill="currentColor">' + (r.s === 1 ? (small ? "원래" : "원래 속도") : r.s + (small ? "배" : "배 느리게")) + '</text>';
+      s += '<text x="' + (x0 + bw * 1.6) + '" y="' + (H - B + 34) + '" font-size="' + (small ? 9.5 : 11) + '" text-anchor="middle" fill="currentColor" opacity=".7">' + (small ? "" : "고정 = ") + (SLOW_FIXED_KO[r.fixed_ref] || r.fixed_ref) + '</text>';
+      s += '<text class="sl-v" data-v="' + vw.cls + '" x="' + (x0 + bw * 1.6) + '" y="' + (H - B + 52) + '" font-size="' + (small ? 10.5 : 12) + '" font-weight="900" text-anchor="middle" fill="' + col + '">' + (small ? "" : "대 무작위: ") + vw.text + '</text></g>';
+    });
+    s += bars.map(([, lab, color], j) => '<rect x="' + (L + j * (small ? 78 : 96)) + '" y="6" width="14" height="10" rx="3" fill="' + color + '"/><text x="' + (L + 18 + j * (small ? 78 : 96)) + '" y="15" font-size="12" font-weight="700" fill="currentColor">' + lab + '</text>').join("") +
+      (small ? '<text x="' + (W - Rm) + '" y="15" font-size="10.5" text-anchor="end" fill="currentColor" opacity=".7">아래 줄: 대 무작위</text>' : '');
+    svg.innerHTML = s;
+  }
+  // 맞는 첫 행동의 여유 시간(lead) 중앙값 — 격자 맨 위 k, 학습 시드 (사전 등록 예측 P1의 값)
+  const leads = rows.filter(([, r]) => typeof r.lead_ms_median_top_k === "number");
+  el("slowLead").textContent = leads.length ? "맞는 첫 행동 뒤 부딪힐 자리까지 남은 시간(중앙값, 격자 맨 위 k·학습 시드): " +
+    leads.map(([, r]) => (r.s === 1 ? "원래" : r.s + "배") + " " + fmtInt(Math.round(r.lead_ms_median_top_k)) + " ms").join(" → ") + ". 느릴수록 길어진다는 것이 사전 등록 예측 P1이었습니다." : "";
+  el("slowWatch").disabled = el("slowRace").disabled = !S.slowTracks.some(P => P.game === SLOW_TRACK_GAME && P.player === "fly");
+  // 사후 점검 두 줄: 지시서의 문장은 그 결과일 때만 쓴다. 숫자는 slow.json에서
+  const ph = S.slow && S.slow.posthoc, cells = ph && Array.isArray(ph.cells) ? ph.cells : [];
+  const dodge = slowRows("dodge_v2").filter(([, r]) => r.s > 1).map(([n]) => n);
+  const A = n => cells.filter(c => c.row === n && c.cell === "A"), Bc = n => cells.filter(c => c.row === n && c.cell === "B");
+  const aWin = n => A(n).length > 0 && A(n).every(c => c.beats), bWin = n => Bc(n).length > 0 && Bc(n).every(c => c.beats);
+  const rc = ph && ph.reading_2x2_cells;                         // 결과 파일의 칸 판독이 있으면 그것을 쓴다 (A 갈림 → 못 이김)
+  const aRead = n => rc && rc[n] ? !!rc[n].A_read_as_beat : aWin(n), bRead = n => rc && rc[n] ? rc[n].B === "beat" : bWin(n);
+  if(dodge.length && cells.length){
+    const line1 = dodge.every(n => !aRead(n)) && dodge.every(bRead);
+    el("slowLine1").textContent = line1 ? "시간만 늘려서는 못 이겼어요 · 원래 속도에서 신호만 세게 넣으면 이겼어요" : "칸 A(시간만 길게) · 칸 B(신호만 세게) 결과";
+    el("slowNum1").textContent = dodge.map(n => { const r = S.slow.rows[n]; return r.s + "배: 칸 A " + A(n).map(c => f1(c.mean)).join("·") + "점 (무작위 " + f1(A(n)[0] && A(n)[0].random) + ") / 칸 B " + Bc(n).map(c => f1(c.mean)).join("·") + "점 (무작위 " + f1(Bc(n)[0] && Bc(n)[0].random) + ")"; }).join(" · ") + ". 학습 시드 0~9, 벽 없는 피하기.";
+    el("slowLine1").dataset.claim = line1;
+  } else { el("slowLine1").textContent = "칸 A·B 기록 없음"; el("slowNum1").textContent = ""; }
+  // 나타남 비율: 피하기 느린 판의 "고른 k·평가"(없으면 전부)로 말한다. 다른 칸은 숫자만 덧붙인다
+  const apAll = ph && Array.isArray(ph.appearance) ? ph.appearance.filter(a => typeof a.frac === "number" && dodge.includes(a.row)) : [];
+  const ap = apAll.some(a => a.where === "selected_k_eval") ? apAll.filter(a => a.where === "selected_k_eval") : apAll;
+  if(ap.length){
+    const fr = ap.map(a => a.frac).sort((a, b) => a - b), med = fr[Math.floor(fr.length / 2)];
+    const half = med >= 0.35 && med <= 0.65;
+    el("slowLine2").textContent = half ? "통과의 절반쯤은 기둥이 나타나자마자 비킨 것" : "기둥이 나타난 직후(300 ms 안)에 비킨 통과의 비율";
+    el("slowLine2").dataset.claim = half;
+    const top = apAll.filter(a => a.where === "top_k_train");
+    el("slowNum2").textContent = "통과 중 맞는 첫 행동이 출현 300 ms 안: " + ap.map(a => { const r = S.slow.rows[a.row]; return (r ? r.s + "배" : a.row) + " " + Math.round(a.frac * 100) + "% (" + a.within_300ms + "/" + a.passed + ")"; }).join(" · ") +
+      (ap[0] && ap[0].where ? " — " + (WHERE_KO[ap[0].where] || ap[0].where) : "") +
+      (top.length && ap !== top ? ". 맨 위 k·학습: " + top.map(a => (S.slow.rows[a.row] ? S.slow.rows[a.row].s + "배" : a.row) + " " + Math.round(a.frac * 100) + "%").join(" · ") : "") + ".";
+  } else { el("slowLine2").textContent = "나타남 비율 기록 없음"; el("slowNum2").textContent = ""; }
+  // 2×2 판독 문구: 같은 문구끼리 묶는다
+  const groups = new Map();
+  if(ph && ph.reading_2x2) for(const [n, t] of Object.entries(ph.reading_2x2)){ const r = S.slow.rows[n]; if(!groups.has(t)) groups.set(t, []); groups.get(t).push(r ? (r.family === "jump" ? "뛰어넘기 " : "피하기 ") + r.s + "배" : n); }
+  el("slowReading").textContent = groups.size ? "2×2 판독(사후): " + [...groups].map(([t, ns]) => ns.join("·") + " — " + t).join(" / ") : "";
+  const hy = S.slow && S.slow.hypothesis;
+  el("slowHyp").innerHTML = hy ? '<span class="hyp" style="margin:0 6px 0 0">' + mdBold(hy.label || SLOW_LABEL) + '</span>' + mdBold(hy.reading || "") : "";
+}
+
 /* ============================== 첫 화면 그림 (꾸밈 애니메이션) ============================== */
 const heroEye = document.createElement("canvas"); heroEye.width = 84; heroEye.height = 84;
 const heroEyeCtx = heroEye.getContext("2d"), heroEyeImg = heroEyeCtx.createImageData(84, 84);
@@ -1823,6 +3158,7 @@ function loop(wall){
   R.lastWall = wall;
   if(S.visible.has("race") || R.playing) renderRace(wall);
   if(S.visible.has("top")) paintHero(wall);
+  if(S.visible.has("arcade")) paintCabs(wall);
   requestAnimationFrame(loop);
 }
 
@@ -1836,7 +3172,8 @@ function wire(){
   el("speedSeg").onclick = ev => { const b = ev.target.closest("button"); if(!b) return; setStageSpeed(Number(b.dataset.speed)); };
   el("slowBtn").onclick = () => {
     const st = S.stage, P = st.P; if(!P) return;
-    const end = P.crashMs != null ? P.crashMs : P.dur;
+    const last = P.kind === "classic" && P.events.length ? P.events[P.events.length - 1].t_ms : null;
+    const end = last != null ? last : P.crashMs != null ? P.crashMs : P.dur;
     st.now = Math.max(0, end - 1500); st.crashWall = null; setStageSpeed(0.25); st.playing = true; st.slow = true; setPlayLabel();
   };
   el("stageMatch").onclick = ev => { const b = ev.target.closest("button"); if(!b) return; S.pick.match = b.dataset.match; buildPicker(); loadStage(stageTrack()); };
@@ -1872,10 +3209,13 @@ function wire(){
   };
   try{ const t = localStorage.getItem("flysim-show-theme"); if(t === "light" || t === "dark") document.documentElement.dataset.theme = t; }catch(e){}
   let rsz = null;
-  window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { sizeStage(); sizeRace(); buildPicker(); buildCard(); buildWhy(); renderStage(performance.now()); renderRace(performance.now()); }, 120); });
+  window.addEventListener("resize", () => { clearTimeout(rsz); rsz = setTimeout(() => { sizeStage(); sizeRace(); buildPicker(); buildCard(); buildCardClassic(); buildBlind(); buildSlow(); buildWhy(); buildLadder(); for(const c of S.cabs) if(c.P) cabReady(c); renderStage(performance.now()); renderRace(performance.now()); }, 120); });
+  el("slowFam").onclick = ev => { const b = ev.target.closest("button"); if(!b) return; S.slowFam = b.dataset.fam; buildSlow(); };
+  el("slowWatch").onclick = () => { pickGame(SLOW_TRACK_GAME); el("stage").scrollIntoView({behavior: "smooth", block: "start"}); };
+  el("slowRace").onclick = () => { S.race.game = SLOW_TRACK_GAME; buildRaceGames(); buildRace(); el("race").scrollIntoView({behavior: "smooth", block: "start"}); };
   if("IntersectionObserver" in window){
     const io = new IntersectionObserver(es => { for(const e of es){ if(e.isIntersecting) S.visible.add(e.target.id); else S.visible.delete(e.target.id); } }, {rootMargin: "120px"});
-    for(const id of ["top", "stage", "race"]) io.observe(el(id));
+    for(const id of ["top", "stage", "race", "arcade"]) io.observe(el(id));
   }
 }
 function setStageSpeed(v){
@@ -1890,18 +3230,24 @@ async function start(){
   el("decorList").innerHTML = DECOR.map(x => "<li>" + x + "</li>").join("");
   el("bNeurons").textContent = fmtInt(GRAPH.neurons);
   el("bEdges").textContent = man(GRAPH.edges);
-  const [sd, bm] = await Promise.allSettled([getJSON("show-data.json"), getJSON("brain-map.json")]);
+  const [sd, bm, sl, ix] = await Promise.allSettled([getJSON("show-data.json"), getJSON("brain-map.json"), getJSON("slow.json"), getJSON("classic/index.json")]);
   if(sd.status === "rejected"){
     banner("err", "장면 기록을 읽지 못했습니다: " + sd.reason.message + "<br>?data= 경로를 확인하세요 (지금: " + DATA_DIR + ").");
   } else ingestShow(sd.value);
   if(bm.status === "rejected") S.problems.push("뇌 지도를 읽지 못했습니다: " + bm.reason.message);
   else ingestMap(bm.value);
-  if(S.problems.length) banner("err", "데이터 문제 " + S.problems.length + "건 — 문제가 있는 판은 빼고 보여 줍니다.<ul>" + S.problems.map(p => "<li>" + p + "</li>").join("") + "</ul>");
-  if((S.data && S.data.meta && S.data.meta.fixture) || (S.map && S.map.fixture))
-    banner("fake", "<b>" + ((S.data && S.data.meta && S.data.meta.fixture) || S.map.fixture) + "</b> — 결과로 읽지 마세요.");
+  if(sl.status === "rejected") S.notes.push("느린 판 기록(slow.json)이 없어 그 칸을 비워 둡니다: " + sl.reason.message);
+  else ingestSlow(sl.value);
+  if(ix.status === "rejected"){ S.classic.indexMissing = true; S.notes.push("오락실 요약(classic/index.json)이 없어 게임 파일 8개를 차례로 읽어 도장을 채웁니다: " + ix.reason.message); }
+  else ingestIndex(ix.value);
+  renderProblems();
+  const fx = [S.data && S.data.meta && S.data.meta.fixture, S.map && S.map.fixture, S.slow && S.slow.meta && S.slow.meta.fixture, S.classic.index && S.classic.index.meta && S.classic.index.meta.fixture].find(Boolean);
+  if(fx) banner("fake", "<b>" + fx + "</b> — 결과로 읽지 마세요.");
   el("numSources").innerHTML = [
     "뉴런 " + fmtInt(GRAPH.neurons) + "개 · 연결 " + fmtInt(GRAPH.edges) + "개: " + GRAPH.source + " (유지 그래프, 공개 기준값 약 2,558만과 0.1 % 차이)",
     "점수·판정: show-data.json games.*.scores / verdict (원본 data-provenance/m7b-baselines.json, m7c-results.json, m7c2-results.json)",
+    "오락실 점수·판정·따라 하기: classic/index.json과 classic/<게임>.json의 game 블록 (원본 data-provenance/m7f-baselines.json, m7f-results.json, m7f-yoked.json)" + (S.classic.index ? " · 생성 " + S.classic.index.meta.generated + " · 커밋 " + String(S.classic.index.meta.git_commit).slice(0, 7) : ""),
+    "느린 판 점수·판정·사후 점검: slow.json (원본 data-provenance/m7g-results.json)" + (S.slow ? " · 생성 " + S.slow.meta.generated + " · 커밋 " + String(S.slow.meta.git_commit).slice(0, 7) : " — 없음"),
     "회로 뉴런 수: brain-map.json sets.*.n_neurons",
     "장면 기록 생성: " + (S.data ? S.data.meta.generated + " · 커밋 " + String(S.data.meta.git_commit).slice(0, 7) : "없음") + " · 뇌 지도 생성: " + (S.map ? S.map.generated : "없음"),
   ].map(x => "<li>" + x + "</li>").join("");
@@ -1909,16 +3255,58 @@ async function start(){
   const dec = S.tracks.filter(P => P.brain && P.brain.match != null);
   el("selfCheck").textContent = "이 화면이 연 " + S.tracks.length + "판에서 눈 그림 대조 " + eyeOk + "/" + eyeN + " 프레임 바이트 일치" +
     (dec.length ? ", 초파리 " + dec.length + "판의 해독기 재현 " + dec.reduce((a, P) => a + P.brain.match, 0) + "/" + dec.reduce((a, P) => a + P.T, 0) + " 틱 일치" : "") + ".";
-  const raceGame = el("raceGame");
-  raceGame.innerHTML = GAME_ORDER.map(g => '<button data-game="' + g + '">' + (S.games[g] ? S.games[g].title_ko : GAME_FALLBACK_TITLE[g]) + '</button>').join("");
   if(!stageTrack()){
     const any = S.tracks.find(P => P.player === "fly");
     if(any){ S.pick.game = any.game; S.pick.match = any.match; }
   }
   S.race.game = S.pick.game; S.race.match = S.pick.match;
-  buildPicker(); loadStage(stageTrack()); buildRace(); buildCard(); buildWhy();
+  buildRaceGames();
+  buildLadder(); buildPicker(); buildArcade(); loadStage(stageTrack()); buildRace(); buildCard(); buildCardClassic(); buildBlind(); buildSlow(); buildWhy();
+  updateClassicSelfCheck();
+  if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => requestAnimationFrame(drawTrail));   // 글꼴이 늦게 오면 칸 높이가 바뀐다
+  window.addEventListener("load", () => requestAnimationFrame(drawTrail));
   requestAnimationFrame(loop);
+  if(S.classic.indexMissing){                                   // 요약이 없으면 뒤에서 차례로 읽는다
+    (async () => { for(const g of CLASSIC_ORDER) await classicFile(g); })();
+  }
   window.SHOW.loaded = true;
+}
+function addProblem(msg){ S.problems.push(msg); renderProblems(); }
+function renderProblems(){
+  let b = el("errBanner");
+  const items = S.problems.concat(S.notes);
+  if(!items.length){ if(b) b.remove(); return; }
+  if(!b){ b = document.createElement("div"); b.id = "errBanner"; el("banners").prepend(b); }
+  b.className = "banner " + (S.problems.length ? "err" : "note");
+  b.innerHTML = (S.problems.length ? "데이터 문제 " + S.problems.length + "건 — 문제가 있는 판은 빼고 보여 줍니다." : "알림") + "<ul>" + items.map(p => "<li>" + p + "</li>").join("") + "</ul>";
+}
+function ingestIndex(d){
+  if(d.version !== 1) S.problems.push("classic/index.json version이 1이 아님");
+  if(!d.games || typeof d.games !== "object"){ S.problems.push("classic/index.json에 games가 없음"); S.classic.indexMissing = true; return; }
+  for(const g of CLASSIC_ORDER) if(!d.games[g]) S.problems.push("classic/index.json에 " + g + "가 없음");
+  for(const g of Object.keys(d.games)) if(!CLASSIC_ORDER.includes(g)) S.problems.push("classic/index.json에 모르는 게임 " + g);
+  S.classic.index = d;
+}
+function ingestSlow(d){
+  if(d.version !== 1) S.problems.push("slow.json version이 1이 아님");
+  if(!d.rows || typeof d.rows !== "object"){ S.problems.push("slow.json에 rows가 없음"); return; }
+  S.slow = d;
+  if(d.hypothesis && d.hypothesis.label && d.hypothesis.label !== SLOW_LABEL) S.problems.push("slow.json hypothesis.label이 지시서 문구와 다름: " + d.hypothesis.label);
+  if(d.posthoc && (d.posthoc.posthoc !== true || d.posthoc.note !== POSTHOC_KO)) S.problems.push("slow.json posthoc에 사후 점검 표시가 없음");
+  for(const [g, G] of Object.entries(d.games || {})){
+    if(S.games[g]){ S.problems.push("slow.json games." + g + "가 첫 칸 게임 이름과 겹침"); continue; }
+    S.games[g] = G;
+  }
+  for(const tr of d.tracks || []){
+    const P = prepTrack(tr);
+    if(P.errs && P.errs.length && !P.T){ S.problems.push((tr.id || "?") + ": " + P.errs.join(", ")); continue; }
+    if(P.errs.length) S.problems.push(tr.id + ": " + P.errs.join(", "));
+    if(P.errs.length && P.errs.some(e => /길이|규칙|0~3|score 없음/.test(e))) continue;
+    S.slowTracks.push(P); S.byId.set(P.id, P);
+  }
+  const R = d.rows[SLOW_TRACK_GAME], i10 = R && R.eval_seeds ? R.eval_seeds.indexOf(10) : -1;
+  if(R && i10 >= 0) for(const P of S.slowTracks) if(P.game === SLOW_TRACK_GAME && R.scores[P.player] && R.scores[P.player][i10] !== P.tr.score)
+    S.problems.push(P.id + ": 판 점수(" + P.tr.score + ")가 rows." + SLOW_TRACK_GAME + ".scores." + P.player + " 시드 10 값과 다름");
 }
 function ingestShow(d){
   S.data = d;
@@ -1946,8 +3334,11 @@ function ingestMap(m){
 
 /* ============================== 테스트 손잡이 ============================== */
 window.SHOW = {
-  loaded: false, S, eyePixels, decoderSpec, tickAt, verdictPhrases,
-  stageLoad(id){ const P = S.byId.get(id); if(!P) throw new Error("no track " + id); S.pick.game = P.game; S.pick.match = P.match; loadStage(P); },
+  loaded: false, S, eyePixels, classicPixels, decoderSpec, tickAt, verdictPhrases, vword,
+  stageLoad(id){ const P = S.byId.get(id); if(!P) throw new Error("no track " + id); S.pick.game = P.game; if(P.match === "m7c" || P.match === "m7c2") S.pick.match = P.match; loadStage(P); },
+  async classicLoad(g){ const C = await classicFile(g); return C && C.tracks ? C.tracks.map(P => P.id) : []; },
+  async classicLoadAll(){ for(const g of CLASSIC_ORDER) await classicFile(g); return Object.keys(S.classic.games); },
+  stageHud(){ const d = el("scoreBar").dataset; return {tick: Number(d.tick), score: Number(d.score), hud: Number(d.hud), lives: d.lives === "" ? null : Number(d.lives), shown: !el("scoreBar").hidden}; },
   stageTick, stageSeek,
   stagePad(){ const on = [...el("pad").querySelectorAll("button.on")].map(b => Number(b.dataset.act)); return {tick: Number(el("pad").dataset.tick), lit: on}; },
   eyeCanvasBytes(){ const d = eyeCtx.getImageData(0, 0, 84, 84).data; const out = new Array(84 * 84); for(let i = 0; i < out.length; i++) out[i] = d[4 * i]; return out; },
@@ -1956,10 +3347,10 @@ window.SHOW = {
   eyeHashes(id){                                               // 판의 모든 틱 눈 그림의 FNV-1a 32 해시 (테스트가 frames.npz와 대조)
     const P = S.byId.get(id); if(!P) throw new Error("no track " + id);
     const out = new Array(P.T);
-    for(let k = 0; k < P.T; k++){ const px = eyePixels(P.rects[k]); let h = 2166136261; for(let i = 0; i < px.length; i++){ h ^= px[i]; h = Math.imul(h, 16777619) >>> 0; } out[k] = h; }
+    for(let k = 0; k < P.T; k++){ const px = P.kind === "classic" ? classicPixels([P.scene.static, P.scene.at[k]]) : eyePixels(P.rects[k]); let h = 2166136261; for(let i = 0; i < px.length; i++){ h ^= px[i]; h = Math.imul(h, 16777619) >>> 0; } out[k] = h; }
     return out;
   },
-  racePanels(){ return S.race.panels.map(p => ({key: p.key, track: p.P ? p.P.id : null, tick: p.card.dataset.tick == null ? null : Number(p.card.dataset.tick),
+  racePanels(){ return S.race.panels.map(p => ({key: p.key, track: p.P ? p.P.id : null, tick: p.card.dataset.tick == null ? null : Number(p.card.dataset.tick), score: p.score == null ? null : p.score, shown: p.card.querySelector(".sc b").textContent,
     lit: [...p.card.querySelectorAll(".minipad b.on")].map(b => Number(b.dataset.act)), out: p.card.classList.contains("out"),
     outMs: p.card.dataset.outMs == null ? null : Number(p.card.dataset.outMs), badge: p.card.querySelector(".outbadge").textContent})); },
 };

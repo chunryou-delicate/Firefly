@@ -31,7 +31,7 @@ from flysim.sensory.looming import LoomingDetector
 FAKE_MAX_TICKS = 900
 FIXTURE_NOTE = "가짜 데이터 — 테스트 전용. 계약 모양만 맞춘 것이고 결과가 아니다 (tests/show_fake.py)"
 GAMES = {"jump": "뛰어넘기", "dodge": "피하기", "dodge_v2": "벽 없는 피하기"}
-FAKE_THETA = {"jump": 4e-4, "dodge": 1.5e-3, "dodge_v2": 2.5e-4}
+FAKE_THETA = {"jump": 4e-4, "dodge": 1.5e-3, "dodge_v2": 2.5e-4, "dodge_v2_s4": 2.5e-4}
 SETS = ["LC4_L", "LC4_R", "LPLC2_L", "LPLC2_R", "DNp01_L", "DNp01_R", "TTMn_L", "TTMn_R"]
 
 
@@ -97,8 +97,9 @@ class FakeGF:
         return 1 if fl and fr else 3 if fl else 2 if fr else 0
 
 
-def play(game: str, seed: int, player: str, match: str | None, rng: np.random.Generator) -> dict:
-    env = base.make(game)
+def play(game: str, seed: int, player: str, match: str | None, rng: np.random.Generator,
+         env=None, fixed_action: int = 2) -> dict:
+    env = env if env is not None else base.make(game)
     env.max_ticks = FAKE_MAX_TICKS                 # instance override, fixture only
     frame = env.reset(seed)
     det = LoomingDetector()
@@ -139,8 +140,8 @@ def play(game: str, seed: int, player: str, match: str | None, rng: np.random.Ge
             gf.tick(k, side, env.dist is not None and env.dist < 6.0)
             n = spec.get("min_spikes", 1)
             a = gf.decode(t_ms(k + 1), spec["window_ms"], n)
-        elif player == "one_way":
-            a = 2
+        elif player in ("one_way", "fixed"):
+            a = fixed_action
         else:
             a = agent.act(frame)
         actions.append(int(a))
@@ -324,10 +325,286 @@ def make_brain_map() -> dict:
             "fixture": FIXTURE_NOTE}
 
 
+# ---------------------------------------------------------------- M7e4: the eight classic games
+# docs/m7e4-brief.md 2.1 (classic/<game>.json), its "계약 추가" (classic/index.json) and 2.2
+# (slow.json). Real here: the games, their scene records and frames, the detector, the random /
+# fixed / threshold bots. Invented: every brain record and the fly's actions (FakeGF), all
+# scores of seeds 11-19, every verdict, the yoked matrix, k, p99, θ and all of slow.json's numbers.
+CLASSIC = ["paddle", "bricks", "formation", "crossing", "catch", "demons", "ski", "boxing"]
+FAKE_CLASSIC_TICKS = 420
+FAKE_CLASSIC_THETA = 1e-3
+ACTION_NAMES = ["NOOP", "JUMP", "LEFT", "RIGHT"]
+
+
+def _paired(a, b, mult=3.0):
+    d = np.asarray(a, float) - np.asarray(b, float)
+    sem = float(d.std(ddof=1) / math.sqrt(len(d))) if len(d) > 1 else 0.0
+    mean = float(d.mean())
+    beats, loses = bool(mean > mult * sem and mean > 0), bool(-mean > mult * sem and mean < 0)
+    return {"diffs": [float(x) for x in d], "mean": mean, "sem": sem, "beats": beats, "loses": loses,
+            "verdict": "beat" if beats else "lost" if loses else "indistinguishable"}
+
+
+def encode_scene(rect_lists: list[list[dict]]) -> dict:
+    """The contract's coding: ``static`` = the rectangles every tick's list starts with, ``ticks[k]``
+    = the rest, or None when it equals the previous tick's rest. Items [kind index, x0, x1, y0, y1, value]."""
+    kinds: list[str] = []
+    item = lambda r: [kinds.index(r["kind"]) if r["kind"] in kinds else (kinds.append(r["kind"]) or len(kinds) - 1),
+                      *[float(v) for v in r["rect"]], float(r["value"])]
+    coded = [[item(r) for r in rl] for rl in rect_lists]
+    n = min(len(c) for c in coded)
+    p = 0
+    while p < n and all(c[p] == coded[0][p] for c in coded):
+        p += 1
+    ticks, prev = [], None
+    for c in coded:
+        rest = c[p:]
+        ticks.append(None if rest == prev else rest)
+        prev = rest
+    return {"kinds": kinds, "static": coded[0][:p], "ticks": ticks}
+
+
+def encode_shared(tracks: list[dict]) -> dict | None:
+    """The engine window's ``shared_scene`` layer (crossing, paddle): only when the four episodes
+    are the same length; per tick, the common start of the lists after each track's ``static``.
+    Tick k = scene.static + shared_scene.ticks[k] + scene.ticks[k]."""
+    T = tracks[0]["n_ticks"]
+    if any(t["n_ticks"] != T for t in tracks):
+        return None
+    scenes = [encode_scene(t["_rects"]) for t in tracks]
+    kinds: list[str] = []
+    rests = []
+    for t, sc in zip(tracks, scenes):
+        p = len(sc["static"])
+        rests.append([[{"kind": r["kind"], "item": [float(v) for v in r["rect"]] + [float(r["value"])]} for r in rl[p:]]
+                      for rl in t["_rects"]])
+    shared_ticks, prev = [], None
+    own = [[] for _ in tracks]
+    for k in range(T):
+        n = 0
+        while all(len(r[k]) > n for r in rests) and all(r[k][n] == rests[0][k][n] for r in rests):
+            n += 1
+        lst = []
+        for e in rests[0][k][:n]:
+            if e["kind"] not in kinds:
+                kinds.append(e["kind"])
+            lst.append([kinds.index(e["kind"]), *e["item"]])
+        shared_ticks.append(None if lst == prev else lst)
+        prev = lst
+        for i, r in enumerate(rests):
+            own[i].append(r[k][n:])
+    for t, sc, o in zip(tracks, scenes, own):
+        tk, pv = [], None
+        for rest in o:
+            lst = []
+            for e in rest:
+                if e["kind"] not in sc["kinds"]:
+                    sc["kinds"].append(e["kind"])
+                lst.append([sc["kinds"].index(e["kind"]), *e["item"]])
+            tk.append(None if lst == pv else lst)
+            pv = lst
+        t["scene"] = {"kinds": sc["kinds"], "static": sc["static"], "ticks": tk, "shared": True}
+    return {"kinds": kinds, "ticks": shared_ticks}
+
+
+def play_classic(game: str, seed: int, player: str, rng: np.random.Generator, fixed_action: int = 0) -> dict:
+    from flysim.apps.games.classic.common import draw
+    env = base.make(game)
+    env.max_ticks = FAKE_CLASSIC_TICKS             # instance override, fixture only
+    frame = env.reset(seed)
+    det = LoomingDetector()
+    det.reset()
+    agent = None
+    if player == "random":
+        agent = RandomAgent()
+        agent.reset(seed)
+    elif player == "brainless":
+        agent = ThresholdAgent(FAKE_CLASSIC_THETA)
+        agent.reset(seed)
+    spec = gf = None
+    if player == "fly":
+        spec = {"decoder": "CountWindowDecoder", "window_ms": 300.0, "min_spikes": 2,
+                "rule": "count GF spikes per side in [now - window_ms, now); both >= n -> JUMP; "
+                        "left only -> RIGHT; right only -> LEFT; neither -> NOOP",
+                "now_ms": "end of the current tick (game clock)"}
+        gf = FakeGF(rng)
+    frames, actions, looms, rect_lists, score, lives, events = [], [], [], [], [], [], []
+    k = 0
+    while True:
+        sc = env.scene()
+        if not np.array_equal(draw(sc["rects"]), frame):
+            raise AssertionError(f"scene record does not redraw the frame ({game} tick {k})")
+        lo = det.update(frame)
+        frames.append(frame)
+        looms.append([float(lo[0]), float(lo[1])])
+        rect_lists.append(sc["rects"])
+        score.append(sc["hud"]["score"])
+        lives.append(sc["hud"]["lives"])
+        if player == "fly":
+            hint = "center" if lo[0] > 0 and lo[1] > 0 else "L" if lo[0] > 0 else "R" if lo[1] > 0 else None
+            gf.tick(k, hint, hint is not None)
+            a = gf.decode(t_ms(k + 1), spec["window_ms"], spec["min_spikes"])
+        elif player == "fixed":
+            a = fixed_action
+        else:
+            a = agent.act(frame)
+        actions.append(int(a))
+        s0, l0 = env.score, env.lives()
+        frame, _, done, info = env.step(a)
+        # stamping as in M7e3: tick = the step in which it happened (shown from frame tick + 1)
+        if env.score > s0:
+            events.append({"tick": k, "t_ms": t_ms(k + 1), "type": "score", "points": int(env.score - s0),
+                           "score": int(env.score)})
+        if l0 is not None and env.lives() is not None and env.lives() < l0:
+            events.append({"tick": k, "t_ms": t_ms(k + 1), "type": "life_lost", "lives": int(env.lives())})
+        k += 1
+        if done:
+            if not info["truncated"]:
+                events.append({"tick": k - 1, "t_ms": t_ms(k), "type": "game_over"})
+            break
+    T = len(actions)
+    wide = max(range(T), key=lambda i: len(rect_lists[i]))
+    pick = sorted({min(10, T - 1), T // 2, T - 1, wide})
+    track = {"id": f"{game}/{player}", "game": game, "player": player, "seed": seed, "n_ticks": T, "score": int(info["score"]),
+             "crashed": bool(info["crashed"]), "truncated": bool(info["truncated"]),
+             "action": actions, "loom": looms, "_rects": rect_lists,
+             "hud": {"score": score, "lives": lives}, "events": events,
+             "theta": FAKE_CLASSIC_THETA if player == "brainless" else None, "brain": None,
+             "check": {"frames_bit_exact": T, "n_frames": T, "score_matches": True, "actions_match": True},
+             "check_frames": {"ticks": pick, "raw_b64": [base64.b64encode(frames[i].tobytes()).decode() for i in pick]}}
+    if player == "fly":
+        b = _brain({"n_ticks": T, "loom": looms}, gf, spec, "m7f", rng)
+        b["warmup_ms"], b["transient_ms"] = 5000, 0
+        track["brain"] = b
+    return track
+
+
+def make_classic(game: str, rng: np.random.Generator) -> dict:
+    env = base.make(game)
+    d = env.describe()
+    fixed_ref = "JUMP" if game == "crossing" else "NOOP"
+    players = {"fly": None, "random": None, "fixed": ACTION_NAMES.index(fixed_ref), "brainless": None}
+    tracks = [play_classic(game, 10, p, rng, a or 0) for p, a in players.items()]
+    shared = encode_shared(tracks) if game in ("crossing", "paddle") else None
+    for t in tracks:
+        if shared is None:
+            t["scene"] = encode_scene(t["_rects"])
+        del t["_rects"]
+    seed10 = {t["player"]: t["score"] for t in tracks}
+    scores = {}
+    for p in ("fly", "random", "fixed", "brainless"):
+        hi = 6 if (game == "boxing" and p == "fly") else 3
+        lo = 2 if (game == "boxing" and p == "fly") else 0
+        if game == "crossing" and p == "fixed":
+            lo, hi = 1, 5
+        if game == "crossing" and p == "fly":
+            hi = 1
+        scores[p] = [seed10[p]] + [int(x) for x in rng.integers(lo, hi, 9)]
+    if game == "boxing":                       # the fake fly "beats" here and "loses" in crossing
+        scores["random"] = [seed10["random"]] + [0] * 9
+        scores["fixed"] = [seed10["fixed"]] + [0] * 9
+        scores["brainless"] = [seed10["brainless"]] + [0] * 9
+    if game == "crossing":
+        scores["fly"] = [seed10["fly"]] + [0] * 9
+    scores["oracle"] = [int(x) for x in rng.integers(40, 130, 10)]
+    mat = [[int(x) for x in rng.integers(0, 4, 10)] for _ in range(10)]
+    for i in range(10):
+        mat[i][i] = scores["fly"][i]
+    yoked = [float(np.mean([mat[i][j] for i in range(10) if i != j])) for j in range(10)]
+    scores["yoked"] = yoked
+    block = {"name": game, "title_ko": d["title_ko"], "genre_ko": d["genre_ko"], "player_ko": d["player"],
+             "jump_effect": d["actions"]["JUMP"], "left_effect": d["actions"]["LEFT"],
+             "right_effect": d["actions"]["RIGHT"], "automatic": d["automatic"], "score_rule": d["score"],
+             "end_rule": d["ends"], "kinds": d["kinds"], "rules": d, "eval_seeds": list(range(10, 20)),
+             "scores": scores, "fixed_ref": fixed_ref, "brainless_theta": FAKE_CLASSIC_THETA,
+             "k": 12345.6, "p99": 0.00123, "ceiling": False,
+             "verdict": {"vs_random": _paired(scores["fly"], scores["random"]),
+                         "vs_fixed": _paired(scores["fly"], scores["fixed"]),
+                         "vs_brainless": _paired(scores["fly"], scores["brainless"])},
+             "yoked": {"posthoc": True, "note": "사후 점검 — 판정 아님", "matrix_tape_x_game": mat,
+                       "fly": {"scores": scores["fly"], "mean": float(np.mean(scores["fly"]))},
+                       "yoked": {"scores": yoked, "mean": float(np.mean(yoked))},
+                       "verdict": _paired(scores["fly"], yoked), "diagonal_equals_fly": True}}
+    for t in tracks:
+        t["id"] = f"{game}/{t['player']}"
+    return {"version": 1,
+            "meta": {"generated": "2026-10-31T00:00:00+0900", "git_commit": "fixture",
+                     "tick_ms_rule": "t_ms(k) = floor(k*1000/60)",
+                     "action_codes": {"0": "NOOP", "1": "JUMP", "2": "LEFT", "3": "RIGHT"},
+                     "values": {"background": 190, "fixed": 110, "moving": 25},
+                     "sources": {"tests/show_fake.py": "fixture"}, "fixture": FIXTURE_NOTE},
+            "game": block, **({"shared_scene": shared} if shared else {}), "tracks": tracks}
+
+
+def make_slow(rng: np.random.Generator) -> dict:
+    from flysim.apps.games.slow import make_slow as slow_env
+    name = "dodge_v2_s4"
+    tracks = []
+    for player in ("fly", "random", "fixed", "brainless"):
+        t = play(name, 10, player, "m7g" if player == "fly" else None, rng, env=slow_env(name), fixed_action=2)
+        tracks.append(t)
+    seed10 = {t["player"]: t["score"] for t in tracks}
+    rows = {}
+    plan = [("dodge_v2", "dodge_v2", 1, "RIGHT", 72), ("dodge_v2_s2", "dodge_v2", 2, "LEFT", 32),
+            ("dodge_v2_s4", "dodge_v2", 4, "LEFT", 14), ("dodge_v2_s8", "dodge_v2", 8, "LEFT", 6),
+            ("jump", "jump", 1, "JUMP", None), ("jump_s2", "jump", 2, "JUMP", 30), ("jump_s4", "jump", 4, "JUMP", 12)]
+    for row, fam, s, ref, ceil in plan:
+        top = ceil or 50
+        sc = {"fly": [int(x) for x in rng.integers(0, top // 2 + 1, 10)],
+              "random": [int(x) for x in rng.integers(0, 2, 10)],
+              "fixed": [int(x) for x in rng.integers(0, top + 1, 10)],
+              "brainless": [int(x) for x in rng.integers(top // 2, top + 1, 10)],
+              "oracle": [top] * 10}
+        if row == name:
+            for p in ("fly", "random", "fixed", "brainless"):
+                sc[p][0] = seed10[p]
+        rows[row] = {"family": fam, "s": s, "title_ko": GAMES[fam] + (f" ({s}배 느리게)" if s > 1 else ""),
+                     "eval_seeds": list(range(10, 20)), "scores": sc, "fixed_ref": ref,
+                     "ceiling": {"ceiling": ceil is not None, "rule": "fixture", "value": ceil if s == 1 else None},
+                     "verdict": {"vs_random": _paired(sc["fly"], sc["random"]), "vs_fixed": _paired(sc["fly"], sc["fixed"]),
+                                 "vs_brainless": _paired(sc["fly"], sc["brainless"])},
+                     "lead_ms_median_top_k": float(117 * s * s)}
+    cells, appearance = [], []
+    for row, s in (("dodge_v2_s2", 2), ("dodge_v2_s4", 4), ("dodge_v2_s8", 8)):
+        for cell, mean, beats in (("A", 0.3, False), ("A", 0.2, False), ("B", 5.0 * s, True), ("top", 4.0 * s, True)):
+            cells.append({"row": row, "cell": cell, "k": 1000.0 * s, "game": "dodge_v2" if cell == "B" else row,
+                          "mean": mean, "random": 0.1, "diff_mean": mean - 0.1, "sem": 0.5, "beats": beats, "loses": False})
+        for where, n in (("top_k_train", 40 + s), ("selected_k_eval", 45 + s), ("cell_B", 50)):
+            appearance.append({"row": row, "where": where, "passed": 100, "within_300ms": n, "frac": n / 100})
+    for row in ("jump_s2", "jump_s4"):
+        for cell in ("A", "A", "B"):
+            cells.append({"row": row, "cell": cell, "k": 2000.0, "game": "jump" if cell == "B" else row,
+                          "mean": 0.0, "random": 0.4, "diff_mean": -0.4, "sem": 0.2, "beats": False, "loses": False})
+    game_block = {**rows[name], "rules": slow_env(name).describe(), "brainless_theta": FAKE_THETA[name], "one_way_dir": "left"}
+    return {"version": 1,
+            "meta": {"generated": "2026-10-31T00:00:00+0900", "git_commit": "fixture",
+                     "tick_ms_rule": "t_ms(k) = floor(k*1000/60)",
+                     "action_codes": {"0": "NOOP", "1": "JUMP", "2": "LEFT", "3": "RIGHT"},
+                     "sources": {"tests/show_fake.py": "fixture"}, "fixture": FIXTURE_NOTE},
+            "rows": rows,
+            "posthoc": {"posthoc": True, "note": "사후 점검 — 판정 아님", "cells": cells,
+                        "reading_2x2": {r: "가짜 판독 문구 (테스트 전용)" for r in ("dodge_v2_s2", "dodge_v2_s4", "dodge_v2_s8", "jump_s2", "jump_s4")},
+                        "reading_2x2_cells": {r: {"A": "not", "A_read_as_beat": False, "B": "beat" if r.startswith("dodge") else "not"}
+                                              for r in ("dodge_v2_s2", "dodge_v2_s4", "dodge_v2_s8", "jump_s2", "jump_s4")},
+                        "appearance": appearance},
+            "hypothesis": {"label": "가설 — 약하게만 지지됨(느린 판 실험)", "reading": "**가짜 읽기.** 문구 (테스트 전용)"},
+            "games": {name: game_block}, "tracks": tracks}
+
+
 def write(out_dir: Path) -> Path:
     out_dir.mkdir(parents=True, exist_ok=True)
     (out_dir / "show-data.json").write_text(json.dumps(make_show_data(), ensure_ascii=False))
     (out_dir / "brain-map.json").write_text(json.dumps(make_brain_map(), ensure_ascii=False))
+    rng = np.random.default_rng(20261031)
+    (out_dir / "classic").mkdir(exist_ok=True)
+    index = {"version": 1, "meta": {"generated": "2026-10-31T00:00:00+0900", "git_commit": "fixture",
+                                    "fixture": FIXTURE_NOTE}, "games": {}}
+    for game in CLASSIC:
+        d = make_classic(game, rng)
+        index["games"][game] = d["game"]
+        (out_dir / "classic" / f"{game}.json").write_text(json.dumps(d, ensure_ascii=False))
+    (out_dir / "classic" / "index.json").write_text(json.dumps(index, ensure_ascii=False))
+    (out_dir / "slow.json").write_text(json.dumps(make_slow(rng), ensure_ascii=False))
     return out_dir
 
 
