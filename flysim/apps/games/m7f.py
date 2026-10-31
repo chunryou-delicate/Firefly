@@ -40,12 +40,24 @@ Part 2 (§4, the fly), M7c2's main arm unchanged:
   the first action, score and life-loss times, game-over (``play_classic``).
 * replay bundle of evaluation seed 10 in ``runs/m7f/<game>-brain-seed10/`` — M7c2's format plus
   ``scene.json`` (the ``scene()`` of every recorded frame, checked to redraw it bit for bit).
+
+Yoked control (addendum 2, item 3 — decided after part 2, post hoc, descriptive, verdicts unchanged):
+
+    python -m flysim.apps.games.m7f yoked    # -> data-provenance/m7f-yoked.json
+
+* the fly's evaluation games are replayed with each game's chosen ``k`` and every tick's action is
+  taped; scores, lengths and action counts must equal part 2 game by game (else stop).
+* the tape of seed i is played blind (no screen) on the game of seed j, wrapping to its start when
+  the game outlasts it; all 10 x 10 scores are kept and the diagonal must equal the fly's scores.
+* yoked score of game seed j = mean over the nine tapes i != j; fly j - yoked j under the paired
+  rule (> 3 SEM), all eight games.
 """
 from __future__ import annotations
 
 import argparse
 import hashlib
 import json
+import multiprocessing
 import sys
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -99,6 +111,8 @@ def make_agent(spec: tuple, env) -> Agent:
         return ThresholdAgent(spec[1])
     if kind == "oracle":
         return ClassicOracle(env)
+    if kind == "tape":
+        return TapeAgent(spec[1])
     raise KeyError(kind)
 
 
@@ -603,9 +617,156 @@ def merge(paths: list[Path], out: Path = RESULTS) -> dict:
     return result
 
 
+# ---------------------------------------------------------------------------------------------
+# addendum 2, item 3: the yoked control (post hoc, descriptive — the part-2 verdicts stand)
+# ---------------------------------------------------------------------------------------------
+YOKED = ROOT / "data-provenance" / "m7f-yoked.json"
+
+
+class TapeAgent(Agent):
+    """A recorded action tape played without looking at the screen. When the game outlasts the
+    tape, the tape starts again from its beginning (the tape's action mix is kept)."""
+
+    name = "yoked-tape"
+
+    def __init__(self, tape):
+        self.tape = tuple(int(a) for a in tape)
+        if not self.tape:
+            raise ValueError("empty action tape")
+        self.i = 0
+
+    def reset(self, seed: int) -> None:
+        self.i = 0
+
+    def act(self, frame: np.ndarray) -> int:
+        a = self.tape[self.i % len(self.tape)]
+        self.i += 1
+        return a
+
+    def describe(self) -> dict:
+        return {"agent": self.name, "tape_ticks": len(self.tape), "screen": "not looked at",
+                "wrap": "from the start of the tape when the game outlasts it"}
+
+
+class _Taping(Agent):
+    """Passes the fly's actions through unchanged and keeps them, one per tick."""
+
+    def __init__(self, inner: Agent):
+        self.inner, self.tape = inner, []
+
+    def reset(self, seed: int) -> None:
+        self.tape = []
+        self.inner.reset(seed)
+
+    def act(self, frame: np.ndarray) -> int:
+        a = int(self.inner.act(frame))
+        self.tape.append(a)
+        return a
+
+
+def tape_string(tape) -> str:
+    return "".join(str(int(a)) for a in tape)
+
+
+def _tape_episode(job: tuple) -> dict:
+    game, tape, seed = job
+    e = run_episode(make(game), TapeAgent(tape), seed)
+    return e | {"wraps": max(0, (e["ticks"] - 1) // len(tape))}
+
+
+def yoked_matrix(game: str, tapes: list, workers: int) -> dict:
+    """Every tape (rows, evaluation seed order) on every evaluation seed's game (columns)."""
+    jobs = [(game, tuple(t), s) for t in tapes for s in EVAL_SEEDS]
+    if workers <= 1:
+        eps = [_tape_episode(j) for j in jobs]
+    else:                                        # spawn: the parent already holds a CUDA context
+        with ProcessPoolExecutor(max_workers=workers, mp_context=multiprocessing.get_context("spawn")) as ex:
+            eps = list(ex.map(_tape_episode, jobs, chunksize=1))
+    n = len(EVAL_SEEDS)
+    pick = lambda key: [[eps[i * n + j][key] for j in range(n)] for i in range(len(tapes))]
+    return {"scores": pick("score"), "ticks": pick("ticks"), "wraps": pick("wraps")}
+
+
+def yoked_scores(matrix: list[list[int]]) -> list[float]:
+    """Game seed j: the mean of the nine other tapes' scores (rows i != j of column j)."""
+    m = np.asarray(matrix, dtype=float)
+    n = m.shape[0]
+    return [float((m[:, j].sum() - m[j, j]) / (n - 1)) for j in range(n)]
+
+
+def yoked_game(game: str, k: float, part2_eps: list[dict], agent, brain, workers: int) -> dict:
+    from . import m7c as M
+    tg = time.time()
+    brain.k = k
+    taping = _Taping(agent)
+    tapes = []
+    for s, want in zip(EVAL_SEEDS, part2_eps):
+        e = play_classic(game, taping, brain, s)
+        if (e["seed"], e["score"], e["ticks"], e["actions"]) != (want["seed"], want["score"], want["ticks"],
+                                                                  want["actions"]):
+            raise RuntimeError(f"{game} seed {s}: the replay differs from part 2 (determinism)")
+        if len(taping.tape) != e["ticks"]:
+            raise RuntimeError(f"{game} seed {s}: the tape is not one action per tick")
+        tapes.append(list(taping.tape))
+    fly = [e["score"] for e in part2_eps]
+    mat = yoked_matrix(game, tapes, workers)
+    diag = [mat["scores"][i][i] for i in range(len(tapes))]
+    if diag != fly:
+        raise RuntimeError(f"{game}: own tape on own seed {diag} != the fly's scores {fly}")
+    yoked = yoked_scores(mat["scores"])
+    v = M.paired(fly, yoked)
+    v["verdict"] = "beat" if v["beats"] else ("lost" if v["loses"] else "indistinguishable")
+    off = [(i, j) for i in range(len(tapes)) for j in range(len(tapes)) if i != j]
+    row = {"k": k, "fly": {"scores": fly, "mean": float(np.mean(fly))},
+           "yoked": {"scores": yoked, "mean": float(np.mean(yoked))},
+           "paired": v, "matrix": mat, "diagonal_equals_fly": True,
+           "cells_wrapped": int(sum(mat["wraps"][i][j] > 0 for i, j in off)),
+           "tapes": {str(s): {"ticks": len(t), "actions": dict(zip(ACTIONS, np.bincount(t, minlength=len(ACTIONS))
+                                                                 .tolist())), "tape": tape_string(t)}
+                     for s, t in zip(EVAL_SEEDS, tapes)}}
+    log(f"{game}: fly {row['fly']['mean']:.2f} vs yoked {row['yoked']['mean']:.2f} "
+        f"({v['mean']:+.2f} ± {v['sem']:.2f}, {v['verdict']}); wrapped cells {row['cells_wrapped']} "
+        f"({time.time() - tg:.0f} s)")
+    return row
+
+
+def yoked(games, device: str, workers: int, out: Path = YOKED) -> dict:
+    t0 = time.time()
+    res = json.loads(RESULTS.read_text())
+    base = json.loads(BASELINES.read_text())
+    for g in games:
+        if base["games"][g]["rules"] != make(g).describe():
+            raise RuntimeError(f"{g}: the game's rules changed since part 1")
+    agent, brain, _, _ = brain_setup(device)
+    result = {"generated": time.strftime("%Y-%m-%dT%H:%M:%S%z"), "git_commit": git_commit(),
+              "brief": "docs/m7f-brief.md, addendum 2 item 3 (post hoc, descriptive; part-2 verdicts unchanged)",
+              "source": {"file": str(RESULTS.relative_to(ROOT)),
+                         "sha256": hashlib.sha256(RESULTS.read_bytes()).hexdigest()},
+              "eval_seeds": list(EVAL_SEEDS), "brain": brain.describe() | {"k": "per game, part 2's choice"},
+              "decoder": agent.decoder.describe(), "yoked_agent": TapeAgent([0]).describe() | {"tape_ticks": "per tape"},
+              "rules": {"matrix": "rows = tape seed (the fly's evaluation game), columns = game seed, both in "
+                                  "evaluation seed order; the diagonal must equal the fly's scores",
+                        "yoked_score": "game seed j: mean of the nine tapes i != j on game j",
+                        "paired": "fly j - yoked j, mean > 3 SEM (M7c rule)", "sem_mult": 3.0,
+                        "reading": {"beat": "the score came from when the fly moved, given what it saw",
+                                    "indistinguishable": "the movement pattern alone explains it",
+                                    "lost": "recorded as it is"},
+                        "tape": "digits per tick, 0 NOOP 1 JUMP 2 LEFT 3 RIGHT",
+                        "replay_check": "seed, score, ticks and action counts equal part 2's evaluation games"},
+              "games": {}}
+    for g in games:
+        result["games"][g] = yoked_game(g, res["games"][g]["k"], res["games"][g]["fly"]["episodes"],
+                                        agent, brain, workers)
+    result["wall_s"] = round(time.time() - t0, 1)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(result, indent=1) + "\n")
+    log(f"done in {result['wall_s']} s -> {out}")
+    return result
+
+
 def main(argv: list[str]) -> int:
     ap = argparse.ArgumentParser(description="M7f classic-style games")
-    ap.add_argument("command", choices=("tune", "part1", "part2", "merge"))
+    ap.add_argument("command", choices=("tune", "part1", "part2", "merge", "yoked"))
     ap.add_argument("paths", nargs="*", help="merge: the part-2 run files")
     ap.add_argument("--games", default=",".join(GAMES))
     ap.add_argument("--workers", type=int, default=16)
@@ -632,6 +793,10 @@ def main(argv: list[str]) -> int:
         part2(games, args.device, args.workers, out, bundles=not args.no_bundle)
     elif args.command == "merge":
         merge([Path(p) for p in args.paths])
+    elif args.command == "yoked":
+        if games != list(GAMES):
+            raise ValueError("the yoked control runs all eight games (addendum 2: not only the wins)")
+        yoked(games, args.device, args.workers, Path(args.out) if args.out else YOKED)
     log(f"done in {time.time() - t0:.0f} s")
     return 0
 
