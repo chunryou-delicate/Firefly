@@ -164,9 +164,14 @@ class GameEnv(ABC):
 
 
 def make(name: str) -> GameEnv:
+    from .classic import (BoxingGame, BricksGame, CatchGame, CrossingGame, DemonsGame, FormationGame,
+                          PaddleGame, SkiGame)
     from .dodge import DodgeGame, DodgeV2Game
     from .jump import JumpGame
-    games = {"jump": JumpGame, "dodge": DodgeGame, "dodge_v2": DodgeV2Game}
+    games = {"jump": JumpGame, "dodge": DodgeGame, "dodge_v2": DodgeV2Game,
+             "paddle": PaddleGame, "bricks": BricksGame, "formation": FormationGame,
+             "crossing": CrossingGame, "catch": CatchGame, "demons": DemonsGame, "ski": SkiGame,
+             "boxing": BoxingGame}
     if name not in games:
         raise KeyError(f"unknown game {name!r}; known: {sorted(games)}")
     return games[name]()
